@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Энерго-пульт 5.4 (Final)</title>
+    <title>Энерго-пульт 6.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
@@ -24,12 +24,15 @@
             margin-top: 20px; padding-top: 20px; border-top: 1px solid #f0f0f0;
         }
         .stat-item { text-align: center; width: 50%; }
-        .stat-value { font-size: 1.6rem; font-weight: 800; color: #333; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; color: #333; }
         .stat-label { font-size: 0.75rem; color: #999; text-transform: uppercase; letter-spacing: 1px; }
         .unit { color: #666; font-size: 1.2rem; margin-top: 15px; font-weight: 500; }
         .advice-box {
             display: flex; align-items: center; justify-content: center;
             gap: 12px; font-weight: 700; font-size: 1.2rem; padding: 15px; border-radius: 16px; margin-top: 15px;
+        }
+        .countdown {
+            color: #555; font-size: 0.95rem; margin-top: 12px; font-weight: 600;
         }
         .chart-card { background: white; border-radius: 24px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
     </style>
@@ -47,14 +50,16 @@
             <span id="advice-text">Загрузка...</span>
         </div>
 
+        <div class="countdown" id="countdown-text">Считаем время...</div>
+
         <div class="shelly-stats">
             <div class="stat-item">
                 <div class="stat-value" id="shelly-power">Запуск</div>
-                <div class="stat-label">Ватт</div>
+                <div class="stat-label">Ватт сейчас</div>
             </div>
             <div class="stat-item">
                 <div class="stat-value" id="shelly-load">...</div>
-                <div class="stat-label">Нагрузка</div>
+                <div class="stat-label">кВт·ч сегодня</div>
             </div>
         </div>
         <div id="current-interval" style="color:#ccc; font-size: 0.75rem; margin-top: 15px;"></div>
@@ -98,7 +103,6 @@
 
     async function updateShelly() {
         try {
-            // Формируем правильный POST-запрос, как того требует Shelly Cloud
             const targetUrl = 'https://shelly-70-eu.shelly.cloud/device/status';
             const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
             
@@ -114,22 +118,36 @@
 
             if (res.isok) {
                 const emeters = res.data.device_status.emeters;
-                let totalPower = emeters.reduce((sum, phase) => sum + phase.power, 0);
                 
+                // Текущая мощность (Ватт)
+                let totalPower = emeters.reduce((sum, phase) => sum + phase.power, 0);
                 document.getElementById('shelly-power').innerText = Math.round(totalPower);
                 
-                let loadPercent = (totalPower / 15000) * 100;
-                document.getElementById('shelly-load').innerText = loadPercent.toFixed(0) + '%';
+                // Подсчет потребления за день (кВт·ч)
+                let currentTotalWh = emeters.reduce((sum, phase) => sum + (phase.total || 0), 0);
+                const todayStr = new Date().toLocaleDateString('ru-RU');
+                let savedDate = localStorage.getItem('energy_date');
+                let startEnergy = parseFloat(localStorage.getItem('energy_start'));
+
+                // Если наступил новый день или зашли впервые — сохраняем стартовую точку
+                if (savedDate !== todayStr || isNaN(startEnergy) || startEnergy === 0) {
+                    startEnergy = currentTotalWh;
+                    localStorage.setItem('energy_date', todayStr);
+                    localStorage.setItem('energy_start', startEnergy);
+                }
+
+                let consumedTodayKwh = (currentTotalWh - startEnergy) / 1000;
+                if (consumedTodayKwh < 0) consumedTodayKwh = 0; // Защита от багов
+                
+                document.getElementById('shelly-load').innerText = consumedTodayKwh.toFixed(2);
                 
                 document.getElementById('current-interval').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`;
             } else {
-                // Если ключ все-таки не подходит
                 document.getElementById('shelly-power').innerText = "Ключ!";
                 document.getElementById('shelly-load').innerText = "Ошибка";
             }
         } catch (e) { 
             console.error("Ошибка соединения Shelly:", e);
-            // Специально вывожу слово Блок, чтобы точно знать, что режет браузер
             document.getElementById('shelly-power').innerText = "Блок";
             document.getElementById('shelly-load').innerText = "Откл. ABP";
         }
@@ -190,6 +208,20 @@
             }
         });
     }
+
+    // ЛОГИКА ТАЙМЕРА (тикает каждую секунду)
+    setInterval(() => {
+        const now = new Date();
+        const nextPeriod = new Date(now);
+        // Находим следующую 15-минутную отметку (00, 15, 30, 45)
+        nextPeriod.setMinutes(Math.floor(now.getMinutes() / 15) * 15 + 15, 0, 0);
+        
+        const diffMs = nextPeriod - now;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffSecs = Math.floor((diffMs % 60000) / 1000);
+        
+        document.getElementById('countdown-text').innerText = `Цена поменяется через ${diffMins} мин ${diffSecs} сек`;
+    }, 1000);
 
     updateAll();
     setInterval(updateAll, 30000);
