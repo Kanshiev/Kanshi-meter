@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Энерго-пульт 5.3</title>
+    <title>Энерго-пульт 5.4 (Final)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
@@ -23,7 +23,7 @@
             display: flex; justify-content: space-around;
             margin-top: 20px; padding-top: 20px; border-top: 1px solid #f0f0f0;
         }
-        .stat-item { text-align: center; }
+        .stat-item { text-align: center; width: 50%; }
         .stat-value { font-size: 1.6rem; font-weight: 800; color: #333; }
         .stat-label { font-size: 0.75rem; color: #999; text-transform: uppercase; letter-spacing: 1px; }
         .unit { color: #666; font-size: 1.2rem; margin-top: 15px; font-weight: 500; }
@@ -49,15 +49,15 @@
 
         <div class="shelly-stats">
             <div class="stat-item">
-                <div class="stat-value" id="shelly-power">--</div>
+                <div class="stat-value" id="shelly-power">Запуск</div>
                 <div class="stat-label">Ватт</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="shelly-load">--</div>
+                <div class="stat-value" id="shelly-load">...</div>
                 <div class="stat-label">Нагрузка</div>
             </div>
         </div>
-        <div id="current-interval" style="color:#ccc; font-size: 0.7rem; margin-top: 15px;"></div>
+        <div id="current-interval" style="color:#ccc; font-size: 0.75rem; margin-top: 15px;"></div>
     </div>
 
     <div class="chart-card">
@@ -67,11 +67,6 @@
 
 <script>
     Chart.register(ChartDataLabels);
-
-    // ТВОИ КЛЮЧИ
-    const SHELLY_AUTH_KEY = 'MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690';
-    const SHELLY_ID = '483fdac39873';
-    const SHELLY_SERVER = 'https://shelly-70-eu.shelly.cloud'; 
 
     let priceChart;
     const FREE = 2, CHEAP = 5, HIGH = 10;
@@ -103,31 +98,40 @@
 
     async function updateShelly() {
         try {
-            // ФОРМИРУЕМ ПРАВИЛЬНЫЙ ЗАПРОС К ОБЛАКУ И ОБЕРТЫВАЕМ ЕГО В ПРОКСИ ALLORIGINS
-            const cloudUrl = `${SHELLY_SERVER}/device/status?id=${SHELLY_ID}&auth_key=${SHELLY_AUTH_KEY}`;
-            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(cloudUrl)}`;
+            // Формируем правильный POST-запрос, как того требует Shelly Cloud
+            const targetUrl = 'https://shelly-70-eu.shelly.cloud/device/status';
+            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
             
-            const response = await fetch(proxyUrl);
+            const requestBody = 'id=483fdac39873&auth_key=MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690';
+
+            const response = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: requestBody
+            });
+
             const res = await response.json();
 
             if (res.isok) {
-                // Если облако ответило нормально
                 const emeters = res.data.device_status.emeters;
                 let totalPower = emeters.reduce((sum, phase) => sum + phase.power, 0);
                 
                 document.getElementById('shelly-power').innerText = Math.round(totalPower);
                 
-                // Нагрузка в % (исходим из лимита в 15000 Вт)
                 let loadPercent = (totalPower / 15000) * 100;
                 document.getElementById('shelly-load').innerText = loadPercent.toFixed(0) + '%';
                 
-                document.getElementById('current-interval').innerText = `Sync: ${new Date().toLocaleTimeString()}`;
+                document.getElementById('current-interval').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`;
             } else {
-                document.getElementById('shelly-power').innerText = "Err";
+                // Если ключ все-таки не подходит
+                document.getElementById('shelly-power').innerText = "Ключ!";
+                document.getElementById('shelly-load').innerText = "Ошибка";
             }
         } catch (e) { 
-            console.error("Ошибка соединения:", e);
-            document.getElementById('shelly-power').innerText = "Wait";
+            console.error("Ошибка соединения Shelly:", e);
+            // Специально вывожу слово Блок, чтобы точно знать, что режет браузер
+            document.getElementById('shelly-power').innerText = "Блок";
+            document.getElementById('shelly-load').innerText = "Откл. ABP";
         }
     }
 
@@ -188,7 +192,7 @@
     }
 
     updateAll();
-    setInterval(updateAll, 30000); // Обновление каждые 30 секунд
+    setInterval(updateAll, 30000);
 </script>
 </body>
 </html>
