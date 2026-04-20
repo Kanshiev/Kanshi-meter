@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kanshi-meter 2.0</title>
+    <title>Kanshi-meter 2.1</title>
     
     <link rel="manifest" href="manifest.json">
     <script>
@@ -12,8 +12,8 @@
       }
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
     <style>
         :root {
@@ -104,9 +104,9 @@
         }
         .back-btn { background-color: #7f8c8d; margin-bottom: 15px; }
 
-        /* Графики */
-        .chart-container { width: 100%; height: 120px; margin-top: 10px; }
-        .large-chart-container { width: 100%; height: 350px; }
+        /* Графики (Добавлено position: relative для Chart.js) */
+        .chart-container { position: relative; width: 100%; height: 130px; margin-top: 10px; }
+        .large-chart-container { position: relative; width: 100%; height: 350px; }
 
         #details-view { display: none; width: 100%; max-width: 400px; }
     </style>
@@ -153,7 +153,7 @@
         
         <div class="card">
             <h2 style="font-size: 18px; margin-bottom: 5px;">Прогноз цен</h2>
-            <p style="font-size: 12px; opacity: 0.6; margin-bottom: 20px;">Данные на 48 часов</p>
+            <p style="font-size: 12px; opacity: 0.6; margin-bottom: 20px;">Данные обновляются после 14:15</p>
             <div class="large-chart-container">
                 <canvas id="detailedChart"></canvas>
             </div>
@@ -165,6 +165,9 @@
         const SHELLY_ID = "483fdac39873";
         const AUTH_KEY = "MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690";
         const PRICE_SELL_CENTS = 10.0; // Порог для режима "Wait"
+
+        // Принудительно регистрируем плагин цифр над столбцами
+        Chart.register(ChartDataLabels);
 
         let miniChartInstance = null;
         let detailedChartInstance = null;
@@ -252,74 +255,110 @@
                 loadMiniChart(); // Обновляем маленький график
 
             } catch (e) {
-                console.error("Ошибка обновления:", e);
+                console.error("Ошибка обновления главного блока:", e);
             }
         }
 
         async function loadMiniChart() {
-            const res = await fetch('https://api.spot-hinta.fi/TodayAndTomorrow');
-            const data = await res.json();
-            
-            const nextHours = data.slice(0, 8); // Ближайшие 8 интервалов по 15 мин
-            const labels = nextHours.map(item => new Date(item.DateTime).getHours() + ":" + new Date(item.DateTime).getMinutes().toString().padStart(2, '0'));
-            const prices = nextHours.map(item => (item.PriceWithTax * 100).toFixed(1));
-            const colors = prices.map(p => p > 10 ? '#ee8888' : (p <= 5 ? '#a8dcba' : '#f7dc8f'));
+            try {
+                const res = await fetch('https://api.spot-hinta.fi/TodayAndTomorrow');
+                const data = await res.json();
+                
+                // Фильтруем данные: берем только текущий час и будущее
+                const now = new Date();
+                now.setMinutes(0, 0, 0, 0); // Округляем до начала текущего часа
+                
+                const futureData = data.filter(item => new Date(item.DateTime) >= now);
+                const nextHours = futureData.slice(0, 8); // Ближайшие 8 часов
+                
+                const labels = nextHours.map(item => new Date(item.DateTime).getHours() + ":00");
+                const prices = nextHours.map(item => parseFloat((item.PriceWithTax * 100).toFixed(1)));
+                const colors = prices.map(p => p > 10 ? '#ee8888' : (p <= 5 ? '#a8dcba' : '#f7dc8f'));
 
-            const ctx = document.getElementById('miniChart').getContext('2d');
-            if (miniChartInstance) miniChartInstance.destroy();
-            
-            miniChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{ data: prices, backgroundColor: colors, borderRadius: 5 }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, datalabels: { display: true, font: {size: 9} } },
-                    scales: { y: { display: false }, x: { grid: {display: false} } }
-                },
-                plugins: [ChartDataLabels]
-            });
+                const ctx = document.getElementById('miniChart').getContext('2d');
+                if (miniChartInstance) miniChartInstance.destroy();
+                
+                // Рассчитываем максимальную высоту, чтобы цифры не обрезались сверху
+                const maxPrice = Math.max(...prices);
+
+                miniChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{ data: prices, backgroundColor: colors, borderRadius: 5 }]
+                    },
+                    options: {
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        layout: { padding: { top: 15 } }, // Отступ сверху для цифр
+                        plugins: { 
+                            legend: { display: false }, 
+                            datalabels: { 
+                                display: true, 
+                                anchor: 'end',
+                                align: 'top',
+                                font: { size: 10, weight: 'bold' },
+                                color: '#555'
+                            } 
+                        },
+                        scales: { 
+                            y: { display: false, suggestedMax: maxPrice + (maxPrice * 0.2) }, 
+                            x: { grid: { display: false }, ticks: { font: { size: 10 } } } 
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error("Ошибка мини-графика:", e);
+            }
         }
 
         async function loadDetailedChart() {
-            const res = await fetch('https://api.spot-hinta.fi/TodayAndTomorrow');
-            const data = await res.json();
-            
-            const labels = data.map(item => {
-                const d = new Date(item.DateTime);
-                return d.getHours() + (d.getDate() !== new Date().getDate() ? 'д' : '');
-            });
-            const prices = data.map(item => (item.PriceWithTax * 100).toFixed(1));
-            const colors = prices.map(p => p > 10 ? 'rgba(238, 136, 136, 0.8)' : (p <= 5 ? 'rgba(168, 220, 186, 0.8)' : 'rgba(247, 220, 143, 0.8)'));
+            try {
+                const res = await fetch('https://api.spot-hinta.fi/TodayAndTomorrow');
+                const data = await res.json();
+                
+                const labels = data.map(item => {
+                    const d = new Date(item.DateTime);
+                    const isTomorrow = d.getDate() !== new Date().getDate();
+                    return d.getHours() + (isTomorrow ? 'з' : ''); // "з" означает завтра
+                });
+                const prices = data.map(item => parseFloat((item.PriceWithTax * 100).toFixed(1)));
+                const colors = prices.map(p => p > 10 ? 'rgba(238, 136, 136, 0.8)' : (p <= 5 ? 'rgba(168, 220, 186, 0.8)' : 'rgba(247, 220, 143, 0.8)'));
 
-            const ctx = document.getElementById('detailedChart').getContext('2d');
-            if (detailedChartInstance) detailedChartInstance.destroy();
+                const ctx = document.getElementById('detailedChart').getContext('2d');
+                if (detailedChartInstance) detailedChartInstance.destroy();
 
-            detailedChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{ data: prices, backgroundColor: colors, borderRadius: 3 }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { display: false },
-                        datalabels: { 
-                            anchor: 'end', align: 'top', 
-                            formatter: Math.round,
-                            font: { size: 9, weight: 'bold' } 
-                        } 
+                const maxPrice = Math.max(...prices);
+
+                detailedChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{ data: prices, backgroundColor: colors, borderRadius: 3 }]
                     },
-                    scales: { 
-                        x: { ticks: { font: { size: 8 } } },
-                        y: { beginAtZero: true }
+                    options: {
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        layout: { padding: { top: 20 } },
+                        plugins: { 
+                            legend: { display: false },
+                            datalabels: { 
+                                anchor: 'end', 
+                                align: 'top', 
+                                formatter: Math.round,
+                                font: { size: 9, weight: 'bold' },
+                                color: '#666'
+                            } 
+                        },
+                        scales: { 
+                            x: { ticks: { font: { size: 9 }, maxRotation: 90, minRotation: 45 } },
+                            y: { beginAtZero: true, suggestedMax: maxPrice + (maxPrice * 0.15) }
+                        }
                     }
-                },
-                plugins: [ChartDataLabels]
-            });
+                });
+            } catch (e) {
+                console.error("Ошибка детального графика:", e);
+            }
         }
 
         // Запуск
