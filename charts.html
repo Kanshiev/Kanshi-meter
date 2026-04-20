@@ -12,12 +12,12 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
             background-color: #e2f3e5; 
-            display: flex; justify-content: center; padding: 20px; margin: 0;
+            display: flex; justify-content: center; padding: 15px; margin: 0;
         }
         .widget-container { width: 100%; max-width: 500px; }
         .chart-card { 
             background: white; border-radius: 24px; padding: 20px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 15px; 
         }
         .nav-btn {
             display: block; width: 100%; padding: 16px;
@@ -25,11 +25,14 @@
             border: none; border-radius: 16px;
             font-size: 16px; font-weight: bold; cursor: pointer;
             text-decoration: none; text-align: center; box-sizing: border-box;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 15px;
         }
-        .large-chart-container { width: 100%; height: 70vh; min-height: 400px; }
-        h2 { margin-top: 0; color: #333; text-align: center; font-size: 1.5rem; }
-        p { text-align: center; color: #666; font-size: 0.85rem; margin-top: -10px; margin-bottom: 20px; }
+        
+        /* Фиксируем высоту каждого графика, чтобы они красиво смотрелись друг под другом */
+        .chart-wrapper { width: 100%; height: 260px; position: relative; }
+        
+        h2 { margin-top: 0; color: #333; text-align: center; font-size: 1.3rem; margin-bottom: 15px;}
+        .empty-msg { text-align: center; color: #888; font-size: 0.9rem; padding: 50px 0; font-style: italic; }
     </style>
 </head>
 <body>
@@ -38,10 +41,16 @@
     <a href="index.html" class="nav-btn">⬅ Назад к пульту</a>
     
     <div class="chart-card">
-        <h2>Прогноз цен</h2>
-        <p>Данные на завтра появляются после 14:15</p>
-        <div class="large-chart-container">
-            <canvas id="detailedChart"></canvas>
+        <h2>Сегодня</h2>
+        <div class="chart-wrapper">
+            <canvas id="chartToday"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <h2>Завтра</h2>
+        <div id="tomorrow-container" class="chart-wrapper">
+            <canvas id="chartTomorrow"></canvas>
         </div>
     </div>
 </div>
@@ -51,62 +60,84 @@
 
     const FREE = 2, CHEAP = 5, HIGH = 10;
 
-    async function loadDetailedChart() {
+    async function loadCharts() {
         try {
-            // ИСПРАВЛЕНО: Точный адрес API, как в твоем рабочем index.html
             const res = await fetch('https://api.spot-hinta.fi/TodayAndDayForward');
-            if (!res.ok) throw new Error("Network response was not ok");
+            if (!res.ok) throw new Error("Network error");
             const data = await res.json();
             
-            // ФИЛЬТР: Берем только ровные часы (00 минут), чтобы график был читаемым
+            // Берем только ровные часы (00 минут)
             const hourlyData = data.filter(item => new Date(item.DateTime).getMinutes() === 0);
             
-            // Формируем подписи (добавляем 'з' для завтрашних часов)
-            const labels = hourlyData.map(item => {
-                const d = new Date(item.DateTime);
-                return d.getHours() + (d.getDate() !== new Date().getDate() ? 'з' : ''); 
-            });
+            // Определяем какое число СЕГОДНЯ
+            const todayDate = new Date().getDate();
             
-            const prices = hourlyData.map(item => Math.round(item.PriceWithTax * 100));
-            const colors = prices.map(p => p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#ffeaae' : '#ffadad');
+            // Разделяем массив на два: сегодня и завтра
+            const dataToday = hourlyData.filter(item => new Date(item.DateTime).getDate() === todayDate);
+            const dataTomorrow = hourlyData.filter(item => new Date(item.DateTime).getDate() !== todayDate);
 
-            new Chart(document.getElementById('detailedChart'), {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{ 
-                        data: prices, backgroundColor: colors, borderRadius: 4, barPercentage: 0.85 
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    layout: { padding: { top: 25 } }, 
-                    plugins: { 
-                        legend: { display: false },
-                        datalabels: { 
-                            anchor: 'end', align: 'top', formatter: Math.round,
-                            font: { size: 10, weight: 'bold' }, color: '#444'
-                        } 
-                    },
-                    scales: { 
-                        x: { 
-                            ticks: { font: { size: 10 }, maxRotation: 90, minRotation: 90 }, 
-                            grid: { display: false } 
-                        },
-                        y: { 
-                            display: false, 
-                            suggestedMax: Math.max(...prices) * 1.15 
-                        }
-                    }
-                }
-            });
+            // Рисуем график на сегодня
+            drawChart('chartToday', dataToday);
+
+            // Рисуем график на завтра ИЛИ показываем заглушку
+            if (dataTomorrow.length > 0) {
+                drawChart('chartTomorrow', dataTomorrow);
+            } else {
+                document.getElementById('tomorrow-container').innerHTML = 
+                    "<div class='empty-msg'>Данные на завтра появятся после 14:15</div>";
+            }
+
         } catch (e) {
-            console.error("Ошибка детального графика:", e);
-            document.querySelector('.large-chart-container').innerHTML = "<p style='color:red;'>Ошибка загрузки цен. Проверьте соединение.</p>";
+            console.error("Ошибка загрузки:", e);
+            document.getElementById('chartToday').parentElement.innerHTML = 
+                "<p style='color:red; text-align:center;'>Ошибка загрузки. Проверьте интернет.</p>";
         }
     }
 
-    loadDetailedChart();
+    // Универсальная функция для рисования любого из двух графиков
+    function drawChart(canvasId, dataset) {
+        const labels = dataset.map(item => {
+            const h = new Date(item.DateTime).getHours();
+            return h + ":00"; // Подписи вида 0:00, 15:00
+        });
+        
+        const prices = dataset.map(item => Math.round(item.PriceWithTax * 100));
+        const colors = prices.map(p => p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#ffeaae' : '#ffadad');
+
+        new Chart(document.getElementById(canvasId), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{ 
+                    data: prices, backgroundColor: colors, borderRadius: 5, barPercentage: 0.85 
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                layout: { padding: { top: 25 } }, 
+                plugins: { 
+                    legend: { display: false },
+                    datalabels: { 
+                        anchor: 'end', align: 'top', formatter: Math.round,
+                        font: { size: 10, weight: 'bold' }, color: '#444'
+                    } 
+                },
+                scales: { 
+                    x: { 
+                        ticks: { font: { size: 10 }, maxRotation: 90, minRotation: 45 }, 
+                        grid: { display: false } 
+                    },
+                    y: { 
+                        display: false, 
+                        // Добавляем +20% высоты, чтобы цифры сверху не обрезались
+                        suggestedMax: Math.max(...prices) * 1.2 
+                    }
+                }
+            }
+        });
+    }
+
+    loadCharts();
 </script>
 
 </body>
