@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kanshi-meter Графики</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+    <style>
+        :root { --bg-color: #faf8f5; --card-bg: #ffffff; --text-main: #2c3e50; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color); color: var(--text-main);
+            margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center;
+        }
+        .container { width: 100%; max-width: 400px; }
+        .card {
+            background: var(--card-bg); border-radius: 24px; padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; margin-bottom: 15px;
+        }
+        .nav-btn {
+            display: block; width: 100%; padding: 16px;
+            background-color: #7f8c8d; color: white;
+            border: none; border-radius: 16px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            text-decoration: none; text-align: center; box-sizing: border-box; margin-bottom: 15px;
+        }
+        .large-chart-container { width: 100%; height: 60vh; min-height: 400px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="index.html" class="nav-btn">⬅ Назад к пульту</a>
+        
+        <div class="card">
+            <h2 style="font-size: 18px; margin-bottom: 5px;">Прогноз цен</h2>
+            <p style="font-size: 12px; opacity: 0.6; margin-bottom: 20px;">Новые цены появляются после 14:15</p>
+            <div class="large-chart-container">
+                <canvas id="detailedChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadDetailedChart() {
+            try {
+                const res = await fetch('https://api.spot-hinta.fi/TodayAndTomorrow');
+                const data = await res.json();
+                
+                const labels = data.map(item => {
+                    const d = new Date(item.DateTime);
+                    return d.getHours() + (d.getDate() !== new Date().getDate() ? 'з' : ''); 
+                });
+                const prices = data.map(item => parseFloat((item.PriceWithTax * 100).toFixed(1)));
+                const colors = prices.map(p => p > 10 ? 'rgba(238, 136, 136, 0.8)' : (p <= 5 ? 'rgba(168, 220, 186, 0.8)' : 'rgba(247, 220, 143, 0.8)'));
+
+                new Chart(document.getElementById('detailedChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{ data: prices, backgroundColor: colors, borderRadius: 3 }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        layout: { padding: { top: 20 } },
+                        plugins: { 
+                            legend: { display: false },
+                            datalabels: { 
+                                anchor: 'end', align: 'top', formatter: Math.round,
+                                font: { size: 10, weight: 'bold' }, color: '#444'
+                            } 
+                        },
+                        scales: { 
+                            x: { ticks: { font: { size: 10 }, maxRotation: 90, minRotation: 45 } },
+                            y: { beginAtZero: true, suggestedMax: Math.max(...prices) * 1.1 }
+                        }
+                    },
+                    plugins: [ChartDataLabels]
+                });
+            } catch (e) {
+                console.error("Ошибка детального графика:", e);
+                document.querySelector('.large-chart-container').innerHTML = "<p>Ошибка загрузки цен. Попробуйте обновить страницу.</p>";
+            }
+        }
+
+        loadDetailedChart();
+    </script>
+</body>
+</html>
