@@ -33,13 +33,15 @@
         .card-header { text-align: center; margin-bottom: 15px; }
         h2 { margin: 0 0 8px 0; color: #333; font-size: 1.4rem; }
         
+        /* Обновленный стиль для компактной статистики */
         .stats-box {
-            display: inline-flex; justify-content: center; gap: 10px; flex-wrap: wrap;
-            background: #f4f6f8; padding: 8px 12px; border-radius: 12px;
-            font-size: 0.85rem; color: #555; width: 100%; box-sizing: border-box;
+            display: inline-flex; justify-content: center; gap: 18px; flex-wrap: wrap;
+            background: #f4f6f8; padding: 10px 16px; border-radius: 14px;
+            font-size: 0.95rem; color: #444; width: 100%; box-sizing: border-box;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
         }
-        .stats-box span { white-space: nowrap; }
-        .stats-box b { color: #2c3e50; font-size: 0.95rem; }
+        .stats-box span { white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+        .stats-box b { color: #111; font-size: 1.05rem; }
         
         .empty-msg { text-align: center; color: #888; font-size: 0.9rem; padding: 50px 0; font-style: italic; }
     </style>
@@ -87,11 +89,9 @@
             const dataToday = hourlyData.filter(item => new Date(item.DateTime).getDate() === todayDate);
             const dataTomorrow = hourlyData.filter(item => new Date(item.DateTime).getDate() !== todayDate);
 
-            // Обрати внимание: теперь мы передаем четвертый параметр "true" для графика Сегодня
             drawChart('chartToday', 'statsToday', dataToday, true);
 
             if (dataTomorrow.length > 0) {
-                // А для Завтра передаем "false", чтобы там ничего не выделялось
                 drawChart('chartTomorrow', 'statsTomorrow', dataTomorrow, false);
             } else {
                 document.getElementById('statsTomorrow').style.display = 'none';
@@ -107,19 +107,18 @@
     }
 
     function drawChart(canvasId, statsId, dataset, isToday) {
-        const currentHour = new Date().getHours(); // Узнаем текущий час
+        const currentHour = new Date().getHours();
 
         const labels = dataset.map(item => {
             const h = new Date(item.DateTime).getHours();
             return h + ":00";
         });
         
-        const prices = dataset.map(item => Math.round(item.PriceWithTax * 100));
+        // Оставляем 1 цифру после запятой для точности (например 6.2)
+        const prices = dataset.map(item => parseFloat((item.PriceWithTax * 100).toFixed(1)));
         
-        // Логика раскраски (фон)
         const bgColors = prices.map(p => p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#ffeaae' : '#ffadad');
 
-        // Логика ВЫДЕЛЕНИЯ ТЕКУЩЕГО ЧАСА (рамки)
         const borderColors = dataset.map(item => {
             const h = new Date(item.DateTime).getHours();
             return (isToday && h === currentHour) ? '#2c3e50' : 'transparent';
@@ -130,14 +129,16 @@
             return (isToday && h === currentHour) ? 3 : 0;
         });
 
-        const minPrice = Math.min(...prices);
-        const maxPrice = Math.max(...prices);
+        // Вычисляем статистику (также с 1 знаком после запятой)
+        const minPrice = Math.min(...prices).toFixed(1);
+        const maxPrice = Math.max(...prices).toFixed(1);
         const avgPrice = (prices.reduce((sum, val) => sum + val, 0) / prices.length).toFixed(1);
 
+        // Обновленный HTML блока статистики с иконками
         document.getElementById(statsId).innerHTML = `
-            <span>Средняя: <b>${avgPrice}</b> ¢</span> | 
-            <span>Мин: <b>${minPrice}</b> ¢</span> | 
-            <span>Макс: <b>${maxPrice}</b> ¢</span>
+            <span title="Минимум" style="color: #27ae60;">⬇️ <b>${minPrice}</b> c</span>
+            <span title="Средняя" style="color: #7f8c8d;">⚖️ <b>${avgPrice}</b> c</span>
+            <span title="Максимум" style="color: #c0392b;">⬆️ <b>${maxPrice}</b> c</span>
         `;
 
         new Chart(document.getElementById(canvasId), {
@@ -147,8 +148,8 @@
                 datasets: [{ 
                     data: prices, 
                     backgroundColor: bgColors,
-                    borderColor: borderColors,     // Добавили обводку
-                    borderWidth: borderWidths,     // Добавили толщину обводки
+                    borderColor: borderColors,
+                    borderWidth: borderWidths,
                     borderRadius: 5, 
                     barPercentage: 0.85 
                 }]
@@ -159,8 +160,9 @@
                 plugins: { 
                     legend: { display: false },
                     datalabels: { 
-                        anchor: 'end', align: 'top', formatter: Math.round,
-                        font: { size: 10, weight: 'bold' }, color: '#444'
+                        anchor: 'end', align: 'top', 
+                        formatter: (value) => value.toFixed(1), // Форматируем ярлыки на графике
+                        font: { size: 9, weight: 'bold' }, color: '#444' // Чуть уменьшил шрифт, чтобы десятые доли не слипались
                     } 
                 },
                 scales: { 
@@ -168,7 +170,7 @@
                         ticks: { font: { size: 10 }, maxRotation: 90, minRotation: 90 }, 
                         grid: { display: false } 
                     },
-                    y: { display: false, suggestedMax: Math.max(...prices) * 1.2 }
+                    y: { display: false, suggestedMax: Math.max(...prices) * 1.25 }
                 }
             }
         });
