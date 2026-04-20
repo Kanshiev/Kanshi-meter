@@ -28,10 +28,19 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 15px;
         }
         
-        /* Фиксируем высоту каждого графика, чтобы они красиво смотрелись друг под другом */
         .chart-wrapper { width: 100%; height: 260px; position: relative; }
         
-        h2 { margin-top: 0; color: #333; text-align: center; font-size: 1.3rem; margin-bottom: 15px;}
+        .card-header { text-align: center; margin-bottom: 15px; }
+        h2 { margin: 0 0 8px 0; color: #333; font-size: 1.4rem; }
+        
+        .stats-box {
+            display: inline-flex; justify-content: center; gap: 10px; flex-wrap: wrap;
+            background: #f4f6f8; padding: 8px 12px; border-radius: 12px;
+            font-size: 0.85rem; color: #555; width: 100%; box-sizing: border-box;
+        }
+        .stats-box span { white-space: nowrap; }
+        .stats-box b { color: #2c3e50; font-size: 0.95rem; }
+        
         .empty-msg { text-align: center; color: #888; font-size: 0.9rem; padding: 50px 0; font-style: italic; }
     </style>
 </head>
@@ -41,14 +50,20 @@
     <a href="index.html" class="nav-btn">⬅ Назад к пульту</a>
     
     <div class="chart-card">
-        <h2>Сегодня</h2>
+        <div class="card-header">
+            <h2>Сегодня</h2>
+            <div id="statsToday" class="stats-box">Загрузка...</div>
+        </div>
         <div class="chart-wrapper">
             <canvas id="chartToday"></canvas>
         </div>
     </div>
 
     <div class="chart-card">
-        <h2>Завтра</h2>
+        <div class="card-header">
+            <h2>Завтра</h2>
+            <div id="statsTomorrow" class="stats-box">Загрузка...</div>
+        </div>
         <div id="tomorrow-container" class="chart-wrapper">
             <canvas id="chartTomorrow"></canvas>
         </div>
@@ -66,50 +81,76 @@
             if (!res.ok) throw new Error("Network error");
             const data = await res.json();
             
-            // Берем только ровные часы (00 минут)
             const hourlyData = data.filter(item => new Date(item.DateTime).getMinutes() === 0);
-            
-            // Определяем какое число СЕГОДНЯ
             const todayDate = new Date().getDate();
             
-            // Разделяем массив на два: сегодня и завтра
             const dataToday = hourlyData.filter(item => new Date(item.DateTime).getDate() === todayDate);
             const dataTomorrow = hourlyData.filter(item => new Date(item.DateTime).getDate() !== todayDate);
 
-            // Рисуем график на сегодня
-            drawChart('chartToday', dataToday);
+            // Обрати внимание: теперь мы передаем четвертый параметр "true" для графика Сегодня
+            drawChart('chartToday', 'statsToday', dataToday, true);
 
-            // Рисуем график на завтра ИЛИ показываем заглушку
             if (dataTomorrow.length > 0) {
-                drawChart('chartTomorrow', dataTomorrow);
+                // А для Завтра передаем "false", чтобы там ничего не выделялось
+                drawChart('chartTomorrow', 'statsTomorrow', dataTomorrow, false);
             } else {
+                document.getElementById('statsTomorrow').style.display = 'none';
                 document.getElementById('tomorrow-container').innerHTML = 
                     "<div class='empty-msg'>Данные на завтра появятся после 14:15</div>";
             }
 
         } catch (e) {
             console.error("Ошибка загрузки:", e);
-            document.getElementById('chartToday').parentElement.innerHTML = 
-                "<p style='color:red; text-align:center;'>Ошибка загрузки. Проверьте интернет.</p>";
+            document.getElementById('statsToday').innerHTML = "Ошибка сети";
+            document.getElementById('statsTomorrow').innerHTML = "Ошибка сети";
         }
     }
 
-    // Универсальная функция для рисования любого из двух графиков
-    function drawChart(canvasId, dataset) {
+    function drawChart(canvasId, statsId, dataset, isToday) {
+        const currentHour = new Date().getHours(); // Узнаем текущий час
+
         const labels = dataset.map(item => {
             const h = new Date(item.DateTime).getHours();
-            return h + ":00"; // Подписи вида 0:00, 15:00
+            return h + ":00";
         });
         
         const prices = dataset.map(item => Math.round(item.PriceWithTax * 100));
-        const colors = prices.map(p => p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#ffeaae' : '#ffadad');
+        
+        // Логика раскраски (фон)
+        const bgColors = prices.map(p => p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#ffeaae' : '#ffadad');
+
+        // Логика ВЫДЕЛЕНИЯ ТЕКУЩЕГО ЧАСА (рамки)
+        const borderColors = dataset.map(item => {
+            const h = new Date(item.DateTime).getHours();
+            return (isToday && h === currentHour) ? '#2c3e50' : 'transparent';
+        });
+
+        const borderWidths = dataset.map(item => {
+            const h = new Date(item.DateTime).getHours();
+            return (isToday && h === currentHour) ? 3 : 0;
+        });
+
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        const avgPrice = (prices.reduce((sum, val) => sum + val, 0) / prices.length).toFixed(1);
+
+        document.getElementById(statsId).innerHTML = `
+            <span>Средняя: <b>${avgPrice}</b> ¢</span> | 
+            <span>Мин: <b>${minPrice}</b> ¢</span> | 
+            <span>Макс: <b>${maxPrice}</b> ¢</span>
+        `;
 
         new Chart(document.getElementById(canvasId), {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [{ 
-                    data: prices, backgroundColor: colors, borderRadius: 5, barPercentage: 0.85 
+                    data: prices, 
+                    backgroundColor: bgColors,
+                    borderColor: borderColors,     // Добавили обводку
+                    borderWidth: borderWidths,     // Добавили толщину обводки
+                    borderRadius: 5, 
+                    barPercentage: 0.85 
                 }]
             },
             options: {
@@ -124,14 +165,10 @@
                 },
                 scales: { 
                     x: { 
-                        ticks: { font: { size: 10 }, maxRotation: 90, minRotation: 45 }, 
+                        ticks: { font: { size: 10 }, maxRotation: 90, minRotation: 90 }, 
                         grid: { display: false } 
                     },
-                    y: { 
-                        display: false, 
-                        // Добавляем +20% высоты, чтобы цифры сверху не обрезались
-                        suggestedMax: Math.max(...prices) * 1.2 
-                    }
+                    y: { display: false, suggestedMax: Math.max(...prices) * 1.2 }
                 }
             }
         });
