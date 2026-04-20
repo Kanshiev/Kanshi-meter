@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kanshi-meter 2.2</title>
+    <title>Kanshi-meter 3.0</title>
     
     <link rel="manifest" href="manifest.json">
     <script>
@@ -36,12 +36,8 @@
             align-items: center;
         }
 
-        .container {
-            width: 100%;
-            max-width: 400px;
-        }
+        .container { width: 100%; max-width: 400px; }
 
-        /* Карточки */
         .card {
             background: var(--card-bg);
             border-radius: 24px;
@@ -51,69 +47,44 @@
             text-align: center;
         }
 
-        /* Главная цена */
         .price-label { font-size: 16px; opacity: 0.7; margin-bottom: 5px; }
         .price-value { font-size: 80px; font-weight: 900; line-height: 1; margin: 10px 0; }
         .price-unit { font-size: 18px; opacity: 0.7; }
 
-        /* Статус-бар */
         .status-bar {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 15px;
-            border-radius: 15px;
-            font-weight: bold;
-            margin: 15px 0;
-            transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px; padding: 15px; border-radius: 15px;
+            font-weight: bold; margin: 15px 0;
         }
         .status-cheap { background-color: var(--accent-green); color: #2d5a27; }
         .status-normal { background-color: var(--accent-yellow); color: #7d6608; }
         .status-wait { background-color: var(--accent-red); color: #7b241c; }
 
-        .timer-text { font-size: 14px; opacity: 0.8; margin-bottom: 15px; font-variant-numeric: tabular-nums; }
+        .timer-text { font-size: 14px; opacity: 0.8; margin-bottom: 15px; font-variant-numeric: tabular-nums;}
 
-        /* Статистика Shelly */
         .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            border-top: 1px solid #eee;
-            padding-top: 20px;
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 15px; border-top: 1px solid #eee; padding-top: 20px;
         }
         .stat-val { font-size: 24px; font-weight: bold; display: block; }
         .stat-label { font-size: 11px; text-transform: uppercase; opacity: 0.5; letter-spacing: 1px; }
 
         .update-time { font-size: 10px; opacity: 0.3; margin-top: 10px; }
 
-        /* Кнопки навигации */
         .nav-btn {
-            display: block;
-            width: 100%;
-            padding: 16px;
-            background-color: #2c3e50;
-            color: white;
-            border: none;
-            border-radius: 16px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            margin-top: 10px;
+            display: block; width: 100%; padding: 16px;
+            background-color: #2c3e50; color: white;
+            border: none; border-radius: 16px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            text-decoration: none; text-align: center; box-sizing: border-box;
         }
-        .back-btn { background-color: #7f8c8d; margin-bottom: 15px; }
-
-        /* Графики */
-        .chart-container { position: relative; width: 100%; height: 130px; margin-top: 10px; }
-        .large-chart-container { position: relative; width: 100%; height: 350px; }
-
-        #details-view { display: none; width: 100%; max-width: 400px; }
+        
+        .chart-container { width: 100%; height: 120px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="container" id="main-view">
+    <div class="container">
         <div class="card">
             <div class="price-label">Цена сейчас</div>
             <div class="price-value" id="current-price">--</div>
@@ -124,7 +95,7 @@
                 <span id="status-text">Загрузка...</span>
             </div>
 
-            <div class="timer-text" id="timer-display">Синхронизация времени...</div>
+            <div class="timer-text" id="timer-display">Синхронизация...</div>
 
             <div class="stats-grid">
                 <div class="stat-item">
@@ -145,56 +116,25 @@
             </div>
         </div>
 
-        <button class="nav-btn" onclick="toggleView('details')">📊 Цены на сегодня и завтра</button>
-    </div>
-
-    <div id="details-view">
-        <button class="nav-btn back-btn" onclick="toggleView('main')">⬅ Назад к пульту</button>
-        
-        <div class="card">
-            <h2 style="font-size: 18px; margin-bottom: 5px;">Прогноз цен</h2>
-            <p style="font-size: 12px; opacity: 0.6; margin-bottom: 20px;">Данные обновляются после 14:15</p>
-            <div class="large-chart-container">
-                <canvas id="detailedChart"></canvas>
-            </div>
-        </div>
+        <a href="charts.html" class="nav-btn">📊 График на сегодня и завтра</a>
     </div>
 
     <script>
-        // --- КОНФИГУРАЦИЯ ---
         const SHELLY_ID = "483fdac39873";
         const AUTH_KEY = "MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690";
         const PRICE_SELL_CENTS = 10.0;
 
         let miniChartInstance = null;
-        let detailedChartInstance = null;
 
-        // ЖИВОЙ ТАЙМЕР (Тикает каждую секунду независимо от интернета)
         function updateClock() {
             const now = new Date();
-            const minutes = 59 - now.getMinutes();
-            const seconds = 59 - now.getSeconds();
-            document.getElementById('timer-display').innerText = `Цена поменяется через ${minutes} мин ${seconds} сек`;
+            document.getElementById('timer-display').innerText = `Цена поменяется через ${59 - now.getMinutes()} мин ${59 - now.getSeconds()} сек`;
         }
         setInterval(updateClock, 1000);
-        updateClock(); // Запускаем сразу
+        updateClock();
 
-        // Переключение экранов
-        function toggleView(view) {
-            if (view === 'details') {
-                document.getElementById('main-view').style.display = 'none';
-                document.getElementById('details-view').style.display = 'block';
-                loadDetailedChart();
-            } else {
-                document.getElementById('details-view').style.display = 'none';
-                document.getElementById('main-view').style.display = 'block';
-            }
-        }
-
-        // ОСНОВНЫЕ ДАННЫЕ (Цена и Shelly)
-        async function fetchMainData() {
+        async function updateData() {
             try {
-                // Цена
                 const priceRes = await fetch('https://api.spot-hinta.fi/JustNow');
                 const priceData = await priceRes.json();
                 const price = parseFloat((priceData.PriceWithTax * 100).toFixed(1));
@@ -206,160 +146,64 @@
 
                 statusBox.className = 'status-bar';
                 if (price > PRICE_SELL_CENTS) {
-                    statusBox.classList.add('status-wait');
-                    statusText.innerText = "Дорого. Ждём.";
-                    statusIcon.innerText = "🛑";
+                    statusBox.classList.add('status-wait'); statusText.innerText = "Дорого. Ждём."; statusIcon.innerText = "🛑";
                 } else if (price <= 5) {
-                    statusBox.classList.add('status-cheap');
-                    statusText.innerText = "Дёшево! Включай.";
-                    statusIcon.innerText = "✅";
+                    statusBox.classList.add('status-cheap'); statusText.innerText = "Дёшево! Включай."; statusIcon.innerText = "✅";
                 } else {
-                    statusBox.classList.add('status-normal');
-                    statusText.innerText = "Нормально. Пользуемся.";
-                    statusIcon.innerText = "⚖️";
+                    statusBox.classList.add('status-normal'); statusText.innerText = "Нормально. Пользуемся."; statusIcon.innerText = "⚖️";
                 }
 
-                // Shelly
                 const shellyRes = await fetch('https://shelly-70-eu.shelly.cloud/device/status', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                     body: `id=${SHELLY_ID}&auth_key=${AUTH_KEY}`
                 });
                 const shellyData = await shellyRes.json();
 
                 if (shellyData.isok) {
                     const emeters = shellyData.data.device_status.emeters;
-                    let totalPower = emeters.reduce((sum, p) => sum + p.power, 0);
-                    document.getElementById('shelly-power').innerText = Math.round(totalPower);
+                    document.getElementById('shelly-power').innerText = Math.round(emeters.reduce((s, p) => s + p.power, 0));
 
-                    let currentTotalWh = emeters.reduce((sum, p) => sum + (p.total || 0), 0);
-                    const todayStr = new Date().toLocaleDateString('ru-RU');
-                    let savedDate = localStorage.getItem('kanshi_date');
-                    let startEnergy = parseFloat(localStorage.getItem('kanshi_start'));
-
-                    if (savedDate !== todayStr || isNaN(startEnergy)) {
-                        startEnergy = currentTotalWh;
-                        localStorage.setItem('kanshi_date', todayStr);
-                        localStorage.setItem('kanshi_start', startEnergy);
+                    let totalWh = emeters.reduce((s, p) => s + (p.total || 0), 0);
+                    let todayStr = new Date().toLocaleDateString('ru-RU');
+                    if (localStorage.getItem('k_date') !== todayStr) {
+                        localStorage.setItem('k_date', todayStr);
+                        localStorage.setItem('k_start', totalWh);
                     }
-
-                    let consumedKwh = (currentTotalWh - startEnergy) / 1000;
+                    let consumedKwh = (totalWh - parseFloat(localStorage.getItem('k_start') || totalWh)) / 1000;
                     document.getElementById('shelly-load').innerText = Math.max(0, consumedKwh).toFixed(2);
                 }
-
                 document.getElementById('last-update').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`;
-            } catch (e) {
-                console.error("Ошибка загрузки данных:", e);
-            }
+            } catch (e) { console.error(e); }
         }
 
-        // МИНИ ГРАФИК (Завернут в Try-Catch, чтобы не ломать всё остальное)
         async function loadMiniChart() {
             try {
                 const res = await fetch('https://api.spot-hinta.fi/TodayAndTomorrow');
                 const data = await res.json();
                 
-                const currentHour = new Date().getHours();
-                const currentDay = new Date().getDate();
+                const now = new Date(); now.setMinutes(0,0,0,0);
+                const nextHours = data.filter(i => new Date(i.DateTime) >= now).slice(0, 8);
                 
-                // Фильтруем часы (начиная с текущего)
-                const futureData = data.filter(item => {
-                    const d = new Date(item.DateTime);
-                    return d.getTime() >= new Date().getTime() - 3600000; 
-                });
-                
-                const nextHours = futureData.slice(0, 8); 
-                
-                const labels = nextHours.map(item => new Date(item.DateTime).getHours() + ":00");
-                const prices = nextHours.map(item => parseFloat((item.PriceWithTax * 100).toFixed(1)));
+                const labels = nextHours.map(i => new Date(i.DateTime).getHours() + ":00");
+                const prices = nextHours.map(i => parseFloat((i.PriceWithTax * 100).toFixed(1)));
                 const colors = prices.map(p => p > 10 ? '#ee8888' : (p <= 5 ? '#a8dcba' : '#f7dc8f'));
 
-                const maxPrice = prices.length > 0 ? Math.max(...prices) : 20;
-
-                const ctx = document.getElementById('miniChart').getContext('2d');
                 if (miniChartInstance) miniChartInstance.destroy();
-                
-                miniChartInstance = new Chart(ctx, {
+                miniChartInstance = new Chart(document.getElementById('miniChart'), {
                     type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{ data: prices, backgroundColor: colors, borderRadius: 5 }]
-                    },
+                    data: { labels: labels, datasets: [{ data: prices, backgroundColor: colors, borderRadius: 4 }] },
                     options: {
                         responsive: true, maintainAspectRatio: false,
-                        layout: { padding: { top: 20 } },
-                        plugins: { 
-                            legend: { display: false }, 
-                            datalabels: { 
-                                display: true, anchor: 'end', align: 'top',
-                                font: { size: 10, weight: 'bold' }, color: '#444'
-                            } 
-                        },
-                        scales: { 
-                            y: { display: false, suggestedMax: maxPrice + (maxPrice * 0.2) }, 
-                            x: { grid: { display: false }, ticks: { font: { size: 10 } } } 
-                        }
+                        plugins: { legend: { display: false }, datalabels: { display: true, anchor: 'end', align: 'top', font: {size: 10} } },
+                        scales: { y: { display: false, suggestedMax: Math.max(...prices)*1.2 }, x: { grid: { display: false } } }
                     },
                     plugins: [ChartDataLabels]
                 });
-            } catch (e) {
-                console.error("Ошибка мини-графика:", e);
-            }
+            } catch (e) { console.error(e); }
         }
 
-        // БОЛЬШОЙ ГРАФИК
-        async function loadDetailedChart() {
-            try {
-                const res = await fetch('https://api.spot-hinta.fi/TodayAndTomorrow');
-                const data = await res.json();
-                
-                const labels = data.map(item => {
-                    const d = new Date(item.DateTime);
-                    return d.getHours() + (d.getDate() !== new Date().getDate() ? 'з' : ''); 
-                });
-                const prices = data.map(item => parseFloat((item.PriceWithTax * 100).toFixed(1)));
-                const colors = prices.map(p => p > 10 ? 'rgba(238, 136, 136, 0.8)' : (p <= 5 ? 'rgba(168, 220, 186, 0.8)' : 'rgba(247, 220, 143, 0.8)'));
-
-                const maxPrice = prices.length > 0 ? Math.max(...prices) : 20;
-
-                const ctx = document.getElementById('detailedChart').getContext('2d');
-                if (detailedChartInstance) detailedChartInstance.destroy();
-
-                detailedChartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{ data: prices, backgroundColor: colors, borderRadius: 3 }]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        layout: { padding: { top: 25 } },
-                        plugins: { 
-                            legend: { display: false },
-                            datalabels: { 
-                                anchor: 'end', align: 'top', formatter: Math.round,
-                                font: { size: 9, weight: 'bold' }, color: '#555'
-                            } 
-                        },
-                        scales: { 
-                            x: { ticks: { font: { size: 9 }, maxRotation: 90, minRotation: 45 } },
-                            y: { beginAtZero: true, suggestedMax: maxPrice + (maxPrice * 0.1) }
-                        }
-                    },
-                    plugins: [ChartDataLabels]
-                });
-            } catch (e) {
-                console.error("Ошибка детального графика:", e);
-            }
-        }
-
-        // Первичный запуск и интервалы
-        fetchMainData();
-        loadMiniChart();
-        setInterval(() => {
-            fetchMainData();
-            loadMiniChart();
-        }, 60000); 
+        updateData(); loadMiniChart();
+        setInterval(() => { updateData(); loadMiniChart(); }, 60000);
     </script>
 </body>
 </html>
