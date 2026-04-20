@@ -134,9 +134,9 @@
         const avgPrice = (pricesExact.reduce((sum, val) => sum + val, 0) / pricesExact.length).toFixed(1);
 
         document.getElementById(statsId).innerHTML = `
-            <span style="color: #27ae60;">⚡⬇️ <b>${minPrice}</b> c</span>
+            <span style="color: #27ae60;">⬇️ <b>${minPrice}</b> c</span>
             <span style="color: #7f8c8d;">☁️ <b>${avgPrice}</b> c</span>
-            <span style="color: #c0392b;">⚡⬆️ <b>${maxPrice}</b> c</span>
+            <span style="color: #c0392b;">⬆️ <b>${maxPrice}</b> c</span>
         `;
 
         new Chart(document.getElementById(canvasId), {
