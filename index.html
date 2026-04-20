@@ -2,236 +2,329 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Энерго-пульт 6.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kanshi-meter 2.0</title>
+    
     <link rel="manifest" href="manifest.json">
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-  }
-</script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+      }
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
     <style>
+        :root {
+            --bg-color: #faf8f5;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+            --accent-green: #a8dcba;
+            --accent-yellow: #f7dc8f;
+            --accent-red: #ee8888;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-            background-color: #e2f3e5;
-            display: flex; justify-content: center; padding: 20px; margin: 0;
-            transition: background-color 0.8s ease;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .widget-container { width: 100%; max-width: 500px; }
-        .main-card {
-            background: white; border-radius: 24px; padding: 25px;
-            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 20px;
+
+        .container {
+            width: 100%;
+            max-width: 400px;
         }
-        .price-big { font-size: 7rem; font-weight: 900; margin: 0; line-height: 0.9; color: #1a1a1a; }
-        .shelly-stats {
-            display: flex; justify-content: space-around;
-            margin-top: 20px; padding-top: 20px; border-top: 1px solid #f0f0f0;
+
+        /* Карточки */
+        .card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center;
         }
-        .stat-item { text-align: center; width: 50%; }
-        .stat-value { font-size: 1.8rem; font-weight: 800; color: #333; }
-        .stat-label { font-size: 0.75rem; color: #999; text-transform: uppercase; letter-spacing: 1px; }
-        .unit { color: #666; font-size: 1.2rem; margin-top: 15px; font-weight: 500; }
-        .advice-box {
-            display: flex; align-items: center; justify-content: center;
-            gap: 12px; font-weight: 700; font-size: 1.2rem; padding: 15px; border-radius: 16px; margin-top: 15px;
+
+        /* Главная цена */
+        .price-label { font-size: 16px; opacity: 0.7; margin-bottom: 5px; }
+        .price-value { font-size: 80px; font-weight: 900; line-height: 1; margin: 10px 0; }
+        .price-unit { font-size: 18px; opacity: 0.7; }
+
+        /* Статус-бар */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 15px;
+            border-radius: 15px;
+            font-weight: bold;
+            margin: 15px 0;
+            transition: all 0.3s ease;
         }
-        .countdown {
-            color: #555; font-size: 0.95rem; margin-top: 12px; font-weight: 600;
+        .status-cheap { background-color: var(--accent-green); color: #2d5a27; }
+        .status-normal { background-color: var(--accent-yellow); color: #7d6608; }
+        .status-wait { background-color: var(--accent-red); color: #7b241c; }
+
+        .timer-text { font-size: 14px; opacity: 0.8; margin-bottom: 15px; }
+
+        /* Статистика Shelly */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
         }
-        .chart-card { background: white; border-radius: 24px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .stat-val { font-size: 24px; font-weight: bold; display: block; }
+        .stat-label { font-size: 11px; text-transform: uppercase; opacity: 0.5; letter-spacing: 1px; }
+
+        .update-time { font-size: 10px; opacity: 0.3; margin-top: 10px; }
+
+        /* Кнопки навигации */
+        .nav-btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 10px;
+        }
+        .back-btn { background-color: #7f8c8d; margin-bottom: 15px; }
+
+        /* Графики */
+        .chart-container { width: 100%; height: 120px; margin-top: 10px; }
+        .large-chart-container { width: 100%; height: 350px; }
+
+        #details-view { display: none; width: 100%; max-width: 400px; }
     </style>
 </head>
 <body>
 
-<div class="widget-container">
-    <div class="main-card">
-        <div style="color: #444; font-weight: 500; margin-bottom: 10px;">Цена сейчас</div>
-        <div class="price-big" id="current-price">--</div>
-        <div class="unit">центов / кВтч</div>
+    <div class="container" id="main-view">
+        <div class="card">
+            <div class="price-label">Цена сейчас</div>
+            <div class="price-value" id="current-price">--</div>
+            <div class="price-unit">центов / кВтч</div>
+
+            <div id="status-box" class="status-bar status-normal">
+                <span id="status-icon">⚖️</span>
+                <span id="status-text">Загрузка...</span>
+            </div>
+
+            <div class="timer-text" id="timer-display">Цена поменяется через -- мин -- сек</div>
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-val" id="shelly-power">0</span>
+                    <span class="stat-label">Ватт сейчас</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-val" id="shelly-load">0.00</span>
+                    <span class="stat-label">кВт·ч сегодня</span>
+                </div>
+            </div>
+            <div class="update-time" id="last-update">Обновлено: --:--:--</div>
+        </div>
+
+        <div class="card">
+            <div class="chart-container">
+                <canvas id="miniChart"></canvas>
+            </div>
+        </div>
+
+        <button class="nav-btn" onclick="toggleView('details')">📊 Цены на сегодня и завтра</button>
+    </div>
+
+    <div id="details-view">
+        <button class="nav-btn back-btn" onclick="toggleView('main')">⬅ Назад к пульту</button>
         
-        <div class="advice-box" id="advice-container">
-            <span id="advice-icon">⌛</span>
-            <span id="advice-text">Загрузка...</span>
-        </div>
-
-        <div class="countdown" id="countdown-text">Считаем время...</div>
-
-        <div class="shelly-stats">
-            <div class="stat-item">
-                <div class="stat-value" id="shelly-power">Запуск</div>
-                <div class="stat-label">Ватт сейчас</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="shelly-load">...</div>
-                <div class="stat-label">кВт·ч сегодня</div>
+        <div class="card">
+            <h2 style="font-size: 18px; margin-bottom: 5px;">Прогноз цен</h2>
+            <p style="font-size: 12px; opacity: 0.6; margin-bottom: 20px;">Данные на 48 часов</p>
+            <div class="large-chart-container">
+                <canvas id="detailedChart"></canvas>
             </div>
         </div>
-        <div id="current-interval" style="color:#ccc; font-size: 0.75rem; margin-top: 15px;"></div>
     </div>
 
-    <div class="chart-card">
-        <canvas id="priceChart"></canvas>
-    </div>
-</div>
+    <script>
+        // --- КОНФИГУРАЦИЯ ---
+        const SHELLY_ID = "483fdac39873";
+        const AUTH_KEY = "MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690";
+        const PRICE_SELL_CENTS = 10.0; // Порог для режима "Wait"
 
-<script>
-    Chart.register(ChartDataLabels);
+        let miniChartInstance = null;
+        let detailedChartInstance = null;
 
-    let priceChart;
-    const FREE = 2, CHEAP = 5, HIGH = 10;
-
-    async function updateAll() {
-        await updatePrices();
-        await updateShelly();
-    }
-
-    async function updatePrices() {
-        try {
-            const response = await fetch('https://api.spot-hinta.fi/TodayAndDayForward');
-            const data = await response.json();
-            const now = new Date();
-            const quarter = Math.floor(now.getMinutes() / 15) * 15;
-            const refTime = new Date(now); refTime.setMinutes(quarter, 0, 0);
-            
-            const searchStr = refTime.toLocaleString('sv-SE').replace(' ', 'T').substring(0, 16);
-            const startIndex = data.findIndex(s => s.DateTime.includes(searchStr));
-
-            if (startIndex !== -1) {
-                const priceCents = Math.round(data[startIndex].PriceWithTax * 100);
-                document.getElementById('current-price').innerText = priceCents;
-                applyVisuals(priceCents);
-                renderChart(data, startIndex);
+        // Переключение экранов
+        function toggleView(view) {
+            if (view === 'details') {
+                document.getElementById('main-view').style.display = 'none';
+                document.getElementById('details-view').style.display = 'block';
+                loadDetailedChart();
+            } else {
+                document.getElementById('details-view').style.display = 'none';
+                document.getElementById('main-view').style.display = 'block';
             }
-        } catch (e) { console.error("Ошибка цен", e); }
-    }
+        }
 
-    async function updateShelly() {
-        try {
-            const targetUrl = 'https://shelly-70-eu.shelly.cloud/device/status';
-            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
-            
-            const requestBody = 'id=483fdac39873&auth_key=MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690';
-
-            const response = await fetch(proxyUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: requestBody
-            });
-
-            const res = await response.json();
-
-            if (res.isok) {
-                const emeters = res.data.device_status.emeters;
+        async function updateData() {
+            try {
+                // 1. Получаем цены
+                const priceRes = await fetch('https://api.spot-hinta.fi/JustNow');
+                const priceData = await priceRes.json();
                 
-                // Текущая мощность (Ватт)
-                let totalPower = emeters.reduce((sum, phase) => sum + phase.power, 0);
-                document.getElementById('shelly-power').innerText = Math.round(totalPower);
-                
-                // Подсчет потребления за день (кВт·ч)
-                let currentTotalWh = emeters.reduce((sum, phase) => sum + (phase.total || 0), 0);
-                const todayStr = new Date().toLocaleDateString('ru-RU');
-                let savedDate = localStorage.getItem('energy_date');
-                let startEnergy = parseFloat(localStorage.getItem('energy_start'));
+                const price = parseFloat((priceData.PriceWithTax * 100).toFixed(1));
+                document.getElementById('current-price').innerText = price;
 
-                // Если наступил новый день или зашли впервые — сохраняем стартовую точку
-                if (savedDate !== todayStr || isNaN(startEnergy) || startEnergy === 0) {
-                    startEnergy = currentTotalWh;
-                    localStorage.setItem('energy_date', todayStr);
-                    localStorage.setItem('energy_start', startEnergy);
+                // Логика статуса
+                const statusBox = document.getElementById('status-box');
+                const statusText = document.getElementById('status-text');
+                const statusIcon = document.getElementById('status-icon');
+
+                statusBox.className = 'status-bar';
+                if (price > PRICE_SELL_CENTS) {
+                    statusBox.classList.add('status-wait');
+                    statusText.innerText = "Дорого. Ждём.";
+                    statusIcon.innerText = "🛑";
+                } else if (price <= 5) {
+                    statusBox.classList.add('status-cheap');
+                    statusText.innerText = "Дёшево! Включай.";
+                    statusIcon.innerText = "✅";
+                } else {
+                    statusBox.classList.add('status-normal');
+                    statusText.innerText = "Нормально. Пользуемся.";
+                    statusIcon.innerText = "⚖️";
                 }
 
-                let consumedTodayKwh = (currentTotalWh - startEnergy) / 1000;
-                if (consumedTodayKwh < 0) consumedTodayKwh = 0; // Защита от багов
+                // 2. Таймер до смены цены
+                const now = new Date();
+                const minutes = 59 - now.getMinutes();
+                const seconds = 59 - now.getSeconds();
+                document.getElementById('timer-display').innerText = `Цена поменяется через ${minutes} мин ${seconds} сек`;
+
+                // 3. Shelly данные
+                const shellyRes = await fetch('https://shelly-70-eu.shelly.cloud/device/status', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `id=${SHELLY_ID}&auth_key=${AUTH_KEY}`
+                });
+                const shellyData = await shellyRes.json();
+
+                if (shellyData.isok) {
+                    const emeters = shellyData.data.device_status.emeters;
+                    
+                    // Мощность сейчас
+                    let totalPower = emeters.reduce((sum, p) => sum + p.power, 0);
+                    document.getElementById('shelly-power').innerText = Math.round(totalPower);
+
+                    // Энергия за день
+                    let currentTotalWh = emeters.reduce((sum, p) => sum + (p.total || 0), 0);
+                    const todayStr = new Date().toLocaleDateString('ru-RU');
+                    let savedDate = localStorage.getItem('kanshi_date');
+                    let startEnergy = parseFloat(localStorage.getItem('kanshi_start'));
+
+                    if (savedDate !== todayStr || isNaN(startEnergy)) {
+                        startEnergy = currentTotalWh;
+                        localStorage.setItem('kanshi_date', todayStr);
+                        localStorage.setItem('kanshi_start', startEnergy);
+                    }
+
+                    let consumedKwh = (currentTotalWh - startEnergy) / 1000;
+                    document.getElementById('shelly-load').innerText = Math.max(0, consumedKwh).toFixed(2);
+                }
+
+                document.getElementById('last-update').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`;
                 
-                document.getElementById('shelly-load').innerText = consumedTodayKwh.toFixed(2);
-                
-                document.getElementById('current-interval').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`;
-            } else {
-                document.getElementById('shelly-power').innerText = "Ключ!";
-                document.getElementById('shelly-load').innerText = "Ошибка";
+                loadMiniChart(); // Обновляем маленький график
+
+            } catch (e) {
+                console.error("Ошибка обновления:", e);
             }
-        } catch (e) { 
-            console.error("Ошибка соединения Shelly:", e);
-            document.getElementById('shelly-power').innerText = "Блок";
-            document.getElementById('shelly-load').innerText = "Откл. ABP";
         }
-    }
 
-    function applyVisuals(price) {
-        const b = document.body, c = document.getElementById('advice-container'), 
-              t = document.getElementById('advice-text'), i = document.getElementById('advice-icon');
-        if (price < FREE) {
-            b.style.backgroundColor = "#00f2ff"; c.style.backgroundColor = "#00d1db"; c.style.color = "#fff";
-            i.innerText = "🚀"; t.innerText = "ХАЛЯВА! ВКЛЮЧАЙ ВСЁ!";
-        } else if (price < CHEAP) {
-            b.style.backgroundColor = "#e2f3e5"; c.style.backgroundColor = "#d4edda"; c.style.color = "#155724";
-            i.innerText = "✅"; t.innerText = "Дешево. Пользуемся!";
-        } else if (price < HIGH) {
-            b.style.backgroundColor = "#fff9e6"; c.style.backgroundColor = "#fff3cd"; c.style.color = "#856404";
-            i.innerText = "⚖️"; t.innerText = "Нормально. Пользуемся.";
-        } else {
-            b.style.backgroundColor = "#fde8e8"; c.style.backgroundColor = "#f8d7da"; c.style.color = "#721c24";
-            i.innerText = "❌"; t.innerText = "Дорого! Ждем.";
+        async function loadMiniChart() {
+            const res = await fetch('https://api.spot-hinta.fi/TodayAndTomorrow');
+            const data = await res.json();
+            
+            const nextHours = data.slice(0, 8); // Ближайшие 8 интервалов по 15 мин
+            const labels = nextHours.map(item => new Date(item.DateTime).getHours() + ":" + new Date(item.DateTime).getMinutes().toString().padStart(2, '0'));
+            const prices = nextHours.map(item => (item.PriceWithTax * 100).toFixed(1));
+            const colors = prices.map(p => p > 10 ? '#ee8888' : (p <= 5 ? '#a8dcba' : '#f7dc8f'));
+
+            const ctx = document.getElementById('miniChart').getContext('2d');
+            if (miniChartInstance) miniChartInstance.destroy();
+            
+            miniChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{ data: prices, backgroundColor: colors, borderRadius: 5 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, datalabels: { display: true, font: {size: 9} } },
+                    scales: { y: { display: false }, x: { grid: {display: false} } }
+                },
+                plugins: [ChartDataLabels]
+            });
         }
-    }
 
-    function renderChart(data, startIndex) {
-        const chartData = data.slice(startIndex, startIndex + 16);
-        const labels = chartData.map(s => {
-            const d = new Date(s.DateTime);
-            return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
-        });
-        const prices = chartData.map(s => Math.round(s.PriceWithTax * 100));
-        const colors = prices.map(p => p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#ffeaae' : '#ffadad');
+        async function loadDetailedChart() {
+            const res = await fetch('https://api.spot-hinta.fi/TodayAndTomorrow');
+            const data = await res.json();
+            
+            const labels = data.map(item => {
+                const d = new Date(item.DateTime);
+                return d.getHours() + (d.getDate() !== new Date().getDate() ? 'д' : '');
+            });
+            const prices = data.map(item => (item.PriceWithTax * 100).toFixed(1));
+            const colors = prices.map(p => p > 10 ? 'rgba(238, 136, 136, 0.8)' : (p <= 5 ? 'rgba(168, 220, 186, 0.8)' : 'rgba(247, 220, 143, 0.8)'));
 
-        const ctx = document.getElementById('priceChart').getContext('2d');
-        if (priceChart) priceChart.destroy();
-        priceChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: prices, backgroundColor: colors,
-                    borderColor: (ctx) => ctx.dataIndex === 0 ? '#000' : 'transparent',
-                    borderWidth: (ctx) => ctx.dataIndex === 0 ? 3 : 0,
-                    borderRadius: 8, barPercentage: 0.9
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    datalabels: {
-                        anchor: 'center', align: 'center',
-                        color: (ctx) => (prices[ctx.dataIndex] >= HIGH || prices[ctx.dataIndex] < CHEAP) ? '#fff' : '#444',
-                        font: { weight: 'bold', size: 12 },
-                        formatter: Math.round
+            const ctx = document.getElementById('detailedChart').getContext('2d');
+            if (detailedChartInstance) detailedChartInstance.destroy();
+
+            detailedChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{ data: prices, backgroundColor: colors, borderRadius: 3 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        datalabels: { 
+                            anchor: 'end', align: 'top', 
+                            formatter: Math.round,
+                            font: { size: 9, weight: 'bold' } 
+                        } 
+                    },
+                    scales: { 
+                        x: { ticks: { font: { size: 8 } } },
+                        y: { beginAtZero: true }
                     }
                 },
-                scales: { y: { display: false }, x: { grid: { display: false }, ticks: { maxRotation: 90, minRotation: 90 } } }
-            }
-        });
-    }
+                plugins: [ChartDataLabels]
+            });
+        }
 
-    // ЛОГИКА ТАЙМЕРА (тикает каждую секунду)
-    setInterval(() => {
-        const now = new Date();
-        const nextPeriod = new Date(now);
-        // Находим следующую 15-минутную отметку (00, 15, 30, 45)
-        nextPeriod.setMinutes(Math.floor(now.getMinutes() / 15) * 15 + 15, 0, 0);
-        
-        const diffMs = nextPeriod - now;
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffSecs = Math.floor((diffMs % 60000) / 1000);
-        
-        document.getElementById('countdown-text').innerText = `Цена поменяется через ${diffMins} мин ${diffSecs} сек`;
-    }, 1000);
-
-    updateAll();
-    setInterval(updateAll, 30000);
-</script>
+        // Запуск
+        updateData();
+        setInterval(updateData, 60000); // Обновление раз в минуту
+    </script>
 </body>
 </html>
