@@ -18,7 +18,6 @@
         .chart-card { 
             background: white; border-radius: 24px; padding: 20px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 15px; 
-            overflow: hidden; 
         }
         .nav-btn {
             display: block; width: 100%; padding: 16px;
@@ -40,21 +39,9 @@
         .stats-box span { white-space: nowrap; display: flex; align-items: center; gap: 5px; }
         .stats-box b { color: #111; font-size: 1.1rem; }
         
-        .chart-scroll-box {
-            width: 100%;
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
-            scrollbar-color: #bdc3c7 transparent;
-            padding-bottom: 10px;
-        }
-        
-        .chart-scroll-box::-webkit-scrollbar { height: 6px; }
-        .chart-scroll-box::-webkit-scrollbar-thumb { background-color: #bdc3c7; border-radius: 10px; }
-
+        /* График снова занимает 100% ширины без прокрутки */
         .chart-wrapper { 
-            min-width: 650px; 
+            width: 100%; 
             height: 250px; 
             position: relative; 
         }
@@ -72,10 +59,8 @@
             <h2>Сегодня</h2>
             <div id="statsToday" class="stats-box">Загрузка...</div>
         </div>
-        <div class="chart-scroll-box">
-            <div class="chart-wrapper">
-                <canvas id="chartToday"></canvas>
-            </div>
+        <div class="chart-wrapper">
+            <canvas id="chartToday"></canvas>
         </div>
     </div>
 
@@ -84,10 +69,8 @@
             <h2>Завтра</h2>
             <div id="statsTomorrow" class="stats-box">Загрузка...</div>
         </div>
-        <div class="chart-scroll-box" id="tomorrow-container">
-            <div class="chart-wrapper" id="tomorrow-wrapper">
-                <canvas id="chartTomorrow"></canvas>
-            </div>
+        <div class="chart-wrapper" id="tomorrow-container">
+            <canvas id="chartTomorrow"></canvas>
         </div>
     </div>
 </div>
@@ -109,10 +92,15 @@
             const dataToday = hourlyData.filter(item => new Date(item.DateTime).getDate() === todayDate);
             const dataTomorrow = hourlyData.filter(item => new Date(item.DateTime).getDate() !== todayDate);
 
-            drawChart('chartToday', 'statsToday', dataToday, true);
+            // Ищем максимумы и минимумы
+            const allPricesExact = hourlyData.map(item => parseFloat((item.PriceWithTax * 100).toFixed(1)));
+            const globalMax = Math.max(...allPricesExact);
+            const globalMin = Math.min(...allPricesExact);
+
+            drawChart('chartToday', 'statsToday', dataToday, true, globalMax, globalMin);
 
             if (dataTomorrow.length > 0) {
-                drawChart('chartTomorrow', 'statsTomorrow', dataTomorrow, false);
+                drawChart('chartTomorrow', 'statsTomorrow', dataTomorrow, false, globalMax, globalMin);
             } else {
                 document.getElementById('statsTomorrow').style.display = 'none';
                 document.getElementById('tomorrow-container').innerHTML = 
@@ -125,7 +113,7 @@
         }
     }
 
-    function drawChart(canvasId, statsId, dataset, isToday) {
+    function drawChart(canvasId, statsId, dataset, isToday, globalMax, globalMin) {
         const currentHour = new Date().getHours();
 
         const labels = dataset.map(item => {
@@ -133,7 +121,6 @@
             return h + ":00";
         });
         
-        // Данные точные (с десятыми), чтобы тултипы показывали точную цену
         const pricesExact = dataset.map(item => parseFloat((item.PriceWithTax * 100).toFixed(1)));
         
         const bgColors = pricesExact.map(p => p < 0 ? '#a78bfa' : p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#ffeaae' : '#ffadad');
@@ -158,8 +145,8 @@
             <span style="color: #c0392b;">⬆️ <b>${maxPrice.toFixed(1)}</b> c</span>
         `;
 
-        let yMin = minPrice < 0 ? (minPrice * 1.3) - 1 : -(maxPrice * 0.15);
-        let yMax = maxPrice > 0 ? maxPrice * 1.25 : 5; 
+        let yMin = globalMin < 0 ? (globalMin * 1.3) - 1 : -(globalMax * 0.15);
+        let yMax = globalMax > 0 ? globalMax * 1.25 : 5;
 
         new Chart(document.getElementById(canvasId), {
             type: 'bar',
@@ -179,24 +166,34 @@
                 layout: { padding: { top: 25, bottom: 5 } }, 
                 plugins: { 
                     legend: { display: false },
-                    // Настраиваем тултип (всплывающую подсказку)
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return context.raw + ' c'; // Показывает точную цену (например 0.3 c)
+                                return context.raw + ' c';
                             }
                         }
                     },
                     datalabels: { 
                         anchor: 'end', 
                         align: (ctx) => ctx.dataset.data[ctx.dataIndex] >= 0 ? 'top' : 'bottom',
-                        formatter: Math.round, // ТОЛЬКО ЦЕЛЫЕ ЧИСЛА НА ГРАФИКЕ (как ты и просил)
-                        font: { size: 11, weight: 'bold' }, color: '#444'
+                        // Скрываем цифры на столбиках, если экран слишком узкий (чтобы не было каши)
+                        display: function(context) {
+                            return context.chart.width > 350; // На совсем узких экранах скрываем верхние подписи
+                        },
+                        formatter: (val) => Math.abs(val) <= 2.0 ? val.toFixed(1) : Math.round(val),
+                        font: { size: 10, weight: 'bold' }, color: '#444'
                     } 
                 },
                 scales: { 
                     x: { 
-                        ticks: { font: { size: 10, weight: 'bold' }, maxRotation: 90, minRotation: 90, color: '#666' }, 
+                        ticks: { 
+                            font: { size: 10, weight: 'bold' }, 
+                            maxRotation: 90, 
+                            minRotation: 90, 
+                            color: '#666',
+                            autoSkip: true, // Разрешаем графику прореживать часы на телефонах
+                            maxTicksLimit: 24 
+                        }, 
                         grid: { display: false } 
                     },
                     y: { 
