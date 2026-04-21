@@ -91,15 +91,11 @@
             const dataToday = hourlyData.filter(item => new Date(item.DateTime).getDate() === todayDate);
             const dataTomorrow = hourlyData.filter(item => new Date(item.DateTime).getDate() !== todayDate);
 
-            // Ищем глобальные максимумы и минимумы по обоим дням для единой шкалы!
-            const allPricesExact = hourlyData.map(item => parseFloat((item.PriceWithTax * 100).toFixed(1)));
-            const globalMax = Math.max(...allPricesExact);
-            const globalMin = Math.min(...allPricesExact);
-
-            drawChart('chartToday', 'statsToday', dataToday, true, globalMax, globalMin);
+            // Отрисовываем графики независимо друг от друга
+            drawChart('chartToday', 'statsToday', dataToday, true);
 
             if (dataTomorrow.length > 0) {
-                drawChart('chartTomorrow', 'statsTomorrow', dataTomorrow, false, globalMax, globalMin);
+                drawChart('chartTomorrow', 'statsTomorrow', dataTomorrow, false);
             } else {
                 document.getElementById('statsTomorrow').style.display = 'none';
                 document.getElementById('tomorrow-container').innerHTML = 
@@ -112,7 +108,7 @@
         }
     }
 
-    function drawChart(canvasId, statsId, dataset, isToday, globalMax, globalMin) {
+    function drawChart(canvasId, statsId, dataset, isToday) {
         const currentHour = new Date().getHours();
 
         const labels = dataset.map(item => {
@@ -120,9 +116,10 @@
             return h + ":00";
         });
         
-        // Храним в датасете точные цифры для тултипа и правильной высоты
+        // Точные цены (с десятыми) для тултипа и расчетов высоты
         const pricesExact = dataset.map(item => parseFloat((item.PriceWithTax * 100).toFixed(1)));
         
+        // Фиолетовый для минуса, голубой для "бесплатно", зеленый для дешево и т.д.
         const bgColors = pricesExact.map(p => p < 0 ? '#a78bfa' : p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#ffeaae' : '#ffadad');
 
         const borderColors = dataset.map(item => {
@@ -135,27 +132,27 @@
             return (isToday && h === currentHour) ? 3 : 0;
         });
 
-        // Статистика (считается точно)
-        const minPrice = Math.min(...pricesExact).toFixed(1);
-        const maxPrice = Math.max(...pricesExact).toFixed(1);
+        // Точная статистика для шапки
+        const minPrice = Math.min(...pricesExact);
+        const maxPrice = Math.max(...pricesExact);
         const avgPrice = (pricesExact.reduce((sum, val) => sum + val, 0) / pricesExact.length).toFixed(1);
 
         document.getElementById(statsId).innerHTML = `
-            <span style="color: #27ae60;">⬇️ <b>${minPrice}</b> c</span>
+            <span style="color: #27ae60;">⬇️ <b>${minPrice.toFixed(1)}</b> c</span>
             <span style="color: #7f8c8d;">☁️ <b>${avgPrice}</b> c</span>
-            <span style="color: #c0392b;">⬆️ <b>${maxPrice}</b> c</span>
+            <span style="color: #c0392b;">⬆️ <b>${maxPrice.toFixed(1)}</b> c</span>
         `;
 
-        // Единая шкала для обоих графиков на базе глобальных значений
-        let yMin = globalMin < 0 ? (globalMin * 1.3) - 2 : -(globalMax * 0.15);
-        let yMax = globalMax > 0 ? globalMax * 1.25 : 5;
+        // Индивидуальный масштаб для каждого графика (чтобы был рельеф!)
+        let yMin = minPrice < 0 ? minPrice * 1.3 : 0; 
+        let yMax = maxPrice > 0 ? maxPrice * 1.25 : 2; // Минимум высоты, чтобы совсем 0 не сплющило
 
         new Chart(document.getElementById(canvasId), {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [{ 
-                    data: pricesExact, // Точные значения
+                    data: pricesExact, 
                     backgroundColor: bgColors,
                     borderColor: borderColors,
                     borderWidth: borderWidths,
@@ -171,18 +168,20 @@
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                // При наведении показываем точную цену с десятыми
+                                // При тапе на столбик выдаст, например, "0.3 c" или "-1.5 c"
                                 return context.raw + ' c';
                             }
                         }
                     },
                     datalabels: { 
                         anchor: 'end', 
+                        // Если цена отрицательная, цифра прыгает ПОД столбик
                         align: (ctx) => ctx.dataset.data[ctx.dataIndex] >= 0 ? 'top' : 'bottom',
+                        // Скрываем часть подписей на узких экранах, чтобы не слипались
                         display: function(context) {
                             return context.chart.width > 350; 
                         },
-                        // Жесткое округление до целых для подписей над столбиками
+                        // Жесткое округление до целых на самом графике для чистоты
                         formatter: Math.round,
                         font: { size: 10, weight: 'bold' }, color: '#444'
                     } 
@@ -200,9 +199,18 @@
                         grid: { display: false } 
                     },
                     y: { 
-                        display: false,
-                        max: yMax, // Глобальный максимум
-                        min: yMin  // Глобальный минимум
+                        display: true, // Включаем показ оси Y, чтобы нарисовать линию нуля
+                        max: yMax,
+                        min: yMin,
+                        ticks: { display: false }, // Сами цифры по бокам скрываем
+                        border: { display: false },
+                        grid: { 
+                            color: function(context) {
+                                // Рисуем четкую линию ТОЛЬКО на нуле, если есть уход в минус
+                                return context.tick.value === 0 && minPrice < 0 ? '#bdc3c7' : 'transparent';
+                            },
+                            lineWidth: 2
+                        }
                     }
                 }
             }
