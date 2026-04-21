@@ -18,6 +18,7 @@
         .chart-card { 
             background: white; border-radius: 24px; padding: 20px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 15px; 
+            overflow: hidden; /* Чтобы скругления не ломались прокруткой */
         }
         .nav-btn {
             display: block; width: 100%; padding: 16px;
@@ -28,12 +29,9 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 15px;
         }
         
-        .chart-wrapper { width: 100%; height: 260px; position: relative; }
-        
         .card-header { text-align: center; margin-bottom: 15px; }
         h2 { margin: 0 0 8px 0; color: #333; font-size: 1.4rem; }
         
-        /* Компактная статистика с иконками */
         .stats-box {
             display: inline-flex; justify-content: center; gap: 15px; flex-wrap: wrap;
             background: #f4f6f8; padding: 10px 16px; border-radius: 14px;
@@ -41,6 +39,27 @@
         }
         .stats-box span { white-space: nowrap; display: flex; align-items: center; gap: 5px; }
         .stats-box b { color: #111; font-size: 1.1rem; }
+        
+        /* Блок для горизонтальной прокрутки на мобилках */
+        .chart-scroll-box {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: #bdc3c7 transparent;
+            padding-bottom: 10px; /* Место под ползунок */
+        }
+        
+        .chart-scroll-box::-webkit-scrollbar { height: 6px; }
+        .chart-scroll-box::-webkit-scrollbar-thumb { background-color: #bdc3c7; border-radius: 10px; }
+
+        /* Сам график теперь имеет минимальную ширину, чтобы цифры не слипались */
+        .chart-wrapper { 
+            min-width: 650px; 
+            height: 250px; 
+            position: relative; 
+        }
         
         .empty-msg { text-align: center; color: #888; font-size: 0.9rem; padding: 50px 0; font-style: italic; }
     </style>
@@ -55,8 +74,10 @@
             <h2>Сегодня</h2>
             <div id="statsToday" class="stats-box">Загрузка...</div>
         </div>
-        <div class="chart-wrapper">
-            <canvas id="chartToday"></canvas>
+        <div class="chart-scroll-box">
+            <div class="chart-wrapper">
+                <canvas id="chartToday"></canvas>
+            </div>
         </div>
     </div>
 
@@ -65,8 +86,10 @@
             <h2>Завтра</h2>
             <div id="statsTomorrow" class="stats-box">Загрузка...</div>
         </div>
-        <div id="tomorrow-container" class="chart-wrapper">
-            <canvas id="chartTomorrow"></canvas>
+        <div class="chart-scroll-box" id="tomorrow-container">
+            <div class="chart-wrapper" id="tomorrow-wrapper">
+                <canvas id="chartTomorrow"></canvas>
+            </div>
         </div>
     </div>
 </div>
@@ -88,15 +111,10 @@
             const dataToday = hourlyData.filter(item => new Date(item.DateTime).getDate() === todayDate);
             const dataTomorrow = hourlyData.filter(item => new Date(item.DateTime).getDate() !== todayDate);
 
-            // Находим глобальный Максимум и Минимум для обоих дней
-            const allPricesExact = hourlyData.map(item => parseFloat((item.PriceWithTax * 100).toFixed(1)));
-            const globalMax = Math.max(...allPricesExact);
-            const globalMin = Math.min(...allPricesExact);
-
-            drawChart('chartToday', 'statsToday', dataToday, true, globalMax, globalMin);
+            drawChart('chartToday', 'statsToday', dataToday, true);
 
             if (dataTomorrow.length > 0) {
-                drawChart('chartTomorrow', 'statsTomorrow', dataTomorrow, false, globalMax, globalMin);
+                drawChart('chartTomorrow', 'statsTomorrow', dataTomorrow, false);
             } else {
                 document.getElementById('statsTomorrow').style.display = 'none';
                 document.getElementById('tomorrow-container').innerHTML = 
@@ -109,7 +127,7 @@
         }
     }
 
-    function drawChart(canvasId, statsId, dataset, isToday, globalMax, globalMin) {
+    function drawChart(canvasId, statsId, dataset, isToday) {
         const currentHour = new Date().getHours();
 
         const labels = dataset.map(item => {
@@ -117,10 +135,8 @@
             return h + ":00";
         });
         
-        // Для графиков берем точные значения, чтобы отрицательные столбики рисовались корректно
         const pricesExact = dataset.map(item => parseFloat((item.PriceWithTax * 100).toFixed(1)));
         
-        // Логика цвета: добавили фиолетовый (#a78bfa) для отрицательных значений
         const bgColors = pricesExact.map(p => p < 0 ? '#a78bfa' : p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#ffeaae' : '#ffadad');
 
         const borderColors = dataset.map(item => {
@@ -133,26 +149,26 @@
             return (isToday && h === currentHour) ? 3 : 0;
         });
 
-        const minPrice = Math.min(...pricesExact).toFixed(1);
-        const maxPrice = Math.max(...pricesExact).toFixed(1);
+        const minPrice = Math.min(...pricesExact);
+        const maxPrice = Math.max(...pricesExact);
         const avgPrice = (pricesExact.reduce((sum, val) => sum + val, 0) / pricesExact.length).toFixed(1);
 
         document.getElementById(statsId).innerHTML = `
-            <span style="color: #27ae60;">⬇️ <b>${minPrice}</b> c</span>
+            <span style="color: #27ae60;">⬇️ <b>${minPrice.toFixed(1)}</b> c</span>
             <span style="color: #7f8c8d;">☁️ <b>${avgPrice}</b> c</span>
-            <span style="color: #c0392b;">⬆️ <b>${maxPrice}</b> c</span>
+            <span style="color: #c0392b;">⬆️ <b>${maxPrice.toFixed(1)}</b> c</span>
         `;
 
-        // Умный расчет нижней границы графика (чтобы подписи часов не слипались с нулями или минусами)
-        let yMin = globalMin < 0 ? (globalMin * 1.3) - 2 : -(globalMax * 0.12);
-        let yMax = globalMax > 0 ? globalMax * 1.25 : 5;
+        // ИНДИВИДУАЛЬНОЕ МАСШТАБИРОВАНИЕ ДЛЯ КАЖДОГО ГРАФИКА
+        let yMin = minPrice < 0 ? (minPrice * 1.3) - 1 : -(maxPrice * 0.15);
+        let yMax = maxPrice > 0 ? maxPrice * 1.25 : 5; // Если цена вообще 0, даем запас 5 центов
 
         new Chart(document.getElementById(canvasId), {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [{ 
-                    data: pricesExact, // Используем точные данные!
+                    data: pricesExact, 
                     backgroundColor: bgColors,
                     borderColor: borderColors,
                     borderWidth: borderWidths,
@@ -162,27 +178,25 @@
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                layout: { padding: { top: 25, bottom: 15 } }, 
+                layout: { padding: { top: 25, bottom: 5 } }, 
                 plugins: { 
                     legend: { display: false },
                     datalabels: { 
                         anchor: 'end', 
-                        // Если минус - пишем цифру СНИЗУ столбика, если плюс - СВЕРХУ
                         align: (ctx) => ctx.dataset.data[ctx.dataIndex] >= 0 ? 'top' : 'bottom',
-                        // Если цена от -2 до 2 центов -> показываем десятичные, иначе округляем до целых
-                        formatter: (val) => Math.abs(val) <= 2 ? val.toFixed(1) : Math.round(val),
-                        font: { size: 10, weight: 'bold' }, color: '#444'
+                        formatter: (val) => Math.abs(val) <= 2.0 ? val.toFixed(1) : Math.round(val),
+                        font: { size: 11, weight: 'bold' }, color: '#444'
                     } 
                 },
                 scales: { 
                     x: { 
-                        ticks: { font: { size: 10 }, maxRotation: 90, minRotation: 90 }, 
+                        ticks: { font: { size: 10, weight: 'bold' }, maxRotation: 90, minRotation: 90, color: '#666' }, 
                         grid: { display: false } 
                     },
                     y: { 
                         display: false,
-                        max: yMax,  // Жестко фиксируем верх
-                        min: yMin   // Жестко фиксируем низ
+                        max: yMax,
+                        min: yMin
                     }
                 }
             }
