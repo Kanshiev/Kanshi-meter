@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kanshi Charts</title>
+    <title>Подробные графики</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -88,10 +88,15 @@
             const dataToday = hourlyData.filter(item => new Date(item.DateTime).getDate() === todayDate);
             const dataTomorrow = hourlyData.filter(item => new Date(item.DateTime).getDate() !== todayDate);
 
-            drawChart('chartToday', 'statsToday', dataToday, true);
+            // Находим глобальный Максимум и Минимум для обоих дней
+            const allPricesExact = hourlyData.map(item => parseFloat((item.PriceWithTax * 100).toFixed(1)));
+            const globalMax = Math.max(...allPricesExact);
+            const globalMin = Math.min(...allPricesExact);
+
+            drawChart('chartToday', 'statsToday', dataToday, true, globalMax, globalMin);
 
             if (dataTomorrow.length > 0) {
-                drawChart('chartTomorrow', 'statsTomorrow', dataTomorrow, false);
+                drawChart('chartTomorrow', 'statsTomorrow', dataTomorrow, false, globalMax, globalMin);
             } else {
                 document.getElementById('statsTomorrow').style.display = 'none';
                 document.getElementById('tomorrow-container').innerHTML = 
@@ -104,7 +109,7 @@
         }
     }
 
-    function drawChart(canvasId, statsId, dataset, isToday) {
+    function drawChart(canvasId, statsId, dataset, isToday, globalMax, globalMin) {
         const currentHour = new Date().getHours();
 
         const labels = dataset.map(item => {
@@ -112,12 +117,11 @@
             return h + ":00";
         });
         
-        // Для графиков оставляем только целые числа
-        const pricesInt = dataset.map(item => Math.round(item.PriceWithTax * 100));
-        // Для статистики считаем точнее
+        // Для графиков берем точные значения, чтобы отрицательные столбики рисовались корректно
         const pricesExact = dataset.map(item => parseFloat((item.PriceWithTax * 100).toFixed(1)));
         
-        const bgColors = pricesInt.map(p => p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#ffeaae' : '#ffadad');
+        // Логика цвета: добавили фиолетовый (#a78bfa) для отрицательных значений
+        const bgColors = pricesExact.map(p => p < 0 ? '#a78bfa' : p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#ffeaae' : '#ffadad');
 
         const borderColors = dataset.map(item => {
             const h = new Date(item.DateTime).getHours();
@@ -139,12 +143,16 @@
             <span style="color: #c0392b;">⬆️ <b>${maxPrice}</b> c</span>
         `;
 
+        // Умный расчет нижней границы графика (чтобы подписи часов не слипались с нулями или минусами)
+        let yMin = globalMin < 0 ? (globalMin * 1.3) - 2 : -(globalMax * 0.12);
+        let yMax = globalMax > 0 ? globalMax * 1.25 : 5;
+
         new Chart(document.getElementById(canvasId), {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [{ 
-                    data: pricesInt, 
+                    data: pricesExact, // Используем точные данные!
                     backgroundColor: bgColors,
                     borderColor: borderColors,
                     borderWidth: borderWidths,
@@ -154,12 +162,15 @@
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                layout: { padding: { top: 25 } }, 
+                layout: { padding: { top: 25, bottom: 15 } }, 
                 plugins: { 
                     legend: { display: false },
                     datalabels: { 
-                        anchor: 'end', align: 'top', 
-                        formatter: Math.round, // ТУТ ТОЛЬКО ЦЕЛЫЕ
+                        anchor: 'end', 
+                        // Если минус - пишем цифру СНИЗУ столбика, если плюс - СВЕРХУ
+                        align: (ctx) => ctx.dataset.data[ctx.dataIndex] >= 0 ? 'top' : 'bottom',
+                        // Если цена от -2 до 2 центов -> показываем десятичные, иначе округляем до целых
+                        formatter: (val) => Math.abs(val) <= 2 ? val.toFixed(1) : Math.round(val),
                         font: { size: 10, weight: 'bold' }, color: '#444'
                     } 
                 },
@@ -168,7 +179,11 @@
                         ticks: { font: { size: 10 }, maxRotation: 90, minRotation: 90 }, 
                         grid: { display: false } 
                     },
-                    y: { display: false, suggestedMax: Math.max(...pricesInt) * 1.2 }
+                    y: { 
+                        display: false,
+                        max: yMax,  // Жестко фиксируем верх
+                        min: yMin   // Жестко фиксируем низ
+                    }
                 }
             }
         });
