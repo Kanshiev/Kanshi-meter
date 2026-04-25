@@ -141,9 +141,8 @@
 
         document.getElementById(statsId).innerHTML = statsHtml;
 
-        // Увеличиваем отступы сверху и снизу, чтобы вертикальные цифры не улетали за край
-        let yMin = minPrice < 0 ? (minPrice * 1.6) - 2 : -2; 
-        let yMax = maxPrice > 0 ? maxPrice * 1.5 : 5;
+        let yMin = minPrice < 0 ? (minPrice * 1.5) - 2 : -1; 
+        let yMax = maxPrice > 0 ? maxPrice * 1.3 : 5;
 
         new Chart(document.getElementById(canvasId), {
             type: 'bar',
@@ -160,7 +159,7 @@
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                layout: { padding: { top: 35, bottom: 5, left: 0, right: 0 } }, 
+                layout: { padding: { top: 30, bottom: 0, left: 0, right: 0 } }, 
                 plugins: { 
                     legend: { display: false },
                     tooltip: {
@@ -174,16 +173,20 @@
                         anchor: 'end', 
                         align: (ctx) => ctx.dataset.data[ctx.dataIndex] >= 0 ? 'top' : 'bottom',
                         display: true,
-                        offset: 4,
-                        rotation: -90, // Поворот цифр, чтобы не слипались
+                        offset: 2,
+                        // Околонулевые и отрицательные — вертикально, остальные — горизонтально
+                        rotation: function(ctx) {
+                            const val = ctx.dataset.data[ctx.dataIndex];
+                            return (val < 0 || (val > -1 && val < 1 && val !== 0)) ? -90 : 0;
+                        },
                         formatter: function(value) {
                             if (Math.abs(value) < 1 && value !== 0) {
                                 return value.toFixed(1);
                             }
                             return Math.round(value);
                         },
-                        font: { size: 8, weight: 'bold' }, 
-                        color: '#555',
+                        font: { size: 9, weight: 'bold' }, 
+                        color: '#444',
                         clip: false 
                     } 
                 },
@@ -191,9 +194,9 @@
                     x: { 
                         ticks: { 
                             font: { size: 9 }, 
-                            maxRotation: 0, 
-                            autoSkip: true, 
-                            maxTicksLimit: 12 // Показываем часы через один для чистоты
+                            maxRotation: 90, 
+                            minRotation: 90, 
+                            autoSkip: false // Чтобы подписи были под каждым столбиком
                         }, 
                         grid: { display: false } 
                     },
