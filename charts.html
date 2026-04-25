@@ -33,7 +33,6 @@
         .card-header { text-align: center; margin-bottom: 15px; }
         h2 { margin: 0 0 8px 0; color: #333; font-size: 1.4rem; }
         
-        /* Компактная статистика с иконками */
         .stats-box {
             display: inline-flex; justify-content: center; gap: 15px; flex-wrap: wrap;
             background: #f4f6f8; padding: 10px 16px; border-radius: 14px;
@@ -112,10 +111,8 @@
             return h + ":00";
         });
         
-        // ТОЧНЫЕ данные: используются для отрисовки графиков (чтобы минусы были видны) и для тултипов
         const pricesExact = dataset.map(item => parseFloat((item.PriceWithTax * 100).toFixed(1)));
         
-        // Цвета: добавили фиолетовый для отрицательных
         const bgColors = pricesExact.map(p => p < 0 ? '#a78bfa' : p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#ffeaae' : '#ffadad');
 
         const borderColors = dataset.map(item => {
@@ -132,7 +129,6 @@
         const maxPrice = Math.max(...pricesExact);
         const avgPrice = (pricesExact.reduce((sum, val) => sum + val, 0) / pricesExact.length).toFixed(1);
 
-        // Статистика. Если цена ушла в минус, добавляем радостную фразу отдельным блоком
         let statsHtml = `
             <span style="color: #27ae60;">⬇️ <b>${minPrice.toFixed(1)}</b> c</span>
             <span style="color: #7f8c8d;">☁️ <b>${avgPrice}</b> c</span>
@@ -145,9 +141,8 @@
 
         document.getElementById(statsId).innerHTML = statsHtml;
 
-        // Индивидуальный масштаб для каждого графика, чтобы было видно горы и ямы
-        let yMin = minPrice < 0 ? (minPrice * 1.3) - 1 : 0; 
-        let yMax = maxPrice > 0 ? maxPrice * 1.25 : 2;
+        let yMin = minPrice < 0 ? (minPrice * 1.4) - 1 : 0; 
+        let yMax = maxPrice > 0 ? maxPrice * 1.3 : 2;
 
         new Chart(document.getElementById(canvasId), {
             type: 'bar',
@@ -164,10 +159,9 @@
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                layout: { padding: { top: 25, bottom: 5 } }, 
+                layout: { padding: { top: 25, bottom: 5, left: 5, right: 5 } }, 
                 plugins: { 
                     legend: { display: false },
-                    // ТУЛТИП: При наведении показываем точное значение с десятыми!
                     tooltip: {
                         callbacks: {
                             label: function(context) {
@@ -177,31 +171,41 @@
                     },
                     datalabels: { 
                         anchor: 'end', 
-                        // Цифры перепрыгивают под столбик, если он отрицательный
                         align: (ctx) => ctx.dataset.data[ctx.dataIndex] >= 0 ? 'top' : 'bottom',
-                        // Скрываем подписи на узких экранах, чтобы не было каши
-                        display: function(context) {
-                            return context.chart.width > 350; 
+                        display: true, // Всегда показываем на мобильных
+                        offset: 2,
+                        formatter: function(value) {
+                            // Если цена около нуля (-0.9 до 0.9), оставляем один знак
+                            if (Math.abs(value) < 1 && value !== 0) {
+                                return value.toFixed(1);
+                            }
+                            // В остальных случаях — целое
+                            return Math.round(value);
                         },
-                        // ТОЛЬКО ЦЕЛЫЕ числа на самих столбиках
-                        formatter: Math.round,
-                        font: { size: 10, weight: 'bold' }, color: '#444'
+                        font: { size: 9, weight: 'bold' }, 
+                        color: '#444',
+                        clip: false // Чтобы цифры сверху не обрезались
                     } 
                 },
                 scales: { 
                     x: { 
-                        ticks: { font: { size: 10 }, maxRotation: 90, minRotation: 90, autoSkip: true, maxTicksLimit: 24 }, 
+                        ticks: { 
+                            font: { size: 9 }, 
+                            maxRotation: 90, 
+                            minRotation: 90, 
+                            autoSkip: true, 
+                            maxTicksLimit: 24 
+                        }, 
                         grid: { display: false } 
                     },
                     y: { 
-                        display: true, // Включаем ось Y, чтобы нарисовать линию нуля
+                        display: true,
                         max: yMax,
                         min: yMin,
                         ticks: { display: false },
                         border: { display: false },
                         grid: { 
                             color: function(context) {
-                                // Если есть отрицательные цены - рисуем линию на нуле
                                 return context.tick.value === 0 && minPrice < 0 ? '#bdc3c7' : 'transparent';
                             },
                             lineWidth: 2
