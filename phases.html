@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пофазный мониторинг</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: #e2f3e5;
+            display: flex; justify-content: center; padding: 20px; margin: 0;
+            transition: background-color 0.5s ease;
+        }
+        .widget-container { width: 100%; max-width: 500px; }
+        
+        /* Главная карточка */
+        .main-card {
+            background: white; border-radius: 24px; padding: 25px;
+            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 20px;
+        }
+        .total-label { color: #888; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .total-value { font-size: 5rem; font-weight: 900; margin: 10px 0; line-height: 1; }
+        .unit { color: #666; font-size: 1.2rem; font-weight: 500; }
+
+        /* Сетка фаз */
+        .phases-grid {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;
+        }
+        .phase-card {
+            background: white; border-radius: 20px; padding: 15px;
+            text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .phase-name { font-weight: 800; color: #ccc; margin-bottom: 10px; }
+        
+        /* Визуальный индикатор нагрузки */
+        .gauge-container {
+            width: 12px; height: 120px; background: #f0f0f0; border-radius: 6px;
+            position: relative; overflow: hidden; margin-bottom: 10px;
+        }
+        .gauge-bar {
+            position: absolute; left: 0; width: 100%; height: 0%;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-radius: 4px;
+        }
+        
+        /* Статистика под индикатором */
+        .p-watt { font-weight: 800; font-size: 1.1rem; color: #333; }
+        .p-volt { font-size: 0.7rem; color: #999; margin-top: 4px; }
+
+        .nav-btn {
+            display: block; width: 100%; padding: 16px; margin-top: 20px;
+            background-color: #2c3e50; color: white; border: none; border-radius: 16px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            text-decoration: none; text-align: center; box-sizing: border-box;
+        }
+
+        /* Цвета состояний */
+        .color-import { background: #ffadad; } /* Потребление - красный */
+        .color-export { background: #a78bfa; } /* Солнце - фиолетовый */
+        .text-export { color: #8e44ad !important; }
+    </style>
+</head>
+<body>
+
+<div class="widget-container">
+    <div class="main-card">
+        <div class="total-label" id="status-text">Общий баланс</div>
+        <div class="total-value" id="total-power">--</div>
+        <div class="unit">Ватт</div>
+    </div>
+
+    <div class="phases-grid">
+        <div class="phase-card">
+            <div class="phase-name">L1</div>
+            <div class="gauge-container">
+                <div id="bar-0" class="gauge-bar"></div>
+            </div>
+            <div class="p-watt" id="watt-0">--</div>
+            <div class="p-volt" id="volt-0">--</div>
+        </div>
+        <div class="phase-card">
+            <div class="phase-name">L2</div>
+            <div class="gauge-container">
+                <div id="bar-1" class="gauge-bar"></div>
+            </div>
+            <div class="p-watt" id="watt-1">--</div>
+            <div class="p-volt" id="volt-1">--</div>
+        </div>
+        <div class="phase-card">
+            <div class="phase-name">L3</div>
+            <div class="gauge-container">
+                <div id="bar-2" class="gauge-bar"></div>
+            </div>
+            <div class="p-watt" id="watt-2">--</div>
+            <div class="p-volt" id="volt-2">--</div>
+        </div>
+    </div>
+
+    <a href="index.html" class="nav-btn">⬅ Назад на главную</a>
+</div>
+
+<script>
+    async function updatePhases() {
+        try {
+            const targetUrl = 'https://shelly-70-eu.shelly.cloud/device/status';
+            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+            const requestBody = 'id=483fdac39873&auth_key=MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690';
+
+            const response = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: requestBody
+            });
+
+            const res = await response.json();
+
+            if (res.isok) {
+                const emeters = res.data.device_status.emeters;
+                let totalSum = 0;
+
+                emeters.forEach((phase, i) => {
+                    totalSum += phase.power;
+                    
+                    // Обновляем текст Ватт и Вольт
+                    document.getElementById(`watt-${i}`).innerText = Math.round(phase.power);
+                    document.getElementById(`volt-${i}`).innerText = Math.round(phase.voltage) + 'V';
+
+                    // Логика бара (высота и цвет)
+                    const bar = document.getElementById(`bar-${i}`);
+                    // Считаем % нагрузки от 5кВт (типичный предел фазы)
+                    let percent = Math.min(Math.abs(phase.power) / 5000 * 100, 100);
+                    bar.style.height = percent + '%';
+                    
+                    if (phase.power < 0) {
+                        bar.className = 'gauge-bar color-export';
+                        bar.style.bottom = '0'; // Растет снизу если экспорт
+                    } else {
+                        bar.className = 'gauge-bar color-import';
+                        bar.style.bottom = '0';
+                    }
+                });
+
+                // Итоговая цифра
+                const totalEl = document.getElementById('total-power');
+                const statusEl = document.getElementById('status-text');
+                const val = Math.round(totalSum);
+                totalEl.innerText = val;
+
+                if (val < 0) {
+                    totalEl.classList.add('text-export');
+                    statusEl.innerText = "Экспорт в сеть ☀️";
+                } else {
+                    totalEl.classList.remove('text-export');
+                    statusEl.innerText = "Потребление из сети";
+                }
+            }
+        } catch (e) {
+            console.error("Ошибка обновления фаз:", e);
+        }
+    }
+
+    updatePhases();
+    setInterval(updatePhases, 5000); // Обновляем каждые 5 секунд для "живого" эффекта
+</script>
+</body>
+</html>
