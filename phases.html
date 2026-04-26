@@ -8,64 +8,74 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
             background-color: #e2f3e5;
-            display: flex; justify-content: center; padding: 20px; margin: 0;
-            transition: background-color 0.5s ease;
+            display: flex; justify-content: center; padding: 15px; margin: 0;
         }
         .widget-container { width: 100%; max-width: 500px; }
         
+        /* Блок цены */
+        .price-header {
+            text-align: center; margin-bottom: 15px; color: #444; font-weight: 600;
+            background: rgba(255,255,255,0.5); padding: 10px; border-radius: 12px;
+        }
+
         /* Главная карточка */
         .main-card {
             background: white; border-radius: 24px; padding: 25px;
             text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 20px;
         }
-        .total-label { color: #888; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-        .total-value { font-size: 5rem; font-weight: 900; margin: 10px 0; line-height: 1; }
-        .unit { color: #666; font-size: 1.2rem; font-weight: 500; }
+        .total-label { color: #888; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        .total-value { font-size: 4.5rem; font-weight: 900; margin: 5px 0; line-height: 1; color: #1a1a1a; }
+        .unit { color: #666; font-size: 1.1rem; font-weight: 500; }
 
         /* Сетка фаз */
         .phases-grid {
-            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
         }
         .phase-card {
-            background: white; border-radius: 20px; padding: 15px;
+            background: white; border-radius: 24px; padding: 15px 10px;
             text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
             display: flex; flex-direction: column; align-items: center;
         }
-        .phase-name { font-weight: 800; color: #ccc; margin-bottom: 10px; }
+        .phase-name { font-weight: 900; color: #ddd; margin-bottom: 12px; font-size: 1.1rem; }
         
-        /* Визуальный индикатор нагрузки */
+        /* Жирный индикатор нагрузки */
         .gauge-container {
-            width: 12px; height: 120px; background: #f0f0f0; border-radius: 6px;
-            position: relative; overflow: hidden; margin-bottom: 10px;
+            width: 32px; height: 180px; background: #f0f0f0; border-radius: 16px;
+            position: relative; margin-bottom: 15px; overflow: visible;
+        }
+        /* Линия нуля */
+        .zero-line {
+            position: absolute; top: 50%; left: -4px; right: -4px;
+            height: 2px; background: #d0d0d0; z-index: 3; border-radius: 2px;
         }
         .gauge-bar {
-            position: absolute; left: 0; width: 100%; height: 0%;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border-radius: 4px;
+            position: absolute; left: 0; width: 100%; height: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+            z-index: 2; border-radius: 8px;
         }
         
-        /* Статистика под индикатором */
-        .p-watt { font-weight: 800; font-size: 1.1rem; color: #333; }
-        .p-volt { font-size: 0.7rem; color: #999; margin-top: 4px; }
+        .p-watt { font-weight: 900; font-size: 1.2rem; color: #1a1a1a; }
+        .p-volt { font-size: 0.75rem; color: #aaa; margin-top: 4px; font-weight: 600; }
 
         .nav-btn {
-            display: block; width: 100%; padding: 16px; margin-top: 20px;
-            background-color: #2c3e50; color: white; border: none; border-radius: 16px;
+            display: block; width: 100%; padding: 18px; margin-top: 20px;
+            background-color: #2c3e50; color: white; border: none; border-radius: 20px;
             font-size: 16px; font-weight: bold; cursor: pointer;
             text-decoration: none; text-align: center; box-sizing: border-box;
         }
 
-        /* Цвета состояний */
-        .color-import { background: #ffadad; } /* Потребление - красный */
-        .color-export { background: #a78bfa; } /* Солнце - фиолетовый */
         .text-export { color: #8e44ad !important; }
     </style>
 </head>
 <body>
 
 <div class="widget-container">
+    <div class="price-header">
+        ⚡ Текущая цена: <span id="top-price">--</span> c
+    </div>
+
     <div class="main-card">
-        <div class="total-label" id="status-text">Общий баланс</div>
+        <div class="total-label" id="status-text">Загрузка...</div>
         <div class="total-value" id="total-power">--</div>
         <div class="unit">Ватт</div>
     </div>
@@ -74,6 +84,7 @@
         <div class="phase-card">
             <div class="phase-name">L1</div>
             <div class="gauge-container">
+                <div class="zero-line"></div>
                 <div id="bar-0" class="gauge-bar"></div>
             </div>
             <div class="p-watt" id="watt-0">--</div>
@@ -82,6 +93,7 @@
         <div class="phase-card">
             <div class="phase-name">L2</div>
             <div class="gauge-container">
+                <div class="zero-line"></div>
                 <div id="bar-1" class="gauge-bar"></div>
             </div>
             <div class="p-watt" id="watt-1">--</div>
@@ -90,6 +102,7 @@
         <div class="phase-card">
             <div class="phase-name">L3</div>
             <div class="gauge-container">
+                <div class="zero-line"></div>
                 <div id="bar-2" class="gauge-bar"></div>
             </div>
             <div class="p-watt" id="watt-2">--</div>
@@ -97,12 +110,36 @@
         </div>
     </div>
 
-    <a href="index.html" class="nav-btn">⬅ Назад на главную</a>
+    <a href="index.html" class="nav-btn">← Назад на главную</a>
 </div>
 
 <script>
-    async function updatePhases() {
+    // Цветовая схема нагрузки
+    function getLoadColor(watt) {
+        const absW = Math.abs(watt);
+        if (watt < -10) return '#a78bfa'; // Фиолетовый для экспорта
+        if (absW <= 1000) return '#2ecc71'; // Зеленый
+        if (absW <= 2000) return '#f1c40f'; // Желтый
+        if (absW <= 5000) return '#e67e22'; // Оранжевый
+        return '#e74c3c'; // Красный
+    }
+
+    async function updateData() {
         try {
+            // 1. Получаем цену (Spot)
+            const priceRes = await fetch('https://api.spot-hinta.fi/TodayAndDayForward');
+            const priceData = await priceRes.json();
+            const now = new Date();
+            const quarter = Math.floor(now.getMinutes() / 15) * 15;
+            const refTime = new Date(now); refTime.setMinutes(quarter, 0, 0);
+            const searchStr = refTime.toLocaleString('sv-SE').replace(' ', 'T').substring(0, 16);
+            const priceObj = priceData.find(s => s.DateTime.includes(searchStr));
+            if (priceObj) {
+                const pExact = priceObj.PriceWithTax * 100;
+                document.getElementById('top-price').innerText = Math.abs(pExact) < 2 ? pExact.toFixed(1) : Math.round(pExact);
+            }
+
+            // 2. Получаем данные Shelly
             const targetUrl = 'https://shelly-70-eu.shelly.cloud/device/status';
             const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
             const requestBody = 'id=483fdac39873&auth_key=MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690';
@@ -120,28 +157,34 @@
                 let totalSum = 0;
 
                 emeters.forEach((phase, i) => {
-                    totalSum += phase.power;
+                    const watt = phase.power;
+                    totalSum += watt;
                     
-                    // Обновляем текст Ватт и Вольт
-                    document.getElementById(`watt-${i}`).innerText = Math.round(phase.power);
+                    document.getElementById(`watt-${i}`).innerText = Math.round(watt);
                     document.getElementById(`volt-${i}`).innerText = Math.round(phase.voltage) + 'V';
 
-                    // Логика бара (высота и цвет)
                     const bar = document.getElementById(`bar-${i}`);
-                    // Считаем % нагрузки от 5кВт (типичный предел фазы)
-                    let percent = Math.min(Math.abs(phase.power) / 5000 * 100, 100);
-                    bar.style.height = percent + '%';
+                    // Расчет высоты (шкала до 5000Вт)
+                    // 50% высоты контейнера — это 0.
+                    let heightPercent = (Math.abs(watt) / 5000) * 50;
+                    if (heightPercent > 50) heightPercent = 50; // Лимит визуальный
+
+                    bar.style.height = heightPercent + '%';
+                    bar.style.backgroundColor = getLoadColor(watt);
                     
-                    if (phase.power < 0) {
-                        bar.className = 'gauge-bar color-export';
-                        bar.style.bottom = '0'; // Растет снизу если экспорт
+                    if (watt >= 0) {
+                        // Потребление: растет вверх от середины
+                        bar.style.bottom = '50%';
+                        bar.style.top = 'auto';
+                        bar.style.borderRadius = '8px 8px 0 0';
                     } else {
-                        bar.className = 'gauge-bar color-import';
-                        bar.style.bottom = '0';
+                        // Экспорт: растет вниз от середины
+                        bar.style.top = '50%';
+                        bar.style.bottom = 'auto';
+                        bar.style.borderRadius = '0 0 8px 8px';
                     }
                 });
 
-                // Итоговая цифра
                 const totalEl = document.getElementById('total-power');
                 const statusEl = document.getElementById('status-text');
                 const val = Math.round(totalSum);
@@ -156,12 +199,12 @@
                 }
             }
         } catch (e) {
-            console.error("Ошибка обновления фаз:", e);
+            console.error("Ошибка данных:", e);
         }
     }
 
-    updatePhases();
-    setInterval(updatePhases, 5000); // Обновляем каждые 5 секунд для "живого" эффекта
+    updateData();
+    setInterval(updateData, 5000);
 </script>
 </body>
 </html>
