@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Финансы и Kulutusvaikutus</title>
+    <title>Финансовая Аналитика</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -24,34 +24,51 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 15px;
         }
 
-        .stats-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;
+        /* КАРТОЧКИ ПЕРИОДОВ */
+        .period-card {
+            background: white; border-radius: 24px; padding: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.06); margin-bottom: 15px;
         }
-
-        .stat-card {
-            background: white; border-radius: 20px; padding: 20px 15px;
-            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.06);
-            display: flex; flex-direction: column; justify-content: center;
-        }
-
-        .stat-card.highlight {
-            background: #2c3e50; color: white;
-        }
-
-        .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; color: #7f8c8d; }
-        .highlight .stat-label { color: #bdc3c7; }
         
-        .stat-value { font-size: 2rem; font-weight: 900; line-height: 1; }
-        .stat-unit { font-size: 0.9rem; font-weight: 600; margin-left: 2px; }
+        .period-header {
+            text-align: center; font-size: 1.3rem; font-weight: 800; color: #2c3e50;
+            margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .stats-row {
+            display: flex; justify-content: space-around; margin-bottom: 20px;
+            padding-bottom: 15px; border-bottom: 1px solid #f0f0f0;
+        }
+        .stats-item { text-align: center; }
+        .stats-item span { display: block; font-size: 0.8rem; color: #7f8c8d; text-transform: uppercase; margin-bottom: 5px; }
+        .stats-item b { font-size: 1.6rem; color: #111; }
+        .stats-item small { font-size: 0.9rem; font-weight: 600; color: #555; }
+
+        /* МАТЕМАТИЧЕСКАЯ ПАНЕЛЬ */
+        .math-row {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .math-box {
+            background: #f8f9fa; padding: 10px; border-radius: 12px; text-align: center;
+            min-width: 65px; font-size: 1.1rem; font-weight: 800; color: #333;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .math-box span {
+            display: block; font-size: 0.65rem; font-weight: 600; color: #95a5a6; 
+            text-transform: uppercase; margin-top: 4px;
+        }
+        .math-sign { font-size: 1.4rem; font-weight: bold; color: #bdc3c7; }
+        
+        .effect-good { color: #27ae60; background: #eafaf1; }
+        .effect-bad { color: #e74c3c; background: #fdedec; }
+        .total-price { background: #2c3e50; color: #fff; }
+        .total-price span { color: #bdc3c7; }
 
         .chart-card { 
-            background: white; border-radius: 24px; padding: 20px; 
+            background: white; border-radius: 24px; padding: 15px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.06); margin-bottom: 15px; 
-            height: 300px; position: relative;
+            height: 280px; position: relative;
         }
-
-        .kulutus-good { color: #27ae60; }
-        .kulutus-bad { color: #e74c3c; }
         
         .update-time { text-align: center; color: #888; font-size: 0.75rem; margin-top: 10px; }
     </style>
@@ -61,30 +78,57 @@
 <div class="widget-container">
     <a href="index.html" class="nav-btn">⬅ Назад к пульту</a>
     
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-label">Фикс. тариф</div>
-            <div class="stat-value">5.99<span class="stat-unit">c</span></div>
+    <div class="period-card">
+        <div class="period-header">Сегодня</div>
+        <div class="stats-row">
+            <div class="stats-item"><span>Энергия</span><b id="today-kwh">0.00</b><small> kWh</small></div>
+            <div class="stats-item"><span>Затраты</span><b id="today-cost">0.00</b><small> €</small></div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Эффект (Kulutus)</div>
-            <div class="stat-value" id="ui-effect">0.00<span class="stat-unit">c</span></div>
+        <div class="math-row">
+            <div class="math-box">5.99<span>Фикс c</span></div>
+            <div class="math-sign" id="today-sign">+</div>
+            <div class="math-box" id="today-eff">0.00<span>Эффект c</span></div>
+            <div class="math-sign">=</div>
+            <div class="math-box total-price" id="today-tot">5.99<span>Итог c/kWh</span></div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Потреблено</div>
-            <div class="stat-value" id="ui-kwh">0.0<span class="stat-unit">kWh</span></div>
+    </div>
+
+    <div class="period-card">
+        <div class="period-header">Последние 7 дней</div>
+        <div class="stats-row">
+            <div class="stats-item"><span>Энергия</span><b id="week-kwh">0.00</b><small> kWh</small></div>
+            <div class="stats-item"><span>Затраты</span><b id="week-cost">0.00</b><small> €</small></div>
         </div>
-        <div class="stat-card highlight">
-            <div class="stat-label">Стоимость за день</div>
-            <div class="stat-value" id="ui-cost">0.00<span class="stat-unit">€</span></div>
+        <div class="math-row">
+            <div class="math-box">5.99<span>Фикс c</span></div>
+            <div class="math-sign" id="week-sign">+</div>
+            <div class="math-box" id="week-eff">0.00<span>Эффект c</span></div>
+            <div class="math-sign">=</div>
+            <div class="math-box total-price" id="week-tot">5.99<span>Итог c/kWh</span></div>
+        </div>
+    </div>
+
+    <div class="period-card">
+        <div class="period-header">Текущий месяц</div>
+        <div class="stats-row">
+            <div class="stats-item"><span>Энергия</span><b id="month-kwh">0.00</b><small> kWh</small></div>
+            <div class="stats-item"><span>Затраты</span><b id="month-cost">0.00</b><small> €</small></div>
+        </div>
+        <div class="math-row">
+            <div class="math-box">5.99<span>Фикс c</span></div>
+            <div class="math-sign" id="month-sign">+</div>
+            <div class="math-box" id="month-eff">0.00<span>Эффект c</span></div>
+            <div class="math-sign">=</div>
+            <div class="math-box total-price" id="month-tot">5.99<span>Итог c/kWh</span></div>
         </div>
     </div>
 
     <div class="chart-card">
+        <div style="text-align: center; color: #7f8c8d; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; text-transform: uppercase;">График за сегодня</div>
         <canvas id="financeChart"></canvas>
     </div>
     
-    <div class="update-time" id="last-update">Подключение к облаку...</div>
+    <div class="update-time" id="last-update">Подключение к базе данных...</div>
 </div>
 
 <script>
@@ -93,142 +137,148 @@
     
     let financeChart = null;
 
+    // Функция для парсинга дат из Google Таблиц
+    function parseSheetDate(dateStr) {
+        let match = dateStr.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+        if (match) return new Date(match[3], match[2] - 1, match[1]);
+        return new Date(dateStr);
+    }
+
     async function syncData() {
         try {
-            // 1. Скачиваем спот-цены (чтобы нарисовать всю кривую дня, даже на будущее)
             const spotRes = await fetch('https://api.spot-hinta.fi/TodayAndDayForward');
             const spotData = await spotRes.json();
             
-            // 2. Скачиваем нашу историю из Google Таблиц
-            // Добавляем случайный параметр (rnd), чтобы Google не отдавал старую кэшированную таблицу
             const sheetRes = await fetch(SHEET_URL + '&_rnd=' + Date.now());
             const sheetText = await sheetRes.text();
 
             processCloudData(spotData, sheetText);
         } catch (e) {
-            console.error("Ошибка синхронизации данных:", e);
-            document.getElementById('last-update').innerText = "Ошибка загрузки из облака";
+            console.error("Ошибка синхронизации:", e);
+            document.getElementById('last-update').innerText = "Ошибка загрузки данных";
         }
     }
 
     function processCloudData(spotData, sheetText) {
         const now = new Date();
+        now.setHours(0,0,0,0);
         
-        // --- Фильтруем спот цены ТОЛЬКО для сегодняшнего дня ---
-        const todaySpot = spotData.filter(item => {
-            const d = new Date(item.DateTime);
-            return d.getDate() === now.getDate() && d.getMinutes() === 0;
-        });
+        const todayTime = now.getTime();
+        const weekTime = todayTime - (6 * 24 * 60 * 60 * 1000); // 7 дней включая сегодня
+        const monthTime = new Date(now.getFullYear(), now.getMonth(), 1).getTime(); // 1 число этого месяца
 
-        // Создаем словарик цен по часам (для математики)
-        let spotByHour = {};
-        let sumSpotPrices = 0;
-        for (let h = 0; h < 24; h++) {
-            let spotObj = todaySpot.find(s => new Date(s.DateTime).getHours() === h);
-            let p = spotObj ? parseFloat((spotObj.PriceWithTax * 100).toFixed(2)) : 0;
-            spotByHour[h] = p;
-            sumSpotPrices += p;
-        }
-        let generalAvgSpot = sumSpotPrices / 24;
+        // Структуры для накопления математики
+        let stats = {
+            today: { sumSpot: 0, sumKwh: 0, sumCost: 0, hoursCount: 0 },
+            week:  { sumSpot: 0, sumKwh: 0, sumCost: 0, hoursCount: 0 },
+            month: { sumSpot: 0, sumKwh: 0, sumCost: 0, hoursCount: 0 }
+        };
 
-        // --- Парсим базу данных Google Таблиц ---
         const lines = sheetText.trim().split(/\r?\n/);
-        let kwhByHour = new Array(24).fill(0);
-        
-        // Генерируем возможные варианты сегодняшней даты (в зависимости от локали Таблиц)
-        const d = String(now.getDate()).padStart(2, '0');
-        const d_noPad = String(now.getDate());
-        const m = String(now.getMonth() + 1).padStart(2, '0');
-        const m_noPad = String(now.getMonth() + 1);
-        const y = now.getFullYear();
-        
-        const dateFormats = [
-            `${d}.${m}.${y}`, `${d_noPad}.${m_noPad}.${y}`, 
-            `${d}/${m}/${y}`, `${m}/${d}/${y}`, `${y}-${m}-${d}`
-        ];
+        let todayChartKwh = new Array(24).fill(0);
+        let todayChartSpot = new Array(24).fill(0);
 
-        // Пробегаемся по всем строкам (пропускаем шапку - i=1)
+        // Парсим строки из базы (пропускаем заголовок)
         for (let i = 1; i < lines.length; i++) {
             const cols = lines[i].split('\t');
             if (cols.length < 6) continue;
 
-            const datetimeStr = cols[0];
-            
-            // Если строка за сегодняшний день
-            let isToday = dateFormats.some(f => datetimeStr.includes(f));
-            
-            if (isToday) {
-                let hourStr = cols[1]; // Например, "21:00"
-                let hourNum = parseInt(hourStr.split(':')[0], 10);
-                
-                if (isNaN(hourNum)) continue;
+            let rowDate = parseSheetDate(cols[0]);
+            rowDate.setHours(0,0,0,0);
+            let rowTime = rowDate.getTime();
 
-                // Заменяем запятые на точки для финского/русского форматов и конвертируем в число
-                let kwhStr = String(cols[5]).replace(',', '.');
-                let kwhVal = parseFloat(kwhStr);
+            let hourNum = parseInt(cols[1].split(':')[0], 10);
+            let spotPrice = parseFloat(String(cols[2]).replace(',', '.'));
+            let hourlyKwh = parseFloat(String(cols[5]).replace(',', '.'));
+
+            if (isNaN(spotPrice) || isNaN(hourlyKwh)) continue;
+
+            // Распределяем данные по корзинам (Месяц, Неделя, Сегодня)
+            if (rowTime >= monthTime) {
+                stats.month.hoursCount++;
+                stats.month.sumSpot += spotPrice;
+                stats.month.sumKwh += hourlyKwh;
+                stats.month.sumCost += (hourlyKwh * spotPrice);
+            }
+
+            if (rowTime >= weekTime) {
+                stats.week.hoursCount++;
+                stats.week.sumSpot += spotPrice;
+                stats.week.sumKwh += hourlyKwh;
+                stats.week.sumCost += (hourlyKwh * spotPrice);
+            }
+
+            if (rowTime === todayTime) {
+                stats.today.hoursCount++;
+                stats.today.sumSpot += spotPrice;
+                stats.today.sumKwh += hourlyKwh;
+                stats.today.sumCost += (hourlyKwh * spotPrice);
                 
-                if (!isNaN(kwhVal) && kwhVal > 0) {
-                    // Суммируем на случай, если скрипт в таблице сработал дважды за час
-                    kwhByHour[hourNum] += kwhVal;
+                // Собираем данные для графика за сегодня
+                if (hourlyKwh > 0) {
+                    todayChartKwh[hourNum] += hourlyKwh; 
                 }
             }
         }
 
-        // --- Главная Математика (Kulutusvaikutus) ---
-        let totalKwhToday = 0;
-        let sumUserCost = 0; 
-        
+        // Подготавливаем график (берем спот-цены на сегодня даже для будущих часов из API)
+        const todaySpotApi = spotData.filter(item => new Date(item.DateTime).getDate() === new Date().getDate());
         let chartHours = [];
-        let chartKwh = [];
-        let chartSpot = [];
-
         for (let h = 0; h < 24; h++) {
             chartHours.push(`${h}:00`);
-            chartSpot.push(spotByHour[h]);
-
-            let whUsed = kwhByHour[h];
-            totalKwhToday += whUsed;
-            sumUserCost += (whUsed * spotByHour[h]);
+            let spotObj = todaySpotApi.find(s => new Date(s.DateTime).getHours() === h);
+            todayChartSpot[h] = spotObj ? parseFloat((spotObj.PriceWithTax * 100).toFixed(2)) : 0;
             
-            chartKwh.push(whUsed > 0 ? whUsed.toFixed(2) : "0");
+            // Если сегодня еще не наступил этот час, фиксируем для средней цены
+            if (stats.today.hoursCount < 24 && todayChartSpot[h] !== 0 && !stats.today.sumSpot.toString().includes(todayChartSpot[h])) {
+                // В этом базовом логгере мы считаем среднюю спот-цену только по записанным часам.
+                // Это сделано для максимальной точности Kulutusvaikutus
+            }
         }
 
-        let userAvgSpot = totalKwhToday > 0 ? (sumUserCost / totalKwhToday) : generalAvgSpot;
-        let kulutusvaikutus = userAvgSpot - generalAvgSpot;
+        // Обновляем UI для каждого периода
+        updatePeriodUI('today', stats.today);
+        updatePeriodUI('week', stats.week);
+        updatePeriodUI('month', stats.month);
 
-        let finalPriceCents = FIXED_PRICE + kulutusvaikutus;
-        let totalCostEuros = (totalKwhToday * finalPriceCents) / 100;
-
-        // Обновляем графику и цифры
-        updateUI(kulutusvaikutus, totalKwhToday, totalCostEuros);
-        drawHybridChart(chartHours, chartKwh, chartSpot);
+        drawHybridChart(chartHours, todayChartKwh, todayChartSpot);
         
-        document.getElementById('last-update').innerText = `Облако синхронизировано: ${now.toLocaleTimeString()}`;
+        let updateDate = new Date();
+        document.getElementById('last-update').innerText = `Синхронизировано: ${updateDate.toLocaleDateString()} ${updateDate.toLocaleTimeString()}`;
     }
 
-    function updateUI(effect, kwh, cost) {
-        const effectEl = document.getElementById('ui-effect');
+    function updatePeriodUI(prefix, data) {
+        // Защита от деления на 0
+        let avgSpot = data.hoursCount > 0 ? (data.sumSpot / data.hoursCount) : 0;
+        let avgPersonal = data.sumKwh > 0 ? (data.sumCost / data.sumKwh) : avgSpot;
         
-        let effectStr = effect > 0 ? `+${effect.toFixed(2)}` : effect.toFixed(2);
-        effectEl.innerHTML = `${effectStr}<span class="stat-unit">c</span>`;
-        
-        if (effect > 0) {
-            effectEl.className = "stat-value kulutus-bad";
-        } else if (effect < 0) {
-            effectEl.className = "stat-value kulutus-good";
+        let kulutus = avgPersonal - avgSpot;
+        let finalPriceCents = FIXED_PRICE + kulutus;
+        let totalCostEuros = (data.sumKwh * finalPriceCents) / 100;
+
+        document.getElementById(`${prefix}-kwh`).innerText = data.sumKwh.toFixed(2);
+        document.getElementById(`${prefix}-cost`).innerText = totalCostEuros.toFixed(2);
+
+        let effBox = document.getElementById(`${prefix}-eff`);
+        let signBox = document.getElementById(`${prefix}-sign`);
+        let totBox = document.getElementById(`${prefix}-tot`);
+
+        // Логика математических знаков и цветов
+        if (kulutus < 0) {
+            effBox.className = "math-box effect-good";
+            signBox.innerText = "-";
+            effBox.innerHTML = `${Math.abs(kulutus).toFixed(2)}<span>Эффект c</span>`;
         } else {
-            effectEl.className = "stat-value";
+            effBox.className = "math-box effect-bad";
+            signBox.innerText = "+";
+            effBox.innerHTML = `${kulutus.toFixed(2)}<span>Эффект c</span>`;
         }
 
-        document.getElementById('ui-kwh').innerHTML = `${kwh.toFixed(1)}<span class="stat-unit">kWh</span>`;
-        document.getElementById('ui-cost').innerHTML = `${cost.toFixed(2)}<span class="stat-unit">€</span>`;
+        totBox.innerHTML = `${finalPriceCents.toFixed(2)}<span>Итог c/kWh</span>`;
     }
 
     function drawHybridChart(labels, kwhData, spotData) {
-        // Чтобы плагин цифр над столбиками не мешал на этом графике
-        if (typeof ChartDataLabels !== 'undefined') {
-            Chart.unregister(ChartDataLabels);
-        }
+        if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels);
 
         const ctx = document.getElementById('financeChart').getContext('2d');
         if (financeChart) financeChart.destroy();
@@ -240,7 +290,7 @@
                 datasets: [
                     {
                         type: 'line',
-                        label: 'Спот-цена (c/kWh)',
+                        label: 'Цена (c)',
                         data: spotData,
                         borderColor: '#e74c3c',
                         backgroundColor: '#e74c3c',
@@ -251,8 +301,8 @@
                     },
                     {
                         type: 'bar',
-                        label: 'Потребление (kWh)',
-                        data: kwhData,
+                        label: 'Расход (kWh)',
+                        data: kwhData.map(v => v > 0 ? v.toFixed(2) : "0"),
                         backgroundColor: '#3498db',
                         borderRadius: 4,
                         yAxisID: 'yKwh'
@@ -262,14 +312,13 @@
             options: {
                 responsive: true, maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
-                plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: {size: 10} } } },
+                plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: {size: 10} } } },
                 scales: {
                     x: { grid: { display: false }, ticks: { maxRotation: 90, minRotation: 90, font: {size: 9} } },
                     yKwh: { 
                         type: 'linear', display: true, position: 'left', 
                         title: { display: true, text: 'kWh', font: {size: 10} },
-                        grid: { borderDash: [5, 5] },
-                        beginAtZero: true
+                        grid: { borderDash: [5, 5] }, beginAtZero: true
                     },
                     ySpot: { 
                         type: 'linear', display: true, position: 'right',
@@ -281,9 +330,8 @@
         });
     }
 
-    // Запускаем сразу и обновляем данные раз в 5 минут (чаще облако дергать нет смысла, скрипт там работает раз в час)
     syncData();
-    setInterval(syncData, 300000); 
+    setInterval(syncData, 300000); // Опрос облака раз в 5 минут
 </script>
 
 </body>
