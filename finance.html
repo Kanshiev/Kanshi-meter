@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Финансы и Kulutusvaikutus</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: #e2f3e5; 
+            display: flex; justify-content: center; padding: 15px; margin: 0;
+        }
+        .widget-container { width: 100%; max-width: 600px; }
+        
+        .nav-btn {
+            display: block; width: 100%; padding: 16px;
+            background-color: #2c3e50; color: white;
+            border: none; border-radius: 16px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            text-decoration: none; text-align: center; box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 15px;
+        }
+
+        .stats-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: white; border-radius: 20px; padding: 20px 15px;
+            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            display: flex; flex-direction: column; justify-content: center;
+        }
+
+        .stat-card.highlight {
+            background: #2c3e50; color: white;
+        }
+
+        .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; color: #7f8c8d; }
+        .highlight .stat-label { color: #bdc3c7; }
+        
+        .stat-value { font-size: 2rem; font-weight: 900; line-height: 1; }
+        .stat-unit { font-size: 0.9rem; font-weight: 600; margin-left: 2px; }
+
+        .chart-card { 
+            background: white; border-radius: 24px; padding: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06); margin-bottom: 15px; 
+            height: 300px; position: relative;
+        }
+
+        .kulutus-good { color: #27ae60; }
+        .kulutus-bad { color: #e74c3c; }
+        
+        .update-time { text-align: center; color: #888; font-size: 0.75rem; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="widget-container">
+    <a href="index.html" class="nav-btn">⬅ Назад к пульту</a>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Фикс. тариф</div>
+            <div class="stat-value">5.99<span class="stat-unit">c</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Эффект (Kulutus)</div>
+            <div class="stat-value" id="ui-effect">--<span class="stat-unit">c</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Потреблено</div>
+            <div class="stat-value" id="ui-kwh">--<span class="stat-unit">kWh</span></div>
+        </div>
+        <div class="stat-card highlight">
+            <div class="stat-label">Стоимость за день</div>
+            <div class="stat-value" id="ui-cost">--<span class="stat-unit">€</span></div>
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <canvas id="financeChart"></canvas>
+    </div>
+    
+    <div class="update-time" id="last-update">Синхронизация...</div>
+</div>
+
+<script>
+    const FIXED_PRICE = 5.99;
+    const SHELLY_URL = 'https://corsproxy.io/?' + encodeURIComponent('https://shelly-70-eu.shelly.cloud/device/status');
+    const SHELLY_BODY = 'id=483fdac39873&auth_key=MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690';
+    
+    let financeChart = null;
+
+    async function syncData() {
+        try {
+            // 1. Получаем цены биржи
+            const spotRes = await fetch('https://api.spot-hinta.fi/TodayAndDayForward');
+            const spotData = await spotRes.json();
+            
+            // 2. Получаем данные Shelly
+            const shellyRes = await fetch(SHELLY_URL, {
+                method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: SHELLY_BODY
+            });
+            const shellyData = await shellyRes.json();
+
+            if (shellyData.isok) {
+                processEnergyMath(spotData, shellyData.data.device_status.emeters);
+            }
+        } catch (e) {
+            console.error("Ошибка синхронизации данных:", e);
+        }
+    }
+
+    function processEnergyMath(spotData, emeters) {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const todayStr = now.toLocaleDateString('ru-RU');
+        
+        // Текущее суммарное показание счетчика со всех 3 фаз (в Ватт-часах)
+        let currentTotalWh = emeters.reduce((sum, phase) => sum + (phase.total || 0), 0);
+
+        // Инициализация хранилища
+        let savedDate = localStorage.getItem('fin_date');
+        let hourlyLog = JSON.parse(localStorage.getItem('fin_hourly')) || {};
+        let lastTotal = parseFloat(localStorage.getItem('fin_last_total'));
+
+        // Если начался новый день - обнуляем логи
+        if (savedDate !== todayStr || isNaN(lastTotal)) {
+            hourlyLog = {};
+            lastTotal = currentTotalWh;
+            localStorage.setItem('fin_date', todayStr);
+        }
+
+        // Вычисляем, сколько накрутило с последнего опроса
+        let diffWh = currentTotalWh - lastTotal;
+        if (diffWh > 0) {
+            // Записываем потребление в копилку текущего часа
+            hourlyLog[currentHour] = (hourlyLog[currentHour] || 0) + diffWh;
+            localStorage.setItem('fin_hourly', JSON.stringify(hourlyLog));
+            localStorage.setItem('fin_last_total', currentTotalWh);
+        } else if (diffWh < 0) {
+             // Защита от сброса счетчика Shelly
+             localStorage.setItem('fin_last_total', currentTotalWh);
+        }
+
+        // Отбираем спот-цены только за СЕГОДНЯ
+        const todaySpot = spotData.filter(item => {
+            const d = new Date(item.DateTime);
+            return d.getDate() === now.getDate() && d.getMinutes() === 0;
+        });
+
+        // Математика Kulutusvaikutus
+        let totalWhToday = 0;
+        let sumSpotPrices = 0;
+        let sumUserCost = 0; // Почасовое потребление умноженное на цену этого часа
+
+        let chartHours = [];
+        let chartKwh = [];
+        let chartSpot = [];
+
+        for (let h = 0; h < 24; h++) {
+            chartHours.push(`${h}:00`);
+            
+            // Ищем цену для этого часа
+            let spotPriceObj = todaySpot.find(s => new Date(s.DateTime).getHours() === h);
+            let spotPrice = spotPriceObj ? parseFloat((spotPriceObj.PriceWithTax * 100).toFixed(2)) : 0;
+            
+            sumSpotPrices += spotPrice;
+            chartSpot.push(spotPrice);
+
+            // Потребление за этот час
+            let whUsed = hourlyLog[h] || 0;
+            totalWhToday += whUsed;
+            sumUserCost += (whUsed * spotPrice);
+            
+            chartKwh.push((whUsed / 1000).toFixed(2));
+        }
+
+        // 1. Средняя цена на бирже за день
+        let generalAvgSpot = sumSpotPrices / 24;
+
+        // 2. Твоя личная средневзвешенная цена
+        let userAvgSpot = totalWhToday > 0 ? (sumUserCost / totalWhToday) : generalAvgSpot;
+
+        // 3. Kulutusvaikutus
+        let kulutusvaikutus = userAvgSpot - generalAvgSpot;
+
+        // 4. Итоговая стоимость
+        let finalPriceCents = FIXED_PRICE + kulutusvaikutus;
+        let totalKwh = totalWhToday / 1000;
+        let totalCostEuros = (totalKwh * finalPriceCents) / 100;
+
+        updateUI(kulutusvaikutus, totalKwh, totalCostEuros);
+        drawHybridChart(chartHours, chartKwh, chartSpot);
+        
+        document.getElementById('last-update').innerText = `Обновлено: ${now.toLocaleTimeString()}`;
+    }
+
+    function updateUI(effect, kwh, cost) {
+        const effectEl = document.getElementById('ui-effect');
+        
+        // Форматируем эффект с плюсом или минусом
+        let effectStr = effect > 0 ? `+${effect.toFixed(2)}` : effect.toFixed(2);
+        effectEl.innerHTML = `${effectStr}<span class="stat-unit">c</span>`;
+        
+        if (effect > 0) {
+            effectEl.className = "stat-value kulutus-bad";
+        } else if (effect < 0) {
+            effectEl.className = "stat-value kulutus-good";
+        } else {
+            effectEl.className = "stat-value";
+        }
+
+        document.getElementById('ui-kwh').innerHTML = `${kwh.toFixed(1)}<span class="stat-unit">kWh</span>`;
+        document.getElementById('ui-cost').innerHTML = `${cost.toFixed(2)}<span class="stat-unit">€</span>`;
+    }
+
+    function drawHybridChart(labels, kwhData, spotData) {
+        // Убираем старый плагин даталейблов для этого графика, чтобы не было каши
+        Chart.unregister(ChartDataLabels);
+
+        const ctx = document.getElementById('financeChart').getContext('2d');
+        if (financeChart) financeChart.destroy();
+        
+        financeChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        type: 'line',
+                        label: 'Спот-цена (c/kWh)',
+                        data: spotData,
+                        borderColor: '#e74c3c',
+                        backgroundColor: '#e74c3c',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        yAxisID: 'ySpot'
+                    },
+                    {
+                        type: 'bar',
+                        label: 'Потребление (kWh)',
+                        data: kwhData,
+                        backgroundColor: '#3498db',
+                        borderRadius: 4,
+                        yAxisID: 'yKwh'
+                    }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: {size: 10} } } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxRotation: 90, minRotation: 90, font: {size: 9} } },
+                    yKwh: { 
+                        type: 'linear', display: true, position: 'left', 
+                        title: { display: true, text: 'kWh', font: {size: 10} },
+                        grid: { borderDash: [5, 5] },
+                        beginAtZero: true
+                    },
+                    ySpot: { 
+                        type: 'linear', display: true, position: 'right',
+                        title: { display: true, text: 'Cent', font: {size: 10} },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    // Запуск цикла
+    syncData();
+    setInterval(syncData, 60000); // Опрашиваем раз в минуту для точного логгирования
+</script>
+
+</body>
+</html>
