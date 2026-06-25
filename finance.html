@@ -42,11 +42,12 @@
         }
 
         .stats-row-3 {
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex; justify-content: space-between; align-items: stretch;
         }
         .stats-item { 
             flex: 1; text-align: center; 
             border-right: 1px solid #f0f0f0; 
+            display: flex; flex-direction: column; justify-content: center;
         }
         .stats-item:last-child { border-right: none; }
         
@@ -73,6 +74,28 @@
         .effect-bad { color: #e74c3c; background: #fdedec; }
         .total-price { background: #2c3e50; color: #fff; }
         .total-price span { color: #bdc3c7; }
+
+        /* СТИЛИ ДЛЯ ЧЕКА (ПОЛНАЯ СТОИМОСТЬ) */
+        .receipt-item { 
+            flex: 1; padding: 0 10px; border-right: 1px solid #f0f0f0; 
+            display: flex; flex-direction: column;
+        }
+        .receipt-item:last-child { border-right: none; }
+        .receipt-item > span { 
+            display: block; text-align: center; font-size: 0.75rem; font-weight: 800; 
+            color: #2c3e50; text-transform: uppercase; margin-bottom: 12px; 
+        }
+        .receipt-line {
+            display: flex; justify-content: space-between; 
+            font-size: 0.75rem; color: #7f8c8d; margin-bottom: 6px;
+        }
+        .receipt-line b { color: #333; font-weight: 700; }
+        .receipt-total {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.85rem; font-weight: 900; color: #2c3e50; 
+            margin-top: auto; padding-top: 8px; border-top: 1px dashed #bdc3c7;
+        }
+        .receipt-total b { font-size: 1.05rem; color: #e74c3c; }
 
         .update-time { text-align: center; color: #888; font-size: 0.75rem; margin-top: 10px; }
     </style>
@@ -106,7 +129,7 @@
     </div>
 
     <div class="period-card">
-        <div class="period-header">💰 Стоимость</div>
+        <div class="period-header">💰 Стоимость энергии</div>
         <div class="stats-row-3">
             <div class="stats-item">
                 <span>Сегодня</span>
@@ -133,15 +156,58 @@
             <div class="math-box total-price" id="math-tot">5.99<span>Итог c/kWh</span></div>
         </div>
     </div>
+
+    <div class="period-card">
+        <div class="period-header">🧾 Итоговый счет</div>
+        <div class="stats-row-3">
+            
+            <div class="receipt-item">
+                <span>Сегодня</span>
+                <div class="receipt-line">Энергия: <b id="full-today-en">0.00 €</b></div>
+                <div class="receipt-line">Передача: <b id="full-today-si">0.00 €</b></div>
+                <div class="receipt-line">Налоги: <b id="full-today-ve">0.00 €</b></div>
+                <div class="receipt-line">Абон.пл: <b id="full-today-pe">0.00 €</b></div>
+                <div class="receipt-total">ИТОГО: <b id="full-today-tot">0.00 €</b></div>
+            </div>
+
+            <div class="receipt-item">
+                <span>7 Дней</span>
+                <div class="receipt-line">Энергия: <b id="full-week-en">0.00 €</b></div>
+                <div class="receipt-line">Передача: <b id="full-week-si">0.00 €</b></div>
+                <div class="receipt-line">Налоги: <b id="full-week-ve">0.00 €</b></div>
+                <div class="receipt-line">Абон.пл: <b id="full-week-pe">0.00 €</b></div>
+                <div class="receipt-total">ИТОГО: <b id="full-week-tot">0.00 €</b></div>
+            </div>
+
+            <div class="receipt-item">
+                <span id="lbl-month-receipt">За Месяц</span>
+                <div class="receipt-line">Энергия: <b id="full-month-en">0.00 €</b></div>
+                <div class="receipt-line">Передача: <b id="full-month-si">0.00 €</b></div>
+                <div class="receipt-line">Налоги: <b id="full-month-ve">0.00 €</b></div>
+                <div class="receipt-line">Абон.пл: <b id="full-month-pe">0.00 €</b></div>
+                <div class="receipt-total">ИТОГО: <b id="full-month-tot">0.00 €</b></div>
+            </div>
+
+        </div>
+    </div>
     
     <div class="update-time" id="last-update">Подключение к базе данных...</div>
 </div>
 
 <script>
-    const FIXED_PRICE = 5.99;
+    // --- ТОЧНЫЕ ДАННЫЕ ИЗ СЧЕТА KANSHIEV ANDREY ---
+    const FIXED_PRICE = 5.99; 
+    
+    const OOMI_PERUS = 5.90;    // Oomi Jousto 24 kk Perusmaksu
+    const SIIRTO_PERUS = 20.33; // Oulun Energia Aikasähkö 3x25 Perusmaksu
+    
+    const SIIRTO_DAY = 2.69;    // Päiväenergia (обычно 07:00 - 22:00)
+    const SIIRTO_NIGHT = 1.63;  // Yöenergia (обычно 22:00 - 07:00)
+    
+    const VERO_C_KWH = 2.92;    // Energiavero I (2.81) + Huoltovarmuusmaksu (0.11)
+
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREfZuB82WO35dZRrsVl3XEaxyf1DrF35kXMZ5p7MbJTIAtqE5R9AUb3w-72A-sqIZ4Z8PWwDIUVqSV/pub?gid=0&single=true&output=tsv';
     
-    // Массив месяцев для подстановки
     const monthsRu = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
     
     let financeChart = null;
@@ -171,20 +237,20 @@
         const now = new Date();
         now.setHours(0,0,0,0);
         
-        // Устанавливаем названия текущего месяца в интерфейсе
         const currentMonthName = monthsRu[now.getMonth()];
         document.getElementById('lbl-month-kwh').innerText = 'За ' + currentMonthName;
         document.getElementById('lbl-month-cost').innerText = 'За ' + currentMonthName;
         document.getElementById('lbl-month-math').innerText = 'Тариф за ' + currentMonthName;
+        document.getElementById('lbl-month-receipt').innerText = 'За ' + currentMonthName;
 
         const todayTime = now.getTime();
         const weekTime = todayTime - (6 * 24 * 60 * 60 * 1000); 
         const monthTime = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
         let stats = {
-            today: { sumSpot: 0, sumKwh: 0, sumCost: 0, hoursCount: 0 },
-            week:  { sumSpot: 0, sumKwh: 0, sumCost: 0, hoursCount: 0 },
-            month: { sumSpot: 0, sumKwh: 0, sumCost: 0, hoursCount: 0 }
+            today: { sumSpot: 0, sumKwh: 0, sumCost: 0, sumSiirto: 0, sumVero: 0, hoursCount: 0 },
+            week:  { sumSpot: 0, sumKwh: 0, sumCost: 0, sumSiirto: 0, sumVero: 0, hoursCount: 0 },
+            month: { sumSpot: 0, sumKwh: 0, sumCost: 0, sumSiirto: 0, sumVero: 0, hoursCount: 0 }
         };
 
         const lines = sheetText.trim().split(/\r?\n/);
@@ -205,11 +271,18 @@
 
             if (isNaN(spotPrice) || isNaN(hourlyKwh)) continue;
 
+            // Логика двухзонного тарифа на передачу (Aikasähkö)
+            let currentSiirtoPrice = (hourNum >= 7 && hourNum < 22) ? SIIRTO_DAY : SIIRTO_NIGHT;
+            let hourlySiirtoCost = (hourlyKwh * currentSiirtoPrice) / 100; // в Евро
+            let hourlyVeroCost = (hourlyKwh * VERO_C_KWH) / 100;           // в Евро
+
             if (rowTime >= monthTime) {
                 stats.month.hoursCount++;
                 stats.month.sumSpot += spotPrice;
                 stats.month.sumKwh += hourlyKwh;
                 stats.month.sumCost += (hourlyKwh * spotPrice);
+                stats.month.sumSiirto += hourlySiirtoCost;
+                stats.month.sumVero += hourlyVeroCost;
             }
 
             if (rowTime >= weekTime) {
@@ -217,6 +290,8 @@
                 stats.week.sumSpot += spotPrice;
                 stats.week.sumKwh += hourlyKwh;
                 stats.week.sumCost += (hourlyKwh * spotPrice);
+                stats.week.sumSiirto += hourlySiirtoCost;
+                stats.week.sumVero += hourlyVeroCost;
             }
 
             if (rowTime === todayTime) {
@@ -224,10 +299,10 @@
                 stats.today.sumSpot += spotPrice;
                 stats.today.sumKwh += hourlyKwh;
                 stats.today.sumCost += (hourlyKwh * spotPrice);
+                stats.today.sumSiirto += hourlySiirtoCost;
+                stats.today.sumVero += hourlyVeroCost;
                 
-                if (hourlyKwh > 0) {
-                    todayChartKwh[hourNum] += hourlyKwh; 
-                }
+                if (hourlyKwh > 0) todayChartKwh[hourNum] += hourlyKwh; 
             }
         }
 
@@ -239,23 +314,29 @@
             todayChartSpot[h] = spotObj ? parseFloat((spotObj.PriceWithTax * 100).toFixed(2)) : 0;
         }
 
-        // Вычисляем данные для каждого периода
         let tData = calculatePeriod(stats.today);
         let wData = calculatePeriod(stats.week);
         let mData = calculatePeriod(stats.month);
 
-        // Обновляем Потребление
         document.getElementById('kwh-today').innerText = tData.kwh.toFixed(2);
         document.getElementById('kwh-week').innerText = wData.kwh.toFixed(1);
         document.getElementById('kwh-month').innerText = mData.kwh.toFixed(1);
 
-        // Обновляем Стоимость
         document.getElementById('cost-today').innerText = tData.cost.toFixed(2);
         document.getElementById('cost-week').innerText = wData.cost.toFixed(2);
         document.getElementById('cost-month').innerText = mData.cost.toFixed(2);
 
-        // Обновляем Математику (на основе данных за МЕСЯЦ)
         updateMathUI(mData.effect, mData.finalPrice);
+
+        // Распределяем абонентскую плату по дням
+        let daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        let currentDayOfMonth = now.getDate();
+        let dailyBasicFee = (OOMI_PERUS + SIIRTO_PERUS) / daysInMonth; 
+
+        // Обновляем чеки передавая точные рассчитанные значения siirto и vero
+        updateReceiptUI('today', tData.cost, stats.today.sumSiirto, stats.today.sumVero, 1, dailyBasicFee);
+        updateReceiptUI('week', wData.cost, stats.week.sumSiirto, stats.week.sumVero, 7, dailyBasicFee);
+        updateReceiptUI('month', mData.cost, stats.month.sumSiirto, stats.month.sumVero, currentDayOfMonth, dailyBasicFee);
 
         drawHybridChart(chartHours, todayChartKwh, todayChartSpot);
         
@@ -288,8 +369,18 @@
             signBox.innerText = "+";
             effBox.innerHTML = `${effect.toFixed(2)}<span>Эффект c</span>`;
         }
-
         totBox.innerHTML = `${finalPrice.toFixed(2)}<span>Итог c/kWh</span>`;
+    }
+
+    function updateReceiptUI(prefix, energyCost, siirtoCost, veroCost, daysRatio, dailyBasicFee) {
+        let basicCost = dailyBasicFee * daysRatio; 
+        let total = energyCost + siirtoCost + veroCost + basicCost;
+
+        document.getElementById(`full-${prefix}-en`).innerText = energyCost.toFixed(2) + ' €';
+        document.getElementById(`full-${prefix}-si`).innerText = siirtoCost.toFixed(2) + ' €';
+        document.getElementById(`full-${prefix}-ve`).innerText = veroCost.toFixed(2) + ' €';
+        document.getElementById(`full-${prefix}-pe`).innerText = basicCost.toFixed(2) + ' €';
+        document.getElementById(`full-${prefix}-tot`).innerText = total.toFixed(2) + ' €';
     }
 
     function drawHybridChart(labels, kwhData, spotData) {
@@ -304,23 +395,14 @@
                 labels: labels,
                 datasets: [
                     {
-                        type: 'line',
-                        label: 'Цена (c)',
-                        data: spotData,
-                        borderColor: '#e74c3c',
-                        backgroundColor: '#e74c3c',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        pointRadius: 0,
-                        yAxisID: 'ySpot'
+                        type: 'line', label: 'Цена (c)', data: spotData,
+                        borderColor: '#e74c3c', backgroundColor: '#e74c3c',
+                        borderWidth: 2, tension: 0.3, pointRadius: 0, yAxisID: 'ySpot'
                     },
                     {
-                        type: 'bar',
-                        label: 'Расход (kWh)',
+                        type: 'bar', label: 'Расход (kWh)',
                         data: kwhData.map(v => v > 0 ? v.toFixed(2) : "0"),
-                        backgroundColor: '#3498db',
-                        borderRadius: 4,
-                        yAxisID: 'yKwh'
+                        backgroundColor: '#3498db', borderRadius: 4, yAxisID: 'yKwh'
                     }
                 ]
             },
