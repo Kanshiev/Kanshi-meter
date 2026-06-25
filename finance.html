@@ -6,7 +6,6 @@
     <title>Финансы и Kulutusvaikutus</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
     <style>
         body {
@@ -85,110 +84,126 @@
         <canvas id="financeChart"></canvas>
     </div>
     
-    <div class="update-time" id="last-update">Синхронизация...</div>
+    <div class="update-time" id="last-update">Подключение к облаку...</div>
 </div>
 
 <script>
     const FIXED_PRICE = 5.99;
+    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREfZuB82WO35dZRrsVl3XEaxyf1DrF35kXMZ5p7MbJTIAtqE5R9AUb3w-72A-sqIZ4Z8PWwDIUVqSV/pub?gid=0&single=true&output=tsv';
     
     let financeChart = null;
 
     async function syncData() {
         try {
-            // 1. Получаем цены биржи
+            // 1. Скачиваем спот-цены (чтобы нарисовать всю кривую дня, даже на будущее)
             const spotRes = await fetch('https://api.spot-hinta.fi/TodayAndDayForward');
             const spotData = await spotRes.json();
             
-            // 2. Получаем данные Shelly (с анти-кэшем)
-            const targetUrl = 'https://shelly-70-eu.shelly.cloud/device/status';
-            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
-            // Добавляем rnd (случайное число), чтобы прокси не отдавал старый кэш
-            const requestBody = 'id=483fdac39873&auth_key=MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690&_rnd=' + Date.now();
+            // 2. Скачиваем нашу историю из Google Таблиц
+            // Добавляем случайный параметр (rnd), чтобы Google не отдавал старую кэшированную таблицу
+            const sheetRes = await fetch(SHEET_URL + '&_rnd=' + Date.now());
+            const sheetText = await sheetRes.text();
 
-            const shellyRes = await fetch(proxyUrl, {
-                method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: requestBody
-            });
-            const shellyData = await shellyRes.json();
-
-            if (shellyData.isok) {
-                processEnergyMath(spotData, shellyData.data.device_status.emeters);
-            }
+            processCloudData(spotData, sheetText);
         } catch (e) {
             console.error("Ошибка синхронизации данных:", e);
+            document.getElementById('last-update').innerText = "Ошибка загрузки из облака";
         }
     }
 
-    function processEnergyMath(spotData, emeters) {
+    function processCloudData(spotData, sheetText) {
         const now = new Date();
-        const currentHour = now.getHours();
-        const todayStr = now.toLocaleDateString('ru-RU');
         
-        let currentTotalWh = emeters.reduce((sum, phase) => sum + (phase.total || 0), 0);
-
-        let savedDate = localStorage.getItem('fin_date');
-        let hourlyLog = JSON.parse(localStorage.getItem('fin_hourly')) || {};
-        let lastTotal = parseFloat(localStorage.getItem('fin_last_total'));
-
-        // ИСПРАВЛЕННЫЙ БЛОК: Правильно сохраняем первое значение счетчика
-        if (savedDate !== todayStr || isNaN(lastTotal)) {
-            hourlyLog = {};
-            lastTotal = currentTotalWh;
-            localStorage.setItem('fin_date', todayStr);
-            localStorage.setItem('fin_last_total', currentTotalWh); // Раньше этой строчки не было!
-            localStorage.setItem('fin_hourly', JSON.stringify(hourlyLog));
-        }
-
-        let diffWh = currentTotalWh - lastTotal;
-        if (diffWh > 0) {
-            hourlyLog[currentHour] = (hourlyLog[currentHour] || 0) + diffWh;
-            localStorage.setItem('fin_hourly', JSON.stringify(hourlyLog));
-            localStorage.setItem('fin_last_total', currentTotalWh);
-        } else if (diffWh < 0) {
-             localStorage.setItem('fin_last_total', currentTotalWh);
-             lastTotal = currentTotalWh;
-        }
-
+        // --- Фильтруем спот цены ТОЛЬКО для сегодняшнего дня ---
         const todaySpot = spotData.filter(item => {
             const d = new Date(item.DateTime);
             return d.getDate() === now.getDate() && d.getMinutes() === 0;
         });
 
-        let totalWhToday = 0;
+        // Создаем словарик цен по часам (для математики)
+        let spotByHour = {};
         let sumSpotPrices = 0;
-        let sumUserCost = 0; 
+        for (let h = 0; h < 24; h++) {
+            let spotObj = todaySpot.find(s => new Date(s.DateTime).getHours() === h);
+            let p = spotObj ? parseFloat((spotObj.PriceWithTax * 100).toFixed(2)) : 0;
+            spotByHour[h] = p;
+            sumSpotPrices += p;
+        }
+        let generalAvgSpot = sumSpotPrices / 24;
 
+        // --- Парсим базу данных Google Таблиц ---
+        const lines = sheetText.trim().split(/\r?\n/);
+        let kwhByHour = new Array(24).fill(0);
+        
+        // Генерируем возможные варианты сегодняшней даты (в зависимости от локали Таблиц)
+        const d = String(now.getDate()).padStart(2, '0');
+        const d_noPad = String(now.getDate());
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const m_noPad = String(now.getMonth() + 1);
+        const y = now.getFullYear();
+        
+        const dateFormats = [
+            `${d}.${m}.${y}`, `${d_noPad}.${m_noPad}.${y}`, 
+            `${d}/${m}/${y}`, `${m}/${d}/${y}`, `${y}-${m}-${d}`
+        ];
+
+        // Пробегаемся по всем строкам (пропускаем шапку - i=1)
+        for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split('\t');
+            if (cols.length < 6) continue;
+
+            const datetimeStr = cols[0];
+            
+            // Если строка за сегодняшний день
+            let isToday = dateFormats.some(f => datetimeStr.includes(f));
+            
+            if (isToday) {
+                let hourStr = cols[1]; // Например, "21:00"
+                let hourNum = parseInt(hourStr.split(':')[0], 10);
+                
+                if (isNaN(hourNum)) continue;
+
+                // Заменяем запятые на точки для финского/русского форматов и конвертируем в число
+                let kwhStr = String(cols[5]).replace(',', '.');
+                let kwhVal = parseFloat(kwhStr);
+                
+                if (!isNaN(kwhVal) && kwhVal > 0) {
+                    // Суммируем на случай, если скрипт в таблице сработал дважды за час
+                    kwhByHour[hourNum] += kwhVal;
+                }
+            }
+        }
+
+        // --- Главная Математика (Kulutusvaikutus) ---
+        let totalKwhToday = 0;
+        let sumUserCost = 0; 
+        
         let chartHours = [];
         let chartKwh = [];
         let chartSpot = [];
 
         for (let h = 0; h < 24; h++) {
             chartHours.push(`${h}:00`);
-            
-            let spotPriceObj = todaySpot.find(s => new Date(s.DateTime).getHours() === h);
-            let spotPrice = spotPriceObj ? parseFloat((spotPriceObj.PriceWithTax * 100).toFixed(2)) : 0;
-            
-            sumSpotPrices += spotPrice;
-            chartSpot.push(spotPrice);
+            chartSpot.push(spotByHour[h]);
 
-            let whUsed = hourlyLog[h] || 0;
-            totalWhToday += whUsed;
-            sumUserCost += (whUsed * spotPrice);
+            let whUsed = kwhByHour[h];
+            totalKwhToday += whUsed;
+            sumUserCost += (whUsed * spotByHour[h]);
             
-            chartKwh.push((whUsed / 1000).toFixed(2));
+            chartKwh.push(whUsed > 0 ? whUsed.toFixed(2) : "0");
         }
 
-        let generalAvgSpot = sumSpotPrices / 24;
-        let userAvgSpot = totalWhToday > 0 ? (sumUserCost / totalWhToday) : generalAvgSpot;
+        let userAvgSpot = totalKwhToday > 0 ? (sumUserCost / totalKwhToday) : generalAvgSpot;
         let kulutusvaikutus = userAvgSpot - generalAvgSpot;
 
         let finalPriceCents = FIXED_PRICE + kulutusvaikutus;
-        let totalKwh = totalWhToday / 1000;
-        let totalCostEuros = (totalKwh * finalPriceCents) / 100;
+        let totalCostEuros = (totalKwhToday * finalPriceCents) / 100;
 
-        updateUI(kulutusvaikutus, totalKwh, totalCostEuros);
+        // Обновляем графику и цифры
+        updateUI(kulutusvaikutus, totalKwhToday, totalCostEuros);
         drawHybridChart(chartHours, chartKwh, chartSpot);
         
-        document.getElementById('last-update').innerText = `Обновлено: ${now.toLocaleTimeString()}`;
+        document.getElementById('last-update').innerText = `Облако синхронизировано: ${now.toLocaleTimeString()}`;
     }
 
     function updateUI(effect, kwh, cost) {
@@ -210,7 +225,10 @@
     }
 
     function drawHybridChart(labels, kwhData, spotData) {
-        Chart.unregister(ChartDataLabels);
+        // Чтобы плагин цифр над столбиками не мешал на этом графике
+        if (typeof ChartDataLabels !== 'undefined') {
+            Chart.unregister(ChartDataLabels);
+        }
 
         const ctx = document.getElementById('financeChart').getContext('2d');
         if (financeChart) financeChart.destroy();
@@ -263,8 +281,9 @@
         });
     }
 
+    // Запускаем сразу и обновляем данные раз в 5 минут (чаще облако дергать нет смысла, скрипт там работает раз в час)
     syncData();
-    setInterval(syncData, 60000); 
+    setInterval(syncData, 300000); 
 </script>
 
 </body>
