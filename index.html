@@ -125,6 +125,11 @@
 
     let priceChart;
     const FREE = 2, CHEAP = 5, HIGH = 10;
+    
+    // Переменные для хранения кэша из Google Таблиц
+    let cachedCloudKwh = 0;
+    let cachedCloudLastWh = 0;
+    let lastCloudSync = 0;
 
     async function updateAll() {
         await updatePrices();
@@ -169,22 +174,60 @@
 
             if (res.isok) {
                 const emeters = res.data.device_status.emeters;
+                
+                // 1. Обновляем текущую мощность в Ваттах (Живые данные)
                 let totalPower = emeters.reduce((sum, phase) => sum + phase.power, 0);
                 document.getElementById('shelly-power').innerText = Math.round(totalPower);
                 
+                // Текущие суммарные показания счетчика
                 let currentTotalWh = emeters.reduce((sum, phase) => sum + (phase.total || 0), 0);
-                const todayStr = new Date().toLocaleDateString('ru-RU');
-                let savedDate = localStorage.getItem('energy_date');
-                let startEnergy = parseFloat(localStorage.getItem('energy_start'));
 
-                if (savedDate !== todayStr || isNaN(startEnergy) || startEnergy === 0) {
-                    startEnergy = currentTotalWh;
-                    localStorage.setItem('energy_date', todayStr);
-                    localStorage.setItem('energy_start', startEnergy);
+                // 2. Синхронизируем базовые показания с Google Таблицей (раз в 5 минут)
+                if (Date.now() - lastCloudSync > 300000) {
+                    try {
+                        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREfZuB82WO35dZRrsVl3XEaxyf1DrF35kXMZ5p7MbJTIAtqE5R9AUb3w-72A-sqIZ4Z8PWwDIUVqSV/pub?gid=0&single=true&output=tsv';
+                        const sheetRes = await fetch(SHEET_URL + '&_rnd=' + Date.now());
+                        const sheetText = await sheetRes.text();
+                        
+                        const lines = sheetText.trim().split(/\r?\n/);
+                        const todayTime = new Date().setHours(0,0,0,0);
+                        let tempKwh = 0;
+                        let tempLastWh = 0;
+                        
+                        for (let i = 1; i < lines.length; i++) {
+                            const cols = lines[i].split('\t');
+                            if (cols.length < 6) continue;
+                            
+                            let match = cols[0].match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+                            let rowDate = match ? new Date(match[3], match[2] - 1, match[1]) : new Date(cols[0]);
+                            
+                            if (rowDate.setHours(0,0,0,0) === todayTime) {
+                                let kwh = parseFloat(String(cols[5]).replace(',', '.'));
+                                if (!isNaN(kwh)) tempKwh += kwh;
+                            }
+                            // Сохраняем самое последнее общее показание счетчика из таблицы
+                            let tWh = parseFloat(cols[3]);
+                            if (!isNaN(tWh)) tempLastWh = tWh; 
+                        }
+                        
+                        cachedCloudKwh = tempKwh;
+                        cachedCloudLastWh = tempLastWh;
+                        lastCloudSync = Date.now();
+                    } catch(e) { 
+                        console.error("Ошибка облака Google:", e); 
+                    }
                 }
 
-                let consumedTodayKwh = (currentTotalWh - startEnergy) / 1000;
-                if (consumedTodayKwh < 0) consumedTodayKwh = 0; 
+                // Защита для самого первого запуска
+                if (cachedCloudLastWh === 0) cachedCloudLastWh = currentTotalWh;
+
+                // 3. Вычисляем точное потребление за сегодня
+                // Разница между живым счетчиком и последней записью в облаке
+                let liveDeltaWh = currentTotalWh - cachedCloudLastWh;
+                if (liveDeltaWh < 0) liveDeltaWh = currentTotalWh; // Защита от сброса Shelly
+                
+                // Суммируем облако + то, что накрутило только что
+                let consumedTodayKwh = cachedCloudKwh + (liveDeltaWh / 1000);
                 
                 document.getElementById('shelly-load').innerText = consumedTodayKwh.toFixed(2);
                 document.getElementById('current-interval').innerText = `Обновлено: ${new Date().toLocaleTimeString()}`;
