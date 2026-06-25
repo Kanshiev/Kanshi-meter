@@ -62,7 +62,19 @@
         }
         .nav-btn:active { transform: scale(0.98); }
         .btn-charts { background-color: #2c3e50; }
-        .btn-phases { background-color: #8e44ad; }
+        .btn-finance { background-color: #27ae60; } /* Красивая зеленая кнопка для финансов */
+        
+        /* Мини-кнопка для фаз */
+        .mini-btn-phases {
+            display: inline-flex; align-items: center; justify-content: center;
+            margin-top: 12px; padding: 6px 14px;
+            background-color: #8e44ad; color: white;
+            border: none; border-radius: 12px;
+            font-size: 0.85rem; font-weight: bold;
+            text-decoration: none; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: transform 0.1s ease;
+        }
+        .mini-btn-phases:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -90,6 +102,11 @@
                 <div class="stat-label">кВт·ч сегодня</div>
             </div>
         </div>
+        
+        <div>
+            <a href="phases.html" class="mini-btn-phases">⚡ По фазам</a>
+        </div>
+
         <div id="current-interval" style="color:#ccc; font-size: 0.75rem; margin-top: 15px;"></div>
     </div>
 
@@ -99,7 +116,7 @@
 
     <div class="nav-grid">
         <a href="charts.html" class="nav-btn btn-charts">📊 Графики</a>
-        <a href="phases.html" class="nav-btn btn-phases">⚡ По фазам</a>
+        <a href="finance.html" class="nav-btn btn-finance">💰 Финансы</a>
     </div>
 </div>
 
