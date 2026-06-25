@@ -69,15 +69,15 @@
         </div>
         <div class="stat-card">
             <div class="stat-label">Эффект (Kulutus)</div>
-            <div class="stat-value" id="ui-effect">--<span class="stat-unit">c</span></div>
+            <div class="stat-value" id="ui-effect">0.00<span class="stat-unit">c</span></div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Потреблено</div>
-            <div class="stat-value" id="ui-kwh">--<span class="stat-unit">kWh</span></div>
+            <div class="stat-value" id="ui-kwh">0.0<span class="stat-unit">kWh</span></div>
         </div>
         <div class="stat-card highlight">
             <div class="stat-label">Стоимость за день</div>
-            <div class="stat-value" id="ui-cost">--<span class="stat-unit">€</span></div>
+            <div class="stat-value" id="ui-cost">0.00<span class="stat-unit">€</span></div>
         </div>
     </div>
 
@@ -90,8 +90,6 @@
 
 <script>
     const FIXED_PRICE = 5.99;
-    const SHELLY_URL = 'https://corsproxy.io/?' + encodeURIComponent('https://shelly-70-eu.shelly.cloud/device/status');
-    const SHELLY_BODY = 'id=483fdac39873&auth_key=MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690';
     
     let financeChart = null;
 
@@ -101,9 +99,14 @@
             const spotRes = await fetch('https://api.spot-hinta.fi/TodayAndDayForward');
             const spotData = await spotRes.json();
             
-            // 2. Получаем данные Shelly
-            const shellyRes = await fetch(SHELLY_URL, {
-                method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: SHELLY_BODY
+            // 2. Получаем данные Shelly (с анти-кэшем)
+            const targetUrl = 'https://shelly-70-eu.shelly.cloud/device/status';
+            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+            // Добавляем rnd (случайное число), чтобы прокси не отдавал старый кэш
+            const requestBody = 'id=483fdac39873&auth_key=MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690&_rnd=' + Date.now();
+
+            const shellyRes = await fetch(proxyUrl, {
+                method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: requestBody
             });
             const shellyData = await shellyRes.json();
 
@@ -120,43 +123,39 @@
         const currentHour = now.getHours();
         const todayStr = now.toLocaleDateString('ru-RU');
         
-        // Текущее суммарное показание счетчика со всех 3 фаз (в Ватт-часах)
         let currentTotalWh = emeters.reduce((sum, phase) => sum + (phase.total || 0), 0);
 
-        // Инициализация хранилища
         let savedDate = localStorage.getItem('fin_date');
         let hourlyLog = JSON.parse(localStorage.getItem('fin_hourly')) || {};
         let lastTotal = parseFloat(localStorage.getItem('fin_last_total'));
 
-        // Если начался новый день - обнуляем логи
+        // ИСПРАВЛЕННЫЙ БЛОК: Правильно сохраняем первое значение счетчика
         if (savedDate !== todayStr || isNaN(lastTotal)) {
             hourlyLog = {};
             lastTotal = currentTotalWh;
             localStorage.setItem('fin_date', todayStr);
+            localStorage.setItem('fin_last_total', currentTotalWh); // Раньше этой строчки не было!
+            localStorage.setItem('fin_hourly', JSON.stringify(hourlyLog));
         }
 
-        // Вычисляем, сколько накрутило с последнего опроса
         let diffWh = currentTotalWh - lastTotal;
         if (diffWh > 0) {
-            // Записываем потребление в копилку текущего часа
             hourlyLog[currentHour] = (hourlyLog[currentHour] || 0) + diffWh;
             localStorage.setItem('fin_hourly', JSON.stringify(hourlyLog));
             localStorage.setItem('fin_last_total', currentTotalWh);
         } else if (diffWh < 0) {
-             // Защита от сброса счетчика Shelly
              localStorage.setItem('fin_last_total', currentTotalWh);
+             lastTotal = currentTotalWh;
         }
 
-        // Отбираем спот-цены только за СЕГОДНЯ
         const todaySpot = spotData.filter(item => {
             const d = new Date(item.DateTime);
             return d.getDate() === now.getDate() && d.getMinutes() === 0;
         });
 
-        // Математика Kulutusvaikutus
         let totalWhToday = 0;
         let sumSpotPrices = 0;
-        let sumUserCost = 0; // Почасовое потребление умноженное на цену этого часа
+        let sumUserCost = 0; 
 
         let chartHours = [];
         let chartKwh = [];
@@ -165,14 +164,12 @@
         for (let h = 0; h < 24; h++) {
             chartHours.push(`${h}:00`);
             
-            // Ищем цену для этого часа
             let spotPriceObj = todaySpot.find(s => new Date(s.DateTime).getHours() === h);
             let spotPrice = spotPriceObj ? parseFloat((spotPriceObj.PriceWithTax * 100).toFixed(2)) : 0;
             
             sumSpotPrices += spotPrice;
             chartSpot.push(spotPrice);
 
-            // Потребление за этот час
             let whUsed = hourlyLog[h] || 0;
             totalWhToday += whUsed;
             sumUserCost += (whUsed * spotPrice);
@@ -180,16 +177,10 @@
             chartKwh.push((whUsed / 1000).toFixed(2));
         }
 
-        // 1. Средняя цена на бирже за день
         let generalAvgSpot = sumSpotPrices / 24;
-
-        // 2. Твоя личная средневзвешенная цена
         let userAvgSpot = totalWhToday > 0 ? (sumUserCost / totalWhToday) : generalAvgSpot;
-
-        // 3. Kulutusvaikutus
         let kulutusvaikutus = userAvgSpot - generalAvgSpot;
 
-        // 4. Итоговая стоимость
         let finalPriceCents = FIXED_PRICE + kulutusvaikutus;
         let totalKwh = totalWhToday / 1000;
         let totalCostEuros = (totalKwh * finalPriceCents) / 100;
@@ -203,7 +194,6 @@
     function updateUI(effect, kwh, cost) {
         const effectEl = document.getElementById('ui-effect');
         
-        // Форматируем эффект с плюсом или минусом
         let effectStr = effect > 0 ? `+${effect.toFixed(2)}` : effect.toFixed(2);
         effectEl.innerHTML = `${effectStr}<span class="stat-unit">c</span>`;
         
@@ -220,7 +210,6 @@
     }
 
     function drawHybridChart(labels, kwhData, spotData) {
-        // Убираем старый плагин даталейблов для этого графика, чтобы не было каши
         Chart.unregister(ChartDataLabels);
 
         const ctx = document.getElementById('financeChart').getContext('2d');
@@ -274,9 +263,8 @@
         });
     }
 
-    // Запуск цикла
     syncData();
-    setInterval(syncData, 60000); // Опрашиваем раз в минуту для точного логгирования
+    setInterval(syncData, 60000); 
 </script>
 
 </body>
