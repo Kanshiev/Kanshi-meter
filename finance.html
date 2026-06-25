@@ -75,27 +75,28 @@
         .total-price { background: #2c3e50; color: #fff; }
         .total-price span { color: #bdc3c7; }
 
-        /* СТИЛИ ДЛЯ ЧЕКА (ПОЛНАЯ СТОИМОСТЬ) */
-        .receipt-item { 
-            flex: 1; padding: 0 10px; border-right: 1px solid #f0f0f0; 
-            display: flex; flex-direction: column;
+        /* НОВЫЙ КОМПАКТНЫЙ СТИЛЬ ДЛЯ ТАБЛИЦЫ-ЧЕКА */
+        .receipt-table {
+            width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem;
         }
-        .receipt-item:last-child { border-right: none; }
-        .receipt-item > span { 
-            display: block; text-align: center; font-size: 0.75rem; font-weight: 800; 
-            color: #2c3e50; text-transform: uppercase; margin-bottom: 12px; 
+        .receipt-table th {
+            font-size: 0.7rem; font-weight: 800; color: #2c3e50; text-transform: uppercase;
+            padding-bottom: 12px; border-bottom: 1px solid #bdc3c7; width: 23%;
         }
-        .receipt-line {
-            display: flex; justify-content: space-between; 
-            font-size: 0.75rem; color: #7f8c8d; margin-bottom: 6px;
+        .receipt-table th:first-child { text-align: left; width: 31%; }
+        .receipt-table td { 
+            padding: 10px 2px; color: #333; font-weight: 700; border-bottom: 1px dashed #f0f0f0; 
         }
-        .receipt-line b { color: #333; font-weight: 700; }
-        .receipt-total {
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.85rem; font-weight: 900; color: #2c3e50; 
-            margin-top: auto; padding-top: 8px; border-top: 1px dashed #bdc3c7;
+        .receipt-table td.row-label { 
+            text-align: left; color: #7f8c8d; font-weight: 600; font-size: 0.75rem; 
         }
-        .receipt-total b { font-size: 1.05rem; color: #e74c3c; }
+        .receipt-table tr:last-child td { border-bottom: none; }
+        .receipt-total-row td { 
+            padding-top: 15px; font-size: 1rem; font-weight: 900; color: #2c3e50; 
+            border-top: 1px solid #bdc3c7; border-bottom: none !important;
+        }
+        .receipt-total-row td.row-label { color: #2c3e50; font-size: 0.85rem; font-weight: 900;}
+        .receipt-total-row td:not(.row-label) { color: #e74c3c; }
 
         .update-time { text-align: center; color: #888; font-size: 0.75rem; margin-top: 10px; }
     </style>
@@ -159,36 +160,48 @@
 
     <div class="period-card">
         <div class="period-header">🧾 Итоговый счет</div>
-        <div class="stats-row-3">
-            
-            <div class="receipt-item">
-                <span>Сегодня</span>
-                <div class="receipt-line">Энергия: <b id="full-today-en">0.00 €</b></div>
-                <div class="receipt-line">Передача: <b id="full-today-si">0.00 €</b></div>
-                <div class="receipt-line">Налоги: <b id="full-today-ve">0.00 €</b></div>
-                <div class="receipt-line">Абон.пл: <b id="full-today-pe">0.00 €</b></div>
-                <div class="receipt-total">ИТОГО: <b id="full-today-tot">0.00 €</b></div>
-            </div>
-
-            <div class="receipt-item">
-                <span>7 Дней</span>
-                <div class="receipt-line">Энергия: <b id="full-week-en">0.00 €</b></div>
-                <div class="receipt-line">Передача: <b id="full-week-si">0.00 €</b></div>
-                <div class="receipt-line">Налоги: <b id="full-week-ve">0.00 €</b></div>
-                <div class="receipt-line">Абон.пл: <b id="full-week-pe">0.00 €</b></div>
-                <div class="receipt-total">ИТОГО: <b id="full-week-tot">0.00 €</b></div>
-            </div>
-
-            <div class="receipt-item">
-                <span id="lbl-month-receipt">За Месяц</span>
-                <div class="receipt-line">Энергия: <b id="full-month-en">0.00 €</b></div>
-                <div class="receipt-line">Передача: <b id="full-month-si">0.00 €</b></div>
-                <div class="receipt-line">Налоги: <b id="full-month-ve">0.00 €</b></div>
-                <div class="receipt-line">Абон.пл: <b id="full-month-pe">0.00 €</b></div>
-                <div class="receipt-total">ИТОГО: <b id="full-month-tot">0.00 €</b></div>
-            </div>
-
-        </div>
+        <table class="receipt-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Сегодня</th>
+                    <th>7 Дней</th>
+                    <th id="lbl-month-receipt">Месяц</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="row-label">Энергия €</td>
+                    <td id="rt-today-en">0.00</td>
+                    <td id="rt-week-en">0.00</td>
+                    <td id="rt-month-en">0.00</td>
+                </tr>
+                <tr>
+                    <td class="row-label">Передача €</td>
+                    <td id="rt-today-si">0.00</td>
+                    <td id="rt-week-si">0.00</td>
+                    <td id="rt-month-si">0.00</td>
+                </tr>
+                <tr>
+                    <td class="row-label">Налоги €</td>
+                    <td id="rt-today-ve">0.00</td>
+                    <td id="rt-week-ve">0.00</td>
+                    <td id="rt-month-ve">0.00</td>
+                </tr>
+                <tr>
+                    <td class="row-label">Абон.пл €</td>
+                    <td id="rt-today-pe">0.00</td>
+                    <td id="rt-week-pe">0.00</td>
+                    <td id="rt-month-pe">0.00</td>
+                </tr>
+                <tr class="receipt-total-row">
+                    <td class="row-label">ИТОГО €</td>
+                    <td id="rt-today-tot">0.00</td>
+                    <td id="rt-week-tot">0.00</td>
+                    <td id="rt-month-tot">0.00</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
     
     <div class="update-time" id="last-update">Подключение к базе данных...</div>
@@ -241,7 +254,7 @@
         document.getElementById('lbl-month-kwh').innerText = 'За ' + currentMonthName;
         document.getElementById('lbl-month-cost').innerText = 'За ' + currentMonthName;
         document.getElementById('lbl-month-math').innerText = 'Тариф за ' + currentMonthName;
-        document.getElementById('lbl-month-receipt').innerText = 'За ' + currentMonthName;
+        document.getElementById('lbl-month-receipt').innerText = currentMonthName;
 
         const todayTime = now.getTime();
         const weekTime = todayTime - (6 * 24 * 60 * 60 * 1000); 
@@ -328,15 +341,36 @@
 
         updateMathUI(mData.effect, mData.finalPrice);
 
-        // Распределяем абонентскую плату по дням
+        // --- НОВАЯ ЛОГИКА АБОНЕНТСКОЙ ПЛАТЫ ---
         let daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        let currentDayOfMonth = now.getDate();
-        let dailyBasicFee = (OOMI_PERUS + SIIRTO_PERUS) / daysInMonth; 
+        let fullMonthBasicFee = OOMI_PERUS + SIIRTO_PERUS;
+        let dailyBasicFee = fullMonthBasicFee / daysInMonth; 
 
-        // Обновляем чеки передавая точные рассчитанные значения siirto и vero
-        updateReceiptUI('today', tData.cost, stats.today.sumSiirto, stats.today.sumVero, 1, dailyBasicFee);
-        updateReceiptUI('week', wData.cost, stats.week.sumSiirto, stats.week.sumVero, 7, dailyBasicFee);
-        updateReceiptUI('month', mData.cost, stats.month.sumSiirto, stats.month.sumVero, currentDayOfMonth, dailyBasicFee);
+        // Заполняем Таблицу-Чек напрямую
+        
+        // СЕГОДНЯ
+        let peToday = dailyBasicFee;
+        document.getElementById('rt-today-en').innerText = tData.cost.toFixed(2);
+        document.getElementById('rt-today-si').innerText = stats.today.sumSiirto.toFixed(2);
+        document.getElementById('rt-today-ve').innerText = stats.today.sumVero.toFixed(2);
+        document.getElementById('rt-today-pe').innerText = peToday.toFixed(2);
+        document.getElementById('rt-today-tot').innerText = (tData.cost + stats.today.sumSiirto + stats.today.sumVero + peToday).toFixed(2);
+
+        // 7 ДНЕЙ
+        let peWeek = dailyBasicFee * 7;
+        document.getElementById('rt-week-en').innerText = wData.cost.toFixed(2);
+        document.getElementById('rt-week-si').innerText = stats.week.sumSiirto.toFixed(2);
+        document.getElementById('rt-week-ve').innerText = stats.week.sumVero.toFixed(2);
+        document.getElementById('rt-week-pe').innerText = peWeek.toFixed(2);
+        document.getElementById('rt-week-tot').innerText = (wData.cost + stats.week.sumSiirto + stats.week.sumVero + peWeek).toFixed(2);
+
+        // МЕСЯЦ (Берем полную абонентскую плату, чтобы совпадало со счетом)
+        let peMonth = fullMonthBasicFee;
+        document.getElementById('rt-month-en').innerText = mData.cost.toFixed(2);
+        document.getElementById('rt-month-si').innerText = stats.month.sumSiirto.toFixed(2);
+        document.getElementById('rt-month-ve').innerText = stats.month.sumVero.toFixed(2);
+        document.getElementById('rt-month-pe').innerText = peMonth.toFixed(2);
+        document.getElementById('rt-month-tot').innerText = (mData.cost + stats.month.sumSiirto + stats.month.sumVero + peMonth).toFixed(2);
 
         drawHybridChart(chartHours, todayChartKwh, todayChartSpot);
         
@@ -370,17 +404,6 @@
             effBox.innerHTML = `${effect.toFixed(2)}<span>Эффект c</span>`;
         }
         totBox.innerHTML = `${finalPrice.toFixed(2)}<span>Итог c/kWh</span>`;
-    }
-
-    function updateReceiptUI(prefix, energyCost, siirtoCost, veroCost, daysRatio, dailyBasicFee) {
-        let basicCost = dailyBasicFee * daysRatio; 
-        let total = energyCost + siirtoCost + veroCost + basicCost;
-
-        document.getElementById(`full-${prefix}-en`).innerText = energyCost.toFixed(2) + ' €';
-        document.getElementById(`full-${prefix}-si`).innerText = siirtoCost.toFixed(2) + ' €';
-        document.getElementById(`full-${prefix}-ve`).innerText = veroCost.toFixed(2) + ' €';
-        document.getElementById(`full-${prefix}-pe`).innerText = basicCost.toFixed(2) + ' €';
-        document.getElementById(`full-${prefix}-tot`).innerText = total.toFixed(2) + ' €';
     }
 
     function drawHybridChart(labels, kwhData, spotData) {
