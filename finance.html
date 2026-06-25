@@ -24,52 +24,56 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 15px;
         }
 
-        /* КАРТОЧКИ ПЕРИОДОВ */
+        .chart-card { 
+            background: white; border-radius: 24px; padding: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06); margin-bottom: 15px; 
+            height: 280px; position: relative;
+        }
+
+        /* КАРТОЧКИ ДАННЫХ */
         .period-card {
-            background: white; border-radius: 24px; padding: 20px;
+            background: white; border-radius: 24px; padding: 20px 15px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.06); margin-bottom: 15px;
         }
         
         .period-header {
-            text-align: center; font-size: 1.3rem; font-weight: 800; color: #2c3e50;
+            text-align: center; font-size: 1.1rem; font-weight: 800; color: #2c3e50;
             margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;
         }
 
-        .stats-row {
-            display: flex; justify-content: space-around; margin-bottom: 20px;
-            padding-bottom: 15px; border-bottom: 1px solid #f0f0f0;
+        .stats-row-3 {
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .stats-item { text-align: center; }
-        .stats-item span { display: block; font-size: 0.8rem; color: #7f8c8d; text-transform: uppercase; margin-bottom: 5px; }
-        .stats-item b { font-size: 1.6rem; color: #111; }
-        .stats-item small { font-size: 0.9rem; font-weight: 600; color: #555; }
+        .stats-item { 
+            flex: 1; text-align: center; 
+            border-right: 1px solid #f0f0f0; 
+        }
+        .stats-item:last-child { border-right: none; }
+        
+        .stats-item span { display: block; font-size: 0.75rem; font-weight: 600; color: #7f8c8d; text-transform: uppercase; margin-bottom: 5px; }
+        .stats-item b { font-size: 1.6rem; font-weight: 900; color: #111; display: block; line-height: 1.1; }
+        .stats-item small { font-size: 0.85rem; font-weight: 600; color: #555; }
 
         /* МАТЕМАТИЧЕСКАЯ ПАНЕЛЬ */
         .math-row {
-            display: flex; align-items: center; justify-content: center; gap: 8px;
+            display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 5px;
         }
         .math-box {
-            background: #f8f9fa; padding: 10px; border-radius: 12px; text-align: center;
-            min-width: 65px; font-size: 1.1rem; font-weight: 800; color: #333;
+            background: #f8f9fa; padding: 12px 10px; border-radius: 12px; text-align: center;
+            min-width: 75px; font-size: 1.2rem; font-weight: 800; color: #333;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
         }
         .math-box span {
             display: block; font-size: 0.65rem; font-weight: 600; color: #95a5a6; 
             text-transform: uppercase; margin-top: 4px;
         }
-        .math-sign { font-size: 1.4rem; font-weight: bold; color: #bdc3c7; }
+        .math-sign { font-size: 1.5rem; font-weight: bold; color: #bdc3c7; }
         
         .effect-good { color: #27ae60; background: #eafaf1; }
         .effect-bad { color: #e74c3c; background: #fdedec; }
         .total-price { background: #2c3e50; color: #fff; }
         .total-price span { color: #bdc3c7; }
 
-        .chart-card { 
-            background: white; border-radius: 24px; padding: 15px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.06); margin-bottom: 15px; 
-            height: 280px; position: relative;
-        }
-        
         .update-time { text-align: center; color: #888; font-size: 0.75rem; margin-top: 10px; }
     </style>
 </head>
@@ -77,55 +81,57 @@
 
 <div class="widget-container">
     <a href="index.html" class="nav-btn">⬅ Назад к пульту</a>
-    
-    <div class="period-card">
-        <div class="period-header">Сегодня</div>
-        <div class="stats-row">
-            <div class="stats-item"><span>Энергия</span><b id="today-kwh">0.00</b><small> kWh</small></div>
-            <div class="stats-item"><span>Затраты</span><b id="today-cost">0.00</b><small> €</small></div>
-        </div>
-        <div class="math-row">
-            <div class="math-box">5.99<span>Фикс c</span></div>
-            <div class="math-sign" id="today-sign">+</div>
-            <div class="math-box" id="today-eff">0.00<span>Эффект c</span></div>
-            <div class="math-sign">=</div>
-            <div class="math-box total-price" id="today-tot">5.99<span>Итог c/kWh</span></div>
-        </div>
-    </div>
-
-    <div class="period-card">
-        <div class="period-header">Последние 7 дней</div>
-        <div class="stats-row">
-            <div class="stats-item"><span>Энергия</span><b id="week-kwh">0.00</b><small> kWh</small></div>
-            <div class="stats-item"><span>Затраты</span><b id="week-cost">0.00</b><small> €</small></div>
-        </div>
-        <div class="math-row">
-            <div class="math-box">5.99<span>Фикс c</span></div>
-            <div class="math-sign" id="week-sign">+</div>
-            <div class="math-box" id="week-eff">0.00<span>Эффект c</span></div>
-            <div class="math-sign">=</div>
-            <div class="math-box total-price" id="week-tot">5.99<span>Итог c/kWh</span></div>
-        </div>
-    </div>
-
-    <div class="period-card">
-        <div class="period-header">Текущий месяц</div>
-        <div class="stats-row">
-            <div class="stats-item"><span>Энергия</span><b id="month-kwh">0.00</b><small> kWh</small></div>
-            <div class="stats-item"><span>Затраты</span><b id="month-cost">0.00</b><small> €</small></div>
-        </div>
-        <div class="math-row">
-            <div class="math-box">5.99<span>Фикс c</span></div>
-            <div class="math-sign" id="month-sign">+</div>
-            <div class="math-box" id="month-eff">0.00<span>Эффект c</span></div>
-            <div class="math-sign">=</div>
-            <div class="math-box total-price" id="month-tot">5.99<span>Итог c/kWh</span></div>
-        </div>
-    </div>
 
     <div class="chart-card">
         <div style="text-align: center; color: #7f8c8d; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; text-transform: uppercase;">График за сегодня</div>
         <canvas id="financeChart"></canvas>
+    </div>
+    
+    <div class="period-card">
+        <div class="period-header">⚡ История потребления</div>
+        <div class="stats-row-3">
+            <div class="stats-item">
+                <span>Сегодня</span>
+                <b id="kwh-today">0.00</b><small>kWh</small>
+            </div>
+            <div class="stats-item">
+                <span>7 Дней</span>
+                <b id="kwh-week">0.00</b><small>kWh</small>
+            </div>
+            <div class="stats-item">
+                <span id="lbl-month-kwh">За Месяц</span>
+                <b id="kwh-month">0.00</b><small>kWh</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="period-card">
+        <div class="period-header">💰 Стоимость</div>
+        <div class="stats-row-3">
+            <div class="stats-item">
+                <span>Сегодня</span>
+                <b id="cost-today">0.00</b><small>€</small>
+            </div>
+            <div class="stats-item">
+                <span>7 Дней</span>
+                <b id="cost-week">0.00</b><small>€</small>
+            </div>
+            <div class="stats-item">
+                <span id="lbl-month-cost">За Месяц</span>
+                <b id="cost-month">0.00</b><small>€</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="period-card">
+        <div class="period-header" id="lbl-month-math">Формирование тарифа</div>
+        <div class="math-row">
+            <div class="math-box">5.99<span>Фикс c</span></div>
+            <div class="math-sign" id="math-sign">+</div>
+            <div class="math-box" id="math-eff">0.00<span>Эффект c</span></div>
+            <div class="math-sign">=</div>
+            <div class="math-box total-price" id="math-tot">5.99<span>Итог c/kWh</span></div>
+        </div>
     </div>
     
     <div class="update-time" id="last-update">Подключение к базе данных...</div>
@@ -135,9 +141,11 @@
     const FIXED_PRICE = 5.99;
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREfZuB82WO35dZRrsVl3XEaxyf1DrF35kXMZ5p7MbJTIAtqE5R9AUb3w-72A-sqIZ4Z8PWwDIUVqSV/pub?gid=0&single=true&output=tsv';
     
+    // Массив месяцев для подстановки
+    const monthsRu = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+    
     let financeChart = null;
 
-    // Функция для парсинга дат из Google Таблиц
     function parseSheetDate(dateStr) {
         let match = dateStr.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
         if (match) return new Date(match[3], match[2] - 1, match[1]);
@@ -163,11 +171,16 @@
         const now = new Date();
         now.setHours(0,0,0,0);
         
-        const todayTime = now.getTime();
-        const weekTime = todayTime - (6 * 24 * 60 * 60 * 1000); // 7 дней включая сегодня
-        const monthTime = new Date(now.getFullYear(), now.getMonth(), 1).getTime(); // 1 число этого месяца
+        // Устанавливаем названия текущего месяца в интерфейсе
+        const currentMonthName = monthsRu[now.getMonth()];
+        document.getElementById('lbl-month-kwh').innerText = 'За ' + currentMonthName;
+        document.getElementById('lbl-month-cost').innerText = 'За ' + currentMonthName;
+        document.getElementById('lbl-month-math').innerText = 'Тариф за ' + currentMonthName;
 
-        // Структуры для накопления математики
+        const todayTime = now.getTime();
+        const weekTime = todayTime - (6 * 24 * 60 * 60 * 1000); 
+        const monthTime = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
         let stats = {
             today: { sumSpot: 0, sumKwh: 0, sumCost: 0, hoursCount: 0 },
             week:  { sumSpot: 0, sumKwh: 0, sumCost: 0, hoursCount: 0 },
@@ -178,7 +191,6 @@
         let todayChartKwh = new Array(24).fill(0);
         let todayChartSpot = new Array(24).fill(0);
 
-        // Парсим строки из базы (пропускаем заголовок)
         for (let i = 1; i < lines.length; i++) {
             const cols = lines[i].split('\t');
             if (cols.length < 6) continue;
@@ -193,7 +205,6 @@
 
             if (isNaN(spotPrice) || isNaN(hourlyKwh)) continue;
 
-            // Распределяем данные по корзинам (Месяц, Неделя, Сегодня)
             if (rowTime >= monthTime) {
                 stats.month.hoursCount++;
                 stats.month.sumSpot += spotPrice;
@@ -214,32 +225,37 @@
                 stats.today.sumKwh += hourlyKwh;
                 stats.today.sumCost += (hourlyKwh * spotPrice);
                 
-                // Собираем данные для графика за сегодня
                 if (hourlyKwh > 0) {
                     todayChartKwh[hourNum] += hourlyKwh; 
                 }
             }
         }
 
-        // Подготавливаем график (берем спот-цены на сегодня даже для будущих часов из API)
         const todaySpotApi = spotData.filter(item => new Date(item.DateTime).getDate() === new Date().getDate());
         let chartHours = [];
         for (let h = 0; h < 24; h++) {
             chartHours.push(`${h}:00`);
             let spotObj = todaySpotApi.find(s => new Date(s.DateTime).getHours() === h);
             todayChartSpot[h] = spotObj ? parseFloat((spotObj.PriceWithTax * 100).toFixed(2)) : 0;
-            
-            // Если сегодня еще не наступил этот час, фиксируем для средней цены
-            if (stats.today.hoursCount < 24 && todayChartSpot[h] !== 0 && !stats.today.sumSpot.toString().includes(todayChartSpot[h])) {
-                // В этом базовом логгере мы считаем среднюю спот-цену только по записанным часам.
-                // Это сделано для максимальной точности Kulutusvaikutus
-            }
         }
 
-        // Обновляем UI для каждого периода
-        updatePeriodUI('today', stats.today);
-        updatePeriodUI('week', stats.week);
-        updatePeriodUI('month', stats.month);
+        // Вычисляем данные для каждого периода
+        let tData = calculatePeriod(stats.today);
+        let wData = calculatePeriod(stats.week);
+        let mData = calculatePeriod(stats.month);
+
+        // Обновляем Потребление
+        document.getElementById('kwh-today').innerText = tData.kwh.toFixed(2);
+        document.getElementById('kwh-week').innerText = wData.kwh.toFixed(1);
+        document.getElementById('kwh-month').innerText = mData.kwh.toFixed(1);
+
+        // Обновляем Стоимость
+        document.getElementById('cost-today').innerText = tData.cost.toFixed(2);
+        document.getElementById('cost-week').innerText = wData.cost.toFixed(2);
+        document.getElementById('cost-month').innerText = mData.cost.toFixed(2);
+
+        // Обновляем Математику (на основе данных за МЕСЯЦ)
+        updateMathUI(mData.effect, mData.finalPrice);
 
         drawHybridChart(chartHours, todayChartKwh, todayChartSpot);
         
@@ -247,34 +263,33 @@
         document.getElementById('last-update').innerText = `Синхронизировано: ${updateDate.toLocaleDateString()} ${updateDate.toLocaleTimeString()}`;
     }
 
-    function updatePeriodUI(prefix, data) {
-        // Защита от деления на 0
+    function calculatePeriod(data) {
         let avgSpot = data.hoursCount > 0 ? (data.sumSpot / data.hoursCount) : 0;
         let avgPersonal = data.sumKwh > 0 ? (data.sumCost / data.sumKwh) : avgSpot;
         
-        let kulutus = avgPersonal - avgSpot;
-        let finalPriceCents = FIXED_PRICE + kulutus;
-        let totalCostEuros = (data.sumKwh * finalPriceCents) / 100;
+        let effect = avgPersonal - avgSpot;
+        let finalPrice = FIXED_PRICE + effect;
+        let cost = (data.sumKwh * finalPrice) / 100;
+        
+        return { kwh: data.sumKwh, cost: cost, effect: effect, finalPrice: finalPrice };
+    }
 
-        document.getElementById(`${prefix}-kwh`).innerText = data.sumKwh.toFixed(2);
-        document.getElementById(`${prefix}-cost`).innerText = totalCostEuros.toFixed(2);
+    function updateMathUI(effect, finalPrice) {
+        let effBox = document.getElementById('math-eff');
+        let signBox = document.getElementById('math-sign');
+        let totBox = document.getElementById('math-tot');
 
-        let effBox = document.getElementById(`${prefix}-eff`);
-        let signBox = document.getElementById(`${prefix}-sign`);
-        let totBox = document.getElementById(`${prefix}-tot`);
-
-        // Логика математических знаков и цветов
-        if (kulutus < 0) {
+        if (effect < 0) {
             effBox.className = "math-box effect-good";
             signBox.innerText = "-";
-            effBox.innerHTML = `${Math.abs(kulutus).toFixed(2)}<span>Эффект c</span>`;
+            effBox.innerHTML = `${Math.abs(effect).toFixed(2)}<span>Эффект c</span>`;
         } else {
             effBox.className = "math-box effect-bad";
             signBox.innerText = "+";
-            effBox.innerHTML = `${kulutus.toFixed(2)}<span>Эффект c</span>`;
+            effBox.innerHTML = `${effect.toFixed(2)}<span>Эффект c</span>`;
         }
 
-        totBox.innerHTML = `${finalPriceCents.toFixed(2)}<span>Итог c/kWh</span>`;
+        totBox.innerHTML = `${finalPrice.toFixed(2)}<span>Итог c/kWh</span>`;
     }
 
     function drawHybridChart(labels, kwhData, spotData) {
@@ -331,7 +346,7 @@
     }
 
     syncData();
-    setInterval(syncData, 300000); // Опрос облака раз в 5 минут
+    setInterval(syncData, 300000); 
 </script>
 
 </body>
