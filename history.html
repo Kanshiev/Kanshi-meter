@@ -3,41 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вся История</title>
+    <title>Вся История (Архив)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-            background-color: #e2f3e5; 
-            display: flex; justify-content: center; padding: 15px; margin: 0;
+            background-color: #e2f3e5; display: flex; justify-content: center; padding: 15px; margin: 0;
         }
         .widget-container { width: 100%; max-width: 600px; }
         
         .nav-btn {
-            display: block; width: 100%; padding: 16px;
-            background-color: #2c3e50; color: white;
-            border: none; border-radius: 16px;
-            font-size: 16px; font-weight: bold; cursor: pointer;
+            display: block; width: 100%; padding: 16px; background-color: #2c3e50; color: white;
+            border: none; border-radius: 16px; font-size: 16px; font-weight: bold; cursor: pointer;
             text-decoration: none; text-align: center; box-sizing: border-box;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px;
         }
 
-        .day-card {
+        .section-title {
+            text-align: center; font-size: 1.4rem; font-weight: 900; color: #27ae60;
+            margin: 35px 0 15px 0; text-transform: uppercase; letter-spacing: 1px;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.5);
+        }
+
+        .history-card {
             background: white; border-radius: 24px; padding: 20px 15px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.06); margin-bottom: 25px;
         }
         
-        .day-header {
+        .card-header {
             text-align: center; font-size: 1.1rem; font-weight: 900; color: #2c3e50;
             margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;
         }
-        .day-header span { color: #7f8c8d; font-weight: 600; font-size: 0.9rem; }
+        .card-header span { color: #7f8c8d; font-weight: 600; font-size: 0.9rem; }
 
         .chart-wrapper { position: relative; height: 220px; margin-bottom: 15px; }
 
         .stats-box {
-            background: #f8f9fa; border-radius: 16px; padding: 15px;
-            border: 1px solid #f0f0f0;
+            background: #f8f9fa; border-radius: 16px; padding: 15px; border: 1px solid #f0f0f0;
         }
         
         .main-stat {
@@ -57,6 +59,7 @@
         .val-low { color: #27ae60; font-weight: 800; }
         
         .loading { text-align: center; font-weight: bold; color: #7f8c8d; padding: 40px; }
+        .empty-msg { text-align: center; color: #95a5a6; font-style: italic; margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -64,13 +67,23 @@
 <div class="widget-container">
     <a href="finance.html" class="nav-btn">⬅ Назад к Финансам</a>
     
-    <div id="history-container">
-        <div class="loading">Загрузка истории из базы данных...</div>
+    <div id="loading-spinner" class="loading">Загрузка и обработка базы данных...</div>
+
+    <div id="days-container" style="display:none;">
+        <div class="section-title">Дневная история</div>
+    </div>
+
+    <div id="weeks-container" style="display:none;">
+        <div class="section-title">Недельная история</div>
+    </div>
+
+    <div id="months-container" style="display:none;">
+        <div class="section-title">Месячная история</div>
     </div>
 </div>
 
 <script>
-    // --- ТАРИФНЫЕ НАСТРОЙКИ (Как в finance.html) ---
+    // --- НАСТРОЙКИ ---
     const FIXED_PRICE = 5.99; 
     const OOMI_PERUS = 5.90;    
     const SIIRTO_PERUS = 20.33; 
@@ -80,14 +93,16 @@
     
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREfZuB82WO35dZRrsVl3XEaxyf1DrF35kXMZ5p7MbJTIAtqE5R9AUb3w-72A-sqIZ4Z8PWwDIUVqSV/pub?gid=0&single=true&output=tsv';
     
-    const monthsRu = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
-    
-    // Функция получения номера недели в году
-    function getWeekNumber(d) {
+    const monthsRu = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+    const shortMonthsRu = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+    const daysOfWeekRu = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+    function getISOWeek(d) {
         let date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-        date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay()||7));
+        let dayNum = date.getUTCDay() || 7;
+        date.setUTCDate(date.getUTCDate() + 4 - dayNum);
         let yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
-        return Math.ceil(( ( (date - yearStart) / 86400000) + 1)/7);
+        return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
     }
 
     function parseSheetDate(dateStr) {
@@ -98,154 +113,239 @@
 
     async function loadHistory() {
         try {
+            const spotRes = await fetch('https://api.spot-hinta.fi/TodayAndDayForward');
+            const spotData = await spotRes.json();
+            
             const sheetRes = await fetch(SHEET_URL + '&_rnd=' + Date.now());
             const sheetText = await sheetRes.text();
             
-            const lines = sheetText.trim().split(/\r?\n/);
-            let dailyData = {};
-
-            // Парсим всю таблицу и разбиваем по дням
-            for (let i = 1; i < lines.length; i++) {
-                const cols = lines[i].split('\t');
-                if (cols.length < 6) continue;
-
-                let rowDate = parseSheetDate(cols[0]);
-                let dateKey = `${rowDate.getFullYear()}-${String(rowDate.getMonth()+1).padStart(2,'0')}-${String(rowDate.getDate()).padStart(2,'0')}`;
-
-                if (!dailyData[dateKey]) {
-                    dailyData[dateKey] = {
-                        dateObj: rowDate,
-                        kwhByHour: new Array(24).fill(0),
-                        spotByHour: new Array(24).fill(0),
-                        sumKwh: 0, sumSpot: 0, sumCost: 0, sumSiirto: 0, sumVero: 0,
-                        hoursCount: 0, spotsList: []
-                    };
-                }
-
-                let hr = parseInt(cols[1].split(':')[0], 10);
-                let spot = parseFloat(String(cols[2]).replace(',', '.'));
-                let kwh = parseFloat(String(cols[5]).replace(',', '.'));
-
-                if (!isNaN(spot) && !isNaN(kwh)) {
-                    dailyData[dateKey].kwhByHour[hr] += kwh;
-                    dailyData[dateKey].spotByHour[hr] = spot;
-                    
-                    if (kwh > 0 || !dailyData[dateKey].spotsList.includes(spot)) {
-                        dailyData[dateKey].spotsList.push(spot);
-                    }
-
-                    dailyData[dateKey].sumKwh += kwh;
-                    dailyData[dateKey].sumSpot += spot;
-                    dailyData[dateKey].sumCost += (kwh * spot);
-                    dailyData[dateKey].hoursCount++;
-
-                    let sPrice = (hr >= 7 && hr < 22) ? SIIRTO_DAY : SIIRTO_NIGHT;
-                    dailyData[dateKey].sumSiirto += (kwh * sPrice) / 100;
-                    dailyData[dateKey].sumVero += (kwh * VERO_C_KWH) / 100;
-                }
-            }
-
-            // Берем последние 7 дней (сортировка по убыванию даты)
-            const sortedDates = Object.keys(dailyData).sort((a, b) => b.localeCompare(a)).slice(0, 7);
-            
-            const container = document.getElementById('history-container');
-            container.innerHTML = ''; // Очищаем статус "Загрузка"
-
-            if(sortedDates.length === 0) {
-                container.innerHTML = '<div class="loading">В базе пока нет данных.</div>';
-                return;
-            }
-
-            // Рендерим карточки
-            sortedDates.forEach((dateKey) => {
-                let dData = dailyData[dateKey];
-                let dObj = dData.dateObj;
-                
-                let weekNum = getWeekNumber(dObj);
-                let formattedTitle = `${dObj.getDate()} ${monthsRu[dObj.getMonth()]}`;
-                
-                // Математика для одного дня
-                let avgSpot = dData.hoursCount > 0 ? (dData.sumSpot / dData.hoursCount) : 0;
-                let avgPersonal = dData.sumKwh > 0 ? (dData.sumCost / dData.sumKwh) : avgSpot;
-                let finalPrice = FIXED_PRICE + (avgPersonal - avgSpot);
-                let energyCost = (dData.sumKwh * finalPrice) / 100;
-                
-                let daysInMonth = new Date(dObj.getFullYear(), dObj.getMonth() + 1, 0).getDate();
-                let dailyBasicFee = (OOMI_PERUS + SIIRTO_PERUS) / daysInMonth;
-                let totalCost = energyCost + dData.sumSiirto + dData.sumVero + dailyBasicFee;
-
-                // Считаем экстремумы (исключаем нули, если скрипт в этот час не работал)
-                let validSpots = dData.spotsList.filter(s => s !== 0);
-                validSpots.sort((a,b) => b - a); // по убыванию
-                
-                // Удаляем дубликаты цен для красоты отображения топа
-                let uniqueSpots = [...new Set(validSpots)];
-                
-                let topMax = uniqueSpots.slice(0, 3).map(n => n.toFixed(1)).join(', ');
-                let topMin = uniqueSpots.slice(-3).reverse().map(n => n.toFixed(1)).join(', ');
-                
-                if(!topMax) topMax = "Нет данных";
-                if(!topMin) topMin = "Нет данных";
-
-                // Подготавливаем метки часов
-                let chartHours = [];
-                for(let h=0; h<24; h++) chartHours.push(`${h}:00`);
-
-                // Вставляем HTML блок
-                let htmlBlock = `
-                <div class="day-card">
-                    <div class="day-header">Неделя ${weekNum} <span>| ${formattedTitle}</span></div>
-                    <div class="chart-wrapper">
-                        <canvas id="chart-${dateKey}"></canvas>
-                    </div>
-                    <div class="stats-box">
-                        <div class="main-stat">
-                            Набежало: <span>${dData.sumKwh.toFixed(2)} kWh</span> <br>
-                            Стоило: <b>${totalCost.toFixed(2)} €</b>
-                        </div>
-                        <div class="sub-stat">
-                            Средняя цена за сутки (биржа): <b>${avgSpot.toFixed(2)} c/kWh</b>
-                        </div>
-                        <div class="sub-stat" style="margin-top: 10px;">
-                            Пик цен: <span class="val-high">${topMax} c</span>
-                        </div>
-                        <div class="sub-stat">
-                            Мин. цена: <span class="val-low">${topMin} c</span>
-                        </div>
-                    </div>
-                </div>`;
-                
-                container.insertAdjacentHTML('beforeend', htmlBlock);
-
-                // Отрисовываем график Chart.js
-                if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels);
-                let ctx = document.getElementById(`chart-${dateKey}`).getContext('2d');
-                
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: chartHours,
-                        datasets: [
-                            { type: 'line', label: 'Цена (c)', data: dData.spotByHour, borderColor: '#e74c3c', backgroundColor: '#e74c3c', borderWidth: 2, tension: 0.3, pointRadius: 0, yAxisID: 'ySpot' },
-                            { type: 'bar', label: 'Расход (kWh)', data: dData.kwhByHour.map(v => v > 0 ? v.toFixed(2) : "0"), backgroundColor: '#3498db', borderRadius: 4, yAxisID: 'yKwh' }
-                        ]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { maxRotation: 90, minRotation: 90, font: {size: 8} } },
-                            yKwh: { type: 'linear', display: true, position: 'left', ticks: { font: {size: 9} }, grid: { borderDash: [5, 5] }, beginAtZero: true },
-                            ySpot: { type: 'linear', display: true, position: 'right', ticks: { font: {size: 9} }, grid: { display: false } }
-                        }
-                    }
-                });
-            });
-
+            processData(spotData, sheetText);
         } catch (e) {
-            console.error("Ошибка загрузки истории:", e);
-            document.getElementById('history-container').innerHTML = '<div class="loading" style="color:#e74c3c;">Ошибка связи с базой данных</div>';
+            console.error("Ошибка загрузки:", e);
+            document.getElementById('loading-spinner').innerHTML = '<span style="color:#e74c3c;">Ошибка базы данных</span>';
         }
+    }
+
+    function createPeriodData() {
+        return {
+            sumKwh: 0, sumSpot: 0, sumCost: 0, sumSiirto: 0, sumVero: 0, sumPerus: 0,
+            hoursCount: 0, spotsList: []
+        };
+    }
+
+    function processData(spotData, sheetText) {
+        const lines = sheetText.trim().split(/\r?\n/);
+        
+        let daysMap = {};
+        let weeksMap = {};
+        let monthsMap = {};
+        
+        let todayStr = new Date().toISOString().split('T')[0];
+
+        // 1. ПАРСИНГ И АГРЕГАЦИЯ ПО ДНЯМ
+        for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split('\t');
+            if (cols.length < 6) continue;
+
+            let rowDate = parseSheetDate(cols[0]);
+            let dateKey = `${rowDate.getFullYear()}-${String(rowDate.getMonth()+1).padStart(2,'0')}-${String(rowDate.getDate()).padStart(2,'0')}`;
+
+            if (!daysMap[dateKey]) {
+                daysMap[dateKey] = {
+                    dateObj: rowDate, data: createPeriodData(),
+                    kwhByHour: new Array(24).fill(0), spotByHour: new Array(24).fill(0)
+                };
+            }
+
+            let hr = parseInt(cols[1].split(':')[0], 10);
+            let spot = parseFloat(String(cols[2]).replace(',', '.'));
+            let kwh = parseFloat(String(cols[5]).replace(',', '.'));
+
+            if (!isNaN(spot) && !isNaN(kwh)) {
+                daysMap[dateKey].kwhByHour[hr] += kwh;
+                daysMap[dateKey].spotByHour[hr] = spot;
+                
+                if (kwh > 0 || !daysMap[dateKey].data.spotsList.includes(spot)) daysMap[dateKey].data.spotsList.push(spot);
+
+                daysMap[dateKey].data.sumKwh += kwh;
+                daysMap[dateKey].data.sumSpot += spot;
+                daysMap[dateKey].data.sumCost += (kwh * spot);
+                daysMap[dateKey].data.hoursCount++;
+
+                let sPrice = (hr >= 7 && hr < 22) ? SIIRTO_DAY : SIIRTO_NIGHT;
+                daysMap[dateKey].data.sumSiirto += (kwh * sPrice) / 100;
+                daysMap[dateKey].data.sumVero += (kwh * VERO_C_KWH) / 100;
+            }
+        }
+
+        // Подмешиваем живое API только для графика СЕГОДНЯ (решает проблему нулей)
+        const todaySpotApi = spotData.filter(item => new Date(item.DateTime).getDate() === new Date().getDate());
+        for(let key in daysMap) {
+            if(key === todayStr) {
+                for(let h=0; h<24; h++) {
+                    let spotObj = todaySpotApi.find(s => new Date(s.DateTime).getHours() === h);
+                    if(spotObj) daysMap[key].spotByHour[h] = parseFloat((spotObj.PriceWithTax * 100).toFixed(2));
+                }
+            }
+        }
+
+        // 2. АГРЕГАЦИЯ ПО НЕДЕЛЯМ И МЕСЯЦАМ
+        for (let dateKey in daysMap) {
+            let dObj = daysMap[dateKey].dateObj;
+            let dData = daysMap[dateKey].data;
+            
+            // Считаем абон.плату за 1 день
+            let daysInMonth = new Date(dObj.getFullYear(), dObj.getMonth() + 1, 0).getDate();
+            let dailyPerus = (OOMI_PERUS + SIIRTO_PERUS) / daysInMonth;
+            dData.sumPerus = dailyPerus;
+
+            // Ключи
+            let weekKey = `${dObj.getFullYear()}-W${String(getISOWeek(dObj)).padStart(2,'0')}`;
+            let monthKey = `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}`;
+
+            // Недели
+            if (!weeksMap[weekKey]) {
+                weeksMap[weekKey] = { 
+                    weekNum: getISOWeek(dObj), year: dObj.getFullYear(), data: createPeriodData(),
+                    kwhByDay: new Array(7).fill(0), spotByDay: new Array(7).fill(0) 
+                };
+            }
+            let dayOfWeekIdx = (dObj.getDay() || 7) - 1; // 0=Пн, 6=Вс
+            weeksMap[weekKey].kwhByDay[dayOfWeekIdx] += dData.sumKwh;
+            weeksMap[weekKey].spotByDay[dayOfWeekIdx] = dData.hoursCount > 0 ? (dData.sumSpot / dData.hoursCount) : 0;
+            mergePeriodData(weeksMap[weekKey].data, dData);
+
+            // Месяцы
+            if (!monthsMap[monthKey]) {
+                monthsMap[monthKey] = { 
+                    monthIdx: dObj.getMonth(), year: dObj.getFullYear(), daysInMonth: daysInMonth, data: createPeriodData(),
+                    kwhByDay: new Array(daysInMonth).fill(0), spotByDay: new Array(daysInMonth).fill(0) 
+                };
+            }
+            let dayOfMonthIdx = dObj.getDate() - 1; // 0=1 число
+            monthsMap[monthKey].kwhByDay[dayOfMonthIdx] += dData.sumKwh;
+            monthsMap[monthKey].spotByDay[dayOfMonthIdx] = dData.hoursCount > 0 ? (dData.sumSpot / dData.hoursCount) : 0;
+            mergePeriodData(monthsMap[monthKey].data, dData);
+        }
+
+        // Прячем загрузку
+        document.getElementById('loading-spinner').style.display = 'none';
+
+        // 3. ОТРИСОВКА (Дни: 7, Недели: 10, Месяцы: 13)
+        let sortedDays = Object.keys(daysMap).sort().reverse().slice(0, 7);
+        let sortedWeeks = Object.keys(weeksMap).sort().reverse().slice(0, 10);
+        let sortedMonths = Object.keys(monthsMap).sort().reverse().slice(0, 13);
+
+        renderSection('days-container', sortedDays, daysMap, 'day');
+        renderSection('weeks-container', sortedWeeks, weeksMap, 'week');
+        renderSection('months-container', sortedMonths, monthsMap, 'month');
+    }
+
+    function mergePeriodData(target, source) {
+        target.sumKwh += source.sumKwh;
+        target.sumSpot += source.sumSpot;
+        target.sumCost += source.sumCost;
+        target.hoursCount += source.hoursCount;
+        target.sumSiirto += source.sumSiirto;
+        target.sumVero += source.sumVero;
+        target.sumPerus += source.sumPerus;
+        target.spotsList.push(...source.spotsList);
+    }
+
+    function renderSection(containerId, keys, dataMap, type) {
+        const container = document.getElementById(containerId);
+        container.style.display = 'block';
+
+        if(keys.length === 0) {
+            container.insertAdjacentHTML('beforeend', `<div class="empty-msg">Данные появятся со временем...</div>`);
+            return;
+        }
+
+        keys.forEach((key, index) => {
+            let item = dataMap[key];
+            let title = "";
+            let labels = [];
+            let kwhData = [];
+            let spotData = [];
+            
+            if (type === 'day') {
+                title = `${item.dateObj.getDate()} ${shortMonthsRu[item.dateObj.getMonth()]} ${item.dateObj.getFullYear()}`;
+                for(let h=0; h<24; h++) labels.push(`${h}:00`);
+                kwhData = item.kwhByHour;
+                spotData = item.spotByHour;
+            } 
+            else if (type === 'week') {
+                title = `Неделя ${item.weekNum} <span>| ${item.year}</span>`;
+                labels = daysOfWeekRu;
+                kwhData = item.kwhByDay;
+                spotData = item.spotByDay;
+            } 
+            else if (type === 'month') {
+                title = `${monthsRu[item.monthIdx]} <span>| ${item.year}</span>`;
+                for(let d=1; d<=item.daysInMonth; d++) labels.push(d);
+                kwhData = item.kwhByDay;
+                spotData = item.spotByDay;
+            }
+
+            // Математика Итогов
+            let dData = item.data || item; // для дней data на верхнем уровне
+            let avgSpot = dData.hoursCount > 0 ? (dData.sumSpot / dData.hoursCount) : 0;
+            let avgPersonal = dData.sumKwh > 0 ? (dData.sumCost / dData.sumKwh) : avgSpot;
+            let finalPrice = FIXED_PRICE + (avgPersonal - avgSpot);
+            let energyCost = (dData.sumKwh * finalPrice) / 100;
+            let totalCost = energyCost + dData.sumSiirto + dData.sumVero + dData.sumPerus;
+
+            // Экстремумы
+            let validSpots = dData.spotsList.filter(s => s !== 0);
+            validSpots.sort((a,b) => b - a);
+            let uniqueSpots = [...new Set(validSpots)];
+            
+            let topMax = uniqueSpots.slice(0, 3).map(n => n.toFixed(1)).join(', ') || "---";
+            let topMin = uniqueSpots.slice(-3).reverse().map(n => n.toFixed(1)).join(', ') || "---";
+
+            let chartId = `chart-${type}-${index}`;
+
+            let htmlBlock = `
+            <div class="history-card">
+                <div class="card-header">${title}</div>
+                <div class="chart-wrapper"><canvas id="${chartId}"></canvas></div>
+                <div class="stats-box">
+                    <div class="main-stat">
+                        Набежало: <span>${dData.sumKwh.toFixed(2)} kWh</span> <br>
+                        Стоило: <b>${totalCost.toFixed(2)} €</b>
+                    </div>
+                    <div class="sub-stat">Средняя цена за период (биржа): <b>${avgSpot.toFixed(2)} c/kWh</b></div>
+                    <div class="sub-stat" style="margin-top: 10px;">Пик цен: <span class="val-high">${topMax} c</span></div>
+                    <div class="sub-stat">Мин. цена: <span class="val-low">${topMin} c</span></div>
+                </div>
+            </div>`;
+            
+            container.insertAdjacentHTML('beforeend', htmlBlock);
+
+            // Рендер Графика
+            if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels);
+            let ctx = document.getElementById(chartId).getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { type: 'line', label: 'Цена (c)', data: spotData, borderColor: '#e74c3c', backgroundColor: '#e74c3c', borderWidth: 2, tension: 0.3, pointRadius: type==='day'?0:3, yAxisID: 'ySpot' },
+                        { type: 'bar', label: 'Расход (kWh)', data: kwhData.map(v => v > 0 ? v.toFixed(2) : "0"), backgroundColor: '#3498db', borderRadius: 4, yAxisID: 'yKwh' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { maxRotation: 90, minRotation: 90, font: {size: type==='month'?8:9} } },
+                        yKwh: { type: 'linear', display: true, position: 'left', ticks: { font: {size: 9} }, grid: { borderDash: [5, 5] }, beginAtZero: true },
+                        ySpot: { type: 'linear', display: true, position: 'right', ticks: { font: {size: 9} }, grid: { display: false } }
+                    }
+                }
+            });
+        });
     }
 
     loadHistory();
