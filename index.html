@@ -26,7 +26,6 @@
         }
         .price-big { font-size: 7rem; font-weight: 900; margin: 0; line-height: 0.9; color: #1a1a1a; }
         
-        /* ОБНОВЛЕННЫЙ БЛОК СТАТИСТИКИ */
         .shelly-stats {
             display: flex; align-items: center; justify-content: space-between;
             margin-top: 20px; padding-top: 20px; border-top: 1px solid #f0f0f0;
@@ -63,8 +62,8 @@
         .nav-btn:active { transform: scale(0.98); }
         .btn-charts { background-color: #2c3e50; }
         .btn-finance { background-color: #27ae60; } 
+        .btn-forecast { background-color: #f39c12; margin-top: 12px; } /* Кнопка прогноза */
         
-        /* КВАДРАТНАЯ КНОПКА ПО ФАЗАМ */
         .square-btn-phases {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             width: 70px; height: 70px; flex-shrink: 0;
@@ -118,6 +117,8 @@
         <a href="charts.html" class="nav-btn btn-charts">📊 Графики</a>
         <a href="finance.html" class="nav-btn btn-finance">💰 Финансы</a>
     </div>
+    
+    <a href="forecast.html" class="nav-btn btn-forecast">🌤 Стратегия и Прогноз</a>
 </div>
 
 <script>
@@ -126,7 +127,6 @@
     let priceChart;
     const FREE = 2, CHEAP = 5, HIGH = 10;
     
-    // Переменные для хранения кэша из Google Таблиц
     let cachedCloudKwh = 0;
     let cachedCloudLastWh = 0;
     let lastCloudSync = 0;
@@ -175,14 +175,11 @@
             if (res.isok) {
                 const emeters = res.data.device_status.emeters;
                 
-                // 1. Обновляем текущую мощность в Ваттах (Живые данные)
                 let totalPower = emeters.reduce((sum, phase) => sum + phase.power, 0);
                 document.getElementById('shelly-power').innerText = Math.round(totalPower);
                 
-                // Текущие суммарные показания счетчика
                 let currentTotalWh = emeters.reduce((sum, phase) => sum + (phase.total || 0), 0);
 
-                // 2. Синхронизируем базовые показания с Google Таблицей (раз в 5 минут)
                 if (Date.now() - lastCloudSync > 300000) {
                     try {
                         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREfZuB82WO35dZRrsVl3XEaxyf1DrF35kXMZ5p7MbJTIAtqE5R9AUb3w-72A-sqIZ4Z8PWwDIUVqSV/pub?gid=0&single=true&output=tsv';
@@ -205,7 +202,6 @@
                                 let kwh = parseFloat(String(cols[5]).replace(',', '.'));
                                 if (!isNaN(kwh)) tempKwh += kwh;
                             }
-                            // Сохраняем самое последнее общее показание счетчика из таблицы
                             let tWh = parseFloat(cols[3]);
                             if (!isNaN(tWh)) tempLastWh = tWh; 
                         }
@@ -218,15 +214,11 @@
                     }
                 }
 
-                // Защита для самого первого запуска
                 if (cachedCloudLastWh === 0) cachedCloudLastWh = currentTotalWh;
 
-                // 3. Вычисляем точное потребление за сегодня
-                // Разница между живым счетчиком и последней записью в облаке
                 let liveDeltaWh = currentTotalWh - cachedCloudLastWh;
-                if (liveDeltaWh < 0) liveDeltaWh = currentTotalWh; // Защита от сброса Shelly
+                if (liveDeltaWh < 0) liveDeltaWh = currentTotalWh;
                 
-                // Суммируем облако + то, что накрутило только что
                 let consumedTodayKwh = cachedCloudKwh + (liveDeltaWh / 1000);
                 
                 document.getElementById('shelly-load').innerText = consumedTodayKwh.toFixed(2);
