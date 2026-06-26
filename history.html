@@ -57,6 +57,20 @@
         .sub-stat b { color: #111; font-weight: 800; }
         .val-high { color: #e74c3c; font-weight: 800; }
         .val-low { color: #27ae60; font-weight: 800; }
+
+        /* СТИЛИ ДЛЯ БИТВЫ ТАРИФОВ */
+        .vs-box { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #bdc3c7; }
+        .vs-title { text-align: center; font-size: 0.8rem; font-weight: 900; color: #7f8c8d; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;}
+        .vs-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; margin-bottom: 8px; }
+        .vs-row:last-child { margin-bottom: 0; }
+        .vs-row div:first-child { color: #555; font-weight: 600; }
+        .vs-row div:last-child { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+        .vs-row b { font-size: 1rem; color: #2c3e50; }
+        
+        .badge { padding: 3px 6px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge.good { background: #eafaf1; color: #27ae60; }
+        .badge.bad { background: #fdedec; color: #e74c3c; }
+        .badge.neutral { background: #2c3e50; color: #fff; }
         
         .loading { text-align: center; font-weight: bold; color: #7f8c8d; padding: 40px; }
         .empty-msg { text-align: center; color: #95a5a6; font-style: italic; margin-bottom: 20px; }
@@ -84,7 +98,10 @@
 
 <script>
     // --- НАСТРОЙКИ ---
-    const FIXED_PRICE = 5.99; 
+    const FIXED_PRICE = 5.99;       // Твой Jousto
+    const PURE_FIXED_PRICE = 8.99;  // Альтернативный глухой фикс
+    const SPOT_MARGIN = 0.40;       // Стандартная маржа продавца для чистого спота (c/kWh)
+    
     const OOMI_PERUS = 5.90;    
     const SIIRTO_PERUS = 20.33; 
     const SIIRTO_DAY = 2.69;    
@@ -178,7 +195,6 @@
             }
         }
 
-        // Подмешиваем живое API только для графика СЕГОДНЯ (решает проблему нулей)
         const todaySpotApi = spotData.filter(item => new Date(item.DateTime).getDate() === new Date().getDate());
         for(let key in daysMap) {
             if(key === todayStr) {
@@ -194,44 +210,39 @@
             let dObj = daysMap[dateKey].dateObj;
             let dData = daysMap[dateKey].data;
             
-            // Считаем абон.плату за 1 день
             let daysInMonth = new Date(dObj.getFullYear(), dObj.getMonth() + 1, 0).getDate();
             let dailyPerus = (OOMI_PERUS + SIIRTO_PERUS) / daysInMonth;
             dData.sumPerus = dailyPerus;
 
-            // Ключи
             let weekKey = `${dObj.getFullYear()}-W${String(getISOWeek(dObj)).padStart(2,'0')}`;
             let monthKey = `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}`;
 
-            // Недели
             if (!weeksMap[weekKey]) {
                 weeksMap[weekKey] = { 
                     weekNum: getISOWeek(dObj), year: dObj.getFullYear(), data: createPeriodData(),
                     kwhByDay: new Array(7).fill(0), spotByDay: new Array(7).fill(0) 
                 };
             }
-            let dayOfWeekIdx = (dObj.getDay() || 7) - 1; // 0=Пн, 6=Вс
+            let dayOfWeekIdx = (dObj.getDay() || 7) - 1; 
             weeksMap[weekKey].kwhByDay[dayOfWeekIdx] += dData.sumKwh;
             weeksMap[weekKey].spotByDay[dayOfWeekIdx] = dData.hoursCount > 0 ? (dData.sumSpot / dData.hoursCount) : 0;
             mergePeriodData(weeksMap[weekKey].data, dData);
 
-            // Месяцы
             if (!monthsMap[monthKey]) {
                 monthsMap[monthKey] = { 
                     monthIdx: dObj.getMonth(), year: dObj.getFullYear(), daysInMonth: daysInMonth, data: createPeriodData(),
                     kwhByDay: new Array(daysInMonth).fill(0), spotByDay: new Array(daysInMonth).fill(0) 
                 };
             }
-            let dayOfMonthIdx = dObj.getDate() - 1; // 0=1 число
+            let dayOfMonthIdx = dObj.getDate() - 1; 
             monthsMap[monthKey].kwhByDay[dayOfMonthIdx] += dData.sumKwh;
             monthsMap[monthKey].spotByDay[dayOfMonthIdx] = dData.hoursCount > 0 ? (dData.sumSpot / dData.hoursCount) : 0;
             mergePeriodData(monthsMap[monthKey].data, dData);
         }
 
-        // Прячем загрузку
         document.getElementById('loading-spinner').style.display = 'none';
 
-        // 3. ОТРИСОВКА (Дни: 7, Недели: 10, Месяцы: 13)
+        // 3. ОТРИСОВКА
         let sortedDays = Object.keys(daysMap).sort().reverse().slice(0, 7);
         let sortedWeeks = Object.keys(weeksMap).sort().reverse().slice(0, 10);
         let sortedMonths = Object.keys(monthsMap).sort().reverse().slice(0, 13);
@@ -287,13 +298,33 @@
                 spotData = item.spotByDay;
             }
 
-            // Математика Итогов
-            let dData = item.data || item; // для дней data на верхнем уровне
+            let dData = item.data || item; 
+            
+            // Расчет тарифов
             let avgSpot = dData.hoursCount > 0 ? (dData.sumSpot / dData.hoursCount) : 0;
             let avgPersonal = dData.sumKwh > 0 ? (dData.sumCost / dData.sumKwh) : avgSpot;
-            let finalPrice = FIXED_PRICE + (avgPersonal - avgSpot);
-            let energyCost = (dData.sumKwh * finalPrice) / 100;
-            let totalCost = energyCost + dData.sumSiirto + dData.sumVero + dData.sumPerus;
+            let effect = avgPersonal - avgSpot;
+            let finalPrice = FIXED_PRICE + effect;
+            
+            // Стоимость энергии в разных сценариях
+            let myEnergyCost = (dData.sumKwh * finalPrice) / 100;
+            let pureSpotCost = (dData.sumCost + (dData.sumKwh * SPOT_MARGIN)) / 100;
+            let pureFixedCost = (dData.sumKwh * PURE_FIXED_PRICE) / 100;
+            
+            // Выгода (положительная) или переплата (отрицательная) по сравнению с Jousto
+            let diffSpot = pureSpotCost - myEnergyCost;
+            let diffFixed = pureFixedCost - myEnergyCost;
+
+            // Формирование бейджей
+            let badgeSpot = diffSpot >= 0 
+                ? `<span class="badge good">Выгода +${diffSpot.toFixed(2)} €</span>`
+                : `<span class="badge bad">Переплата ${diffSpot.toFixed(2)} €</span>`;
+                
+            let badgeFixed = diffFixed >= 0 
+                ? `<span class="badge good">Выгода +${diffFixed.toFixed(2)} €</span>`
+                : `<span class="badge bad">Переплата ${diffFixed.toFixed(2)} €</span>`;
+
+            let totalCostWithSiirto = myEnergyCost + dData.sumSiirto + dData.sumVero + dData.sumPerus;
 
             // Экстремумы
             let validSpots = dData.spotsList.filter(s => s !== 0);
@@ -312,11 +343,28 @@
                 <div class="stats-box">
                     <div class="main-stat">
                         Набежало: <span>${dData.sumKwh.toFixed(2)} kWh</span> <br>
-                        Стоило: <b>${totalCost.toFixed(2)} €</b>
+                        Полная стоимость (с доставкой): <b>${totalCostWithSiirto.toFixed(2)} €</b>
                     </div>
                     <div class="sub-stat">Средняя цена за период (биржа): <b>${avgSpot.toFixed(2)} c/kWh</b></div>
                     <div class="sub-stat" style="margin-top: 10px;">Пик цен: <span class="val-high">${topMax} c</span></div>
                     <div class="sub-stat">Мин. цена: <span class="val-low">${topMin} c</span></div>
+                    
+                    <div class="vs-box">
+                        <div class="vs-title">Битва Тарифов (Затраты на энергию)</div>
+                        <div class="vs-row">
+                            <div>Твой Jousto (5.99 ± эффект)</div>
+                            <div><span class="badge neutral">Твой тариф</span> <b>${myEnergyCost.toFixed(2)} €</b></div>
+                        </div>
+                        <div class="vs-row">
+                            <div>Чистый Спот (+ маржа 0.4c)</div>
+                            <div>${badgeSpot} <b>${pureSpotCost.toFixed(2)} €</b></div>
+                        </div>
+                        <div class="vs-row">
+                            <div>Глухой Фикс (8.99 c)</div>
+                            <div>${badgeFixed} <b>${pureFixedCost.toFixed(2)} €</b></div>
+                        </div>
+                    </div>
+
                 </div>
             </div>`;
             
