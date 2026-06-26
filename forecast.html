@@ -7,68 +7,69 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-            background-color: #e2f3e5; display: flex; justify-content: center; padding: 15px; margin: 0;
+            background-color: #1e272e; /* Темный фон вокруг для контраста плиток */
+            display: flex; justify-content: center; padding: 15px; margin: 0;
         }
         .widget-container { width: 100%; max-width: 500px; }
         
         .nav-btn {
             display: block; width: 100%; padding: 16px; background-color: #2c3e50; color: white;
-            border: none; border-radius: 16px; font-size: 16px; font-weight: bold; cursor: pointer;
+            border: 1px solid #485460; border-radius: 16px; font-size: 16px; font-weight: bold; cursor: pointer;
             text-decoration: none; text-align: center; box-sizing: border-box;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); margin-bottom: 20px;
         }
 
         .header-title {
-            text-align: center; font-size: 1.4rem; font-weight: 900; color: #2c3e50;
+            text-align: center; font-size: 1.4rem; font-weight: 900; color: #d2dae2;
             margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px;
         }
 
-        /* КАРТОЧКА ДНЯ */
-        .day-card {
-            background: white; border-radius: 20px; padding: 18px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.05); margin-bottom: 15px;
-            display: flex; flex-direction: column; gap: 12px;
+        /* СЕТКА ДЛЯ ПЛИТОК */
+        .forecast-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
         }
 
-        /* Верхняя часть карточки (Дата и статус) */
-        .day-top {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px dashed #f0f0f0; padding-bottom: 12px;
+        /* БАЗОВЫЙ СТИЛЬ ПЛИТКИ */
+        .day-tile {
+            border-radius: 20px; padding: 15px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+            position: relative; overflow: hidden;
         }
-        .date-box { display: flex; flex-direction: column; }
-        .date-box b { font-size: 1.1rem; color: #2c3e50; text-transform: uppercase; }
-        .date-box span { font-size: 0.8rem; color: #7f8c8d; font-weight: 600; }
 
-        .price-badge {
-            display: flex; align-items: center; gap: 6px;
-            padding: 6px 12px; border-radius: 12px; font-weight: 800; font-size: 0.85rem;
-        }
-        .badge-cheap { background: #eafaf1; color: #27ae60; }
-        .badge-normal { background: #fef5e7; color: #f39c12; }
-        .badge-expensive { background: #fdedec; color: #e74c3c; }
+        /* "Сегодня" занимает всю ширину */
+        .tile-wide { grid-column: span 2; padding: 20px; }
 
-        /* Нижняя часть карточки (Погода) */
-        .day-weather {
-            display: flex; justify-content: space-between; align-items: center;
-        }
+        /* ЦВЕТОВЫЕ ТЕМЫ ПЛИТОК (Градиенты) */
+        .bg-cheap { background: linear-gradient(135deg, #d5f5e3 0%, #abebc6 100%); color: #145a32; border: 1px solid #82e0aa; }
+        .bg-normal { background: linear-gradient(135deg, #fdebd0 0%, #fad7a1 100%); color: #7e5109; border: 1px solid #f8c471; }
+        .bg-expensive { background: linear-gradient(135deg, #fadbd8 0%, #f5b7b1 100%); color: #78281f; border: 1px solid #f1948a; }
+
+        /* ВНУТРЕННОСТИ ПЛИТКИ */
+        .tile-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .tile-date { display: flex; flex-direction: column; }
+        .tile-date b { font-size: 1.1rem; font-weight: 900; text-transform: uppercase; }
+        .tile-date span { font-size: 0.75rem; font-weight: 700; opacity: 0.7; }
         
-        .weather-main { display: flex; align-items: center; gap: 10px; }
-        .weather-icon { font-size: 2.2rem; }
-        .temp-box { display: flex; flex-direction: column; }
-        .temp-box b { font-size: 1.2rem; color: #111; }
-        .temp-box span { font-size: 0.75rem; color: #7f8c8d; }
+        .tile-status { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; padding: 4px 8px; border-radius: 8px; background: rgba(255,255,255,0.4); }
 
-        .factors { display: flex; gap: 12px; text-align: right; }
-        .factor-item { display: flex; flex-direction: column; align-items: flex-end; }
-        .factor-item span { font-size: 0.7rem; color: #95a5a6; text-transform: uppercase; font-weight: 700; }
-        .factor-item b { font-size: 0.95rem; color: #2c3e50; }
-        
-        /* Цвета для показателей погоды */
-        .wind-high { color: #27ae60 !important; } /* Хорошо для цены */
-        .wind-low { color: #e74c3c !important; } /* Плохо для цены */
-        .temp-cold { color: #3498db !important; } 
+        .tile-middle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        .tile-icon { font-size: 2.5rem; line-height: 1; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); }
+        .tile-temps { text-align: right; }
+        .tile-temps b { display: block; font-size: 1.6rem; font-weight: 900; letter-spacing: -1px; }
+        .tile-temps span { font-size: 0.8rem; font-weight: 700; opacity: 0.7; }
 
-        .loading { text-align: center; font-weight: bold; color: #7f8c8d; padding: 40px; }
+        .tile-bottom { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 10px; }
+        .param { display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .param span { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; opacity: 0.7; margin-bottom: 2px; }
+        .param b { font-size: 0.9rem; font-weight: 900; }
+
+        /* Иконка ветра, солнца, дождя */
+        .param i { font-style: normal; font-size: 0.9rem; margin-bottom: 2px; }
+
+        .loading { text-align: center; font-weight: bold; color: #d2dae2; padding: 40px; }
     </style>
 </head>
 <body>
@@ -78,131 +79,128 @@
     
     <div class="header-title">Стратегия на 5 дней</div>
     
-    <div id="forecast-container">
-        <div class="loading" id="loading-msg">Анализируем розу ветров и солнце...</div>
+    <div id="forecast-grid" class="forecast-grid">
+        <div class="loading" id="loading-msg" style="grid-column: span 2;">Сканируем атмосферу...</div>
     </div>
 </div>
 
 <script>
-    // Координаты Оулу (примерно центр твоей энерго-зоны)
     const LAT = 65.01;
     const LON = 25.46;
     
-    const daysRu = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+    const daysRu = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+    const daysRuFull = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
     const monthsRu = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
 
-    // WMO коды погоды -> Эмодзи
     function getWeatherIcon(code) {
-        if (code === 0) return '☀️'; // Ясно
-        if (code === 1 || code === 2) return '⛅'; // Переменная облачность
-        if (code === 3) return '☁️'; // Пасмурно
-        if (code >= 45 && code <= 48) return '🌫️'; // Туман
-        if (code >= 51 && code <= 67) return '🌧️'; // Дождь
-        if (code >= 71 && code <= 77) return '❄️'; // Снег
-        if (code >= 80 && code <= 82) return '🌦️'; // Ливень
-        if (code >= 85 && code <= 86) return '🌨️'; // Снегопад
-        if (code >= 95) return '⛈️'; // Гроза
+        if (code === 0) return '☀️'; 
+        if (code === 1 || code === 2) return '⛅'; 
+        if (code === 3) return '☁️'; 
+        if (code >= 45 && code <= 48) return '🌫️'; 
+        if (code >= 51 && code <= 67) return '🌧️'; 
+        if (code >= 71 && code <= 77) return '❄️'; 
+        if (code >= 80 && code <= 82) return '🌦️'; 
+        if (code >= 85 && code <= 86) return '🌨️'; 
+        if (code >= 95) return '⛈️'; 
         return '🌤️';
     }
 
     async function loadForecast() {
         try {
-            // Запрашиваем погоду из бесплатного Open-Meteo
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,sunshine_duration&timezone=Europe%2FHelsinki&forecast_days=5`;
+            // Добавил вероятность осадков (precipitation_probability_max)
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,sunshine_duration,precipitation_probability_max&timezone=Europe%2FHelsinki&forecast_days=5`;
             const response = await fetch(url);
             const data = await response.json();
 
-            const container = document.getElementById('forecast-container');
-            container.innerHTML = '';
+            const grid = document.getElementById('forecast-grid');
+            grid.innerHTML = '';
 
             for (let i = 0; i < 5; i++) {
                 const dateStr = data.daily.time[i];
                 const d = new Date(dateStr);
                 
-                const dayName = i === 0 ? "Сегодня" : i === 1 ? "Завтра" : daysRu[d.getDay()];
+                const isToday = i === 0;
+                const dayName = isToday ? "Сегодня" : i === 1 ? "Завтра" : (isToday ? daysRuFull[d.getDay()] : daysRu[d.getDay()]);
                 const dateFormatted = `${d.getDate()} ${monthsRu[d.getMonth()]}`;
                 
                 const tempMax = Math.round(data.daily.temperature_2m_max[i]);
                 const tempMin = Math.round(data.daily.temperature_2m_min[i]);
-                const windMs = (data.daily.wind_speed_10m_max[i] / 3.6).toFixed(1); // Перевод из км/ч в м/с
-                const sunHours = (data.daily.sunshine_duration[i] / 3600).toFixed(1); // Секунды в часы
+                const windMs = (data.daily.wind_speed_10m_max[i] / 3.6).toFixed(1); 
+                const sunHours = (data.daily.sunshine_duration[i] / 3600).toFixed(1); 
+                const pop = data.daily.precipitation_probability_max[i] || 0; // Осадки %
                 const weatherIcon = getWeatherIcon(data.daily.weather_code[i]);
 
-                // --- АЛГОРИТМ ПРЕДСКАЗАНИЯ ЦЕНЫ (ФИНСКОЕ КОМБО) ---
+                // --- АЛГОРИТМ ПРЕДСКАЗАНИЯ ЦЕНЫ ---
                 let riskScore = 0; 
-                // Минус = дешевле, Плюс = дороже
-
-                // 1. Мороз (Зима)
                 if (tempMin < -20) riskScore += 4;
                 else if (tempMin < -10) riskScore += 2.5;
                 else if (tempMin < -5) riskScore += 1;
-                else if (tempMin > 15) riskScore -= 0.5; // Теплое лето
+                else if (tempMin > 15) riskScore -= 0.5; 
 
-                // 2. Ветер (Главный драйвер скидок)
                 if (windMs > 9) riskScore -= 3.5;
                 else if (windMs > 6) riskScore -= 2;
                 else if (windMs < 3) riskScore += 1.5;
 
-                // 3. Солнце / Темнота (Зима = мало солнца = дороже)
                 if (sunHours > 10) riskScore -= 1;
                 else if (sunHours < 3) riskScore += 1;
 
-                // --- ФОРМИРОВАНИЕ БЕЙДЖА ---
-                let badgeClass, badgeIcon, badgeText;
-                
+                // --- ЦВЕТА И СТАТУСЫ ---
+                let bgClass, statusText;
                 if (riskScore <= -1.5) {
-                    badgeClass = "badge-cheap"; badgeIcon = "🚀"; badgeText = "Ожидается дешево";
+                    bgClass = "bg-cheap"; statusText = "Дешево";
                 } else if (riskScore > -1.5 && riskScore <= 1.5) {
-                    badgeClass = "badge-normal"; badgeIcon = "⚖️"; badgeText = "Средняя цена";
+                    bgClass = "bg-normal"; statusText = "Средне";
                 } else {
-                    badgeClass = "badge-expensive"; badgeIcon = "📈"; badgeText = "Риск высоких цен";
+                    bgClass = "bg-expensive"; statusText = "Дорого";
                 }
 
-                // Стилизация циферок для наглядности
-                let windColorClass = windMs > 6 ? 'wind-high' : windMs < 3 ? 'wind-low' : '';
-                let tempColorClass = tempMin < 0 ? 'temp-cold' : '';
+                let wideClass = isToday ? "tile-wide" : "";
+                let displayDayName = isToday ? "Сегодня" : dayName;
 
-                // Рендер карточки
-                let cardHTML = `
-                <div class="day-card">
-                    <div class="day-top">
-                        <div class="date-box">
-                            <b>${dayName}</b>
+                // Рендер Плитки
+                let tileHTML = `
+                <div class="day-tile ${bgClass} ${wideClass}">
+                    <div class="tile-header">
+                        <div class="tile-date">
+                            <b>${displayDayName}</b>
                             <span>${dateFormatted}</span>
                         </div>
-                        <div class="price-badge ${badgeClass}">
-                            <span>${badgeIcon}</span> ${badgeText}
+                        <div class="tile-status">${statusText}</div>
+                    </div>
+                    
+                    <div class="tile-middle">
+                        <div class="tile-icon">${weatherIcon}</div>
+                        <div class="tile-temps">
+                            <b>${tempMax}°</b>
+                            <span>Ночью ${tempMin}°</span>
                         </div>
                     </div>
                     
-                    <div class="day-weather">
-                        <div class="weather-main">
-                            <div class="weather-icon">${weatherIcon}</div>
-                            <div class="temp-box">
-                                <b class="${tempColorClass}">${tempMax}° ... ${tempMin}°</b>
-                                <span>Температура</span>
-                            </div>
+                    <div class="tile-bottom">
+                        <div class="param">
+                            <i>💨</i>
+                            <span>Ветер</span>
+                            <b>${windMs}</b>
                         </div>
-                        
-                        <div class="factors">
-                            <div class="factor-item">
-                                <span>Ветер</span>
-                                <b class="${windColorClass}">${windMs} м/с</b>
-                            </div>
-                            <div class="factor-item">
-                                <span>Солнце</span>
-                                <b>${sunHours} ч</b>
-                            </div>
+                        <div class="param">
+                            <i>☀️</i>
+                            <span>Солнце</span>
+                            <b>${sunHours}ч</b>
+                        </div>
+                        <div class="param">
+                            <i>💧</i>
+                            <span>Осадки</span>
+                            <b>${pop}%</b>
                         </div>
                     </div>
                 </div>`;
                 
-                container.insertAdjacentHTML('beforeend', cardHTML);
+                grid.insertAdjacentHTML('beforeend', tileHTML);
             }
             
         } catch (error) {
             console.error("Ошибка прогноза:", error);
-            document.getElementById('loading-msg').innerHTML = '<span style="color:#e74c3c;">Ошибка получения метеоданных</span>';
+            document.getElementById('loading-msg').innerHTML = '<span style="color:#e74c3c;">Ошибка сети</span>';
         }
     }
 
