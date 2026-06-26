@@ -30,7 +30,6 @@
             height: 280px; position: relative;
         }
 
-        /* КАРТОЧКИ ДАННЫХ */
         .period-card {
             background: white; border-radius: 24px; padding: 20px 15px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.06); margin-bottom: 15px;
@@ -55,7 +54,6 @@
         .stats-item b { font-size: 1.6rem; font-weight: 900; color: #111; display: block; line-height: 1.1; }
         .stats-item small { font-size: 0.85rem; font-weight: 600; color: #555; }
 
-        /* МАТЕМАТИЧЕСКАЯ ПАНЕЛЬ */
         .math-row {
             display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 5px;
         }
@@ -65,8 +63,7 @@
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
         }
         .math-box span {
-            display: block; font-size: 0.65rem; font-weight: 600; color: #95a5a6; 
-            text-transform: uppercase; margin-top: 4px;
+            display: block; font-size: 0.65rem; font-weight: 600; color: #95a5a6; text-transform: uppercase; margin-top: 4px;
         }
         .math-sign { font-size: 1.5rem; font-weight: bold; color: #bdc3c7; }
         
@@ -75,30 +72,24 @@
         .total-price { background: #2c3e50; color: #fff; }
         .total-price span { color: #bdc3c7; }
 
-        /* КОМПАКТНАЯ ТАБЛИЦА-ЧЕК */
-        .receipt-table {
-            width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem;
-        }
-        .receipt-table th {
-            font-size: 0.7rem; font-weight: 800; color: #2c3e50; text-transform: uppercase;
-            padding-bottom: 12px; border-bottom: 1px solid #bdc3c7; width: 23%;
-        }
+        .receipt-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem; }
+        .receipt-table th { font-size: 0.7rem; font-weight: 800; color: #2c3e50; text-transform: uppercase; padding-bottom: 12px; border-bottom: 1px solid #bdc3c7; width: 23%; }
         .receipt-table th:first-child { text-align: left; width: 31%; }
-        .receipt-table td { 
-            padding: 10px 2px; color: #333; font-weight: 700; border-bottom: 1px dashed #f0f0f0; 
-        }
-        .receipt-table td.row-label { 
-            text-align: left; color: #7f8c8d; font-weight: 600; font-size: 0.75rem; 
-        }
+        .receipt-table td { padding: 10px 2px; color: #333; font-weight: 700; border-bottom: 1px dashed #f0f0f0; }
+        .receipt-table td.row-label { text-align: left; color: #7f8c8d; font-weight: 600; font-size: 0.75rem; }
         .receipt-table tr:last-child td { border-bottom: none; }
-        .receipt-total-row td { 
-            padding-top: 15px; font-size: 1rem; font-weight: 900; color: #2c3e50; 
-            border-top: 1px solid #bdc3c7; border-bottom: none !important;
-        }
+        .receipt-total-row td { padding-top: 15px; font-size: 1rem; font-weight: 900; color: #2c3e50; border-top: 1px solid #bdc3c7; border-bottom: none !important; }
         .receipt-total-row td.row-label { color: #2c3e50; font-size: 0.85rem; font-weight: 900;}
         .receipt-total-row td:not(.row-label) { color: #e74c3c; }
 
         .update-time { text-align: center; color: #888; font-size: 0.75rem; margin-top: 10px; }
+        
+        .history-btn {
+            display: block; background: #34495e; color: #fff; padding: 12px; 
+            border-radius: 12px; text-align: center; text-decoration: none; 
+            font-weight: bold; font-size: 0.9rem; margin-top: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -115,34 +106,30 @@
         <div class="period-header">⚡ История потребления</div>
         <div class="stats-row-3">
             <div class="stats-item">
-                <span>Сегодня</span>
-                <b id="kwh-today">0.00</b><small>kWh</small>
+                <span>Сегодня</span><b id="kwh-today">0.00</b><small>kWh</small>
             </div>
             <div class="stats-item">
-                <span>7 Дней</span>
-                <b id="kwh-week">0.00</b><small>kWh</small>
+                <span>7 Дней</span><b id="kwh-week">0.00</b><small>kWh</small>
             </div>
             <div class="stats-item">
-                <span id="lbl-month-kwh">За Месяц</span>
-                <b id="kwh-month">0.00</b><small>kWh</small>
+                <span id="lbl-month-kwh">За Месяц</span><b id="kwh-month">0.00</b><small>kWh</small>
             </div>
         </div>
+        <!-- КНОПКА В ИСТОРИЮ -->
+        <a href="history.html" class="history-btn">📅 Вся История (7 дней)</a>
     </div>
 
     <div class="period-card">
         <div class="period-header">💰 Стоимость энергии</div>
         <div class="stats-row-3">
             <div class="stats-item">
-                <span>Сегодня</span>
-                <b id="cost-today">0.00</b><small>€</small>
+                <span>Сегодня</span><b id="cost-today">0.00</b><small>€</small>
             </div>
             <div class="stats-item">
-                <span>7 Дней</span>
-                <b id="cost-week">0.00</b><small>€</small>
+                <span>7 Дней</span><b id="cost-week">0.00</b><small>€</small>
             </div>
             <div class="stats-item">
-                <span id="lbl-month-cost">За Месяц</span>
-                <b id="cost-month">0.00</b><small>€</small>
+                <span id="lbl-month-cost">За Месяц</span><b id="cost-month">0.00</b><small>€</small>
             </div>
         </div>
     </div>
@@ -163,43 +150,15 @@
         <table class="receipt-table">
             <thead>
                 <tr>
-                    <th></th>
-                    <th>Сегодня</th>
-                    <th>7 Дней</th>
-                    <th id="lbl-month-receipt">Месяц</th>
+                    <th></th><th>Сегодня</th><th>7 Дней</th><th id="lbl-month-receipt">Месяц</th>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td class="row-label">Энергия €</td>
-                    <td id="rt-today-en">0.00</td>
-                    <td id="rt-week-en">0.00</td>
-                    <td id="rt-month-en">0.00</td>
-                </tr>
-                <tr>
-                    <td class="row-label">Передача €</td>
-                    <td id="rt-today-si">0.00</td>
-                    <td id="rt-week-si">0.00</td>
-                    <td id="rt-month-si">0.00</td>
-                </tr>
-                <tr>
-                    <td class="row-label">Налоги €</td>
-                    <td id="rt-today-ve">0.00</td>
-                    <td id="rt-week-ve">0.00</td>
-                    <td id="rt-month-ve">0.00</td>
-                </tr>
-                <tr>
-                    <td class="row-label">Абон.пл €</td>
-                    <td id="rt-today-pe">0.00</td>
-                    <td id="rt-week-pe">0.00</td>
-                    <td id="rt-month-pe">0.00</td>
-                </tr>
-                <tr class="receipt-total-row">
-                    <td class="row-label">ИТОГО €</td>
-                    <td id="rt-today-tot">0.00</td>
-                    <td id="rt-week-tot">0.00</td>
-                    <td id="rt-month-tot">0.00</td>
-                </tr>
+                <tr><td class="row-label">Энергия €</td><td id="rt-today-en">0.00</td><td id="rt-week-en">0.00</td><td id="rt-month-en">0.00</td></tr>
+                <tr><td class="row-label">Передача €</td><td id="rt-today-si">0.00</td><td id="rt-week-si">0.00</td><td id="rt-month-si">0.00</td></tr>
+                <tr><td class="row-label">Налоги €</td><td id="rt-today-ve">0.00</td><td id="rt-week-ve">0.00</td><td id="rt-month-ve">0.00</td></tr>
+                <tr><td class="row-label">Абон.пл €</td><td id="rt-today-pe">0.00</td><td id="rt-week-pe">0.00</td><td id="rt-month-pe">0.00</td></tr>
+                <tr class="receipt-total-row"><td class="row-label">ИТОГО €</td><td id="rt-today-tot">0.00</td><td id="rt-week-tot">0.00</td><td id="rt-month-tot">0.00</td></tr>
             </tbody>
         </table>
     </div>
@@ -209,17 +168,13 @@
 
 <script>
     const FIXED_PRICE = 5.99; 
-    
     const OOMI_PERUS = 5.90;    
     const SIIRTO_PERUS = 20.33; 
-    
     const SIIRTO_DAY = 2.69;    
     const SIIRTO_NIGHT = 1.63;  
-    
     const VERO_C_KWH = 2.92;    
 
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREfZuB82WO35dZRrsVl3XEaxyf1DrF35kXMZ5p7MbJTIAtqE5R9AUb3w-72A-sqIZ4Z8PWwDIUVqSV/pub?gid=0&single=true&output=tsv';
-    
     const monthsRu = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
     
     let financeChart = null;
@@ -325,11 +280,8 @@
             todayChartSpot[h] = spotObj ? parseFloat((spotObj.PriceWithTax * 100).toFixed(2)) : 0;
         }
 
-        // --- ИСПРАВЛЕННАЯ ЛОГИКА ЕДИНОГО ТАРИФА ---
-        // Считаем Кулутусвакутус и итоговый тариф ТОЛЬКО за месяц, как это делает Oomi
         let mData = calculatePeriod(stats.month);
 
-        // Применяем эту единую месячную цену (mData.finalPrice) ко всем дням для идеальной точности
         let todayEnergyCost = (stats.today.sumKwh * mData.finalPrice) / 100;
         let weekEnergyCost = (stats.week.sumKwh * mData.finalPrice) / 100;
         let monthEnergyCost = mData.cost;
@@ -348,7 +300,6 @@
         let fullMonthBasicFee = OOMI_PERUS + SIIRTO_PERUS;
         let dailyBasicFee = fullMonthBasicFee / daysInMonth; 
 
-        // СЕГОДНЯ
         let peToday = dailyBasicFee;
         document.getElementById('rt-today-en').innerText = todayEnergyCost.toFixed(2);
         document.getElementById('rt-today-si').innerText = stats.today.sumSiirto.toFixed(2);
@@ -356,7 +307,6 @@
         document.getElementById('rt-today-pe').innerText = peToday.toFixed(2);
         document.getElementById('rt-today-tot').innerText = (todayEnergyCost + stats.today.sumSiirto + stats.today.sumVero + peToday).toFixed(2);
 
-        // 7 ДНЕЙ
         let peWeek = dailyBasicFee * 7;
         document.getElementById('rt-week-en').innerText = weekEnergyCost.toFixed(2);
         document.getElementById('rt-week-si').innerText = stats.week.sumSiirto.toFixed(2);
@@ -364,7 +314,6 @@
         document.getElementById('rt-week-pe').innerText = peWeek.toFixed(2);
         document.getElementById('rt-week-tot').innerText = (weekEnergyCost + stats.week.sumSiirto + stats.week.sumVero + peWeek).toFixed(2);
 
-        // МЕСЯЦ
         let peMonth = fullMonthBasicFee;
         document.getElementById('rt-month-en').innerText = monthEnergyCost.toFixed(2);
         document.getElementById('rt-month-si').innerText = stats.month.sumSiirto.toFixed(2);
@@ -381,11 +330,9 @@
     function calculatePeriod(data) {
         let avgSpot = data.hoursCount > 0 ? (data.sumSpot / data.hoursCount) : 0;
         let avgPersonal = data.sumKwh > 0 ? (data.sumCost / data.sumKwh) : avgSpot;
-        
         let effect = avgPersonal - avgSpot;
         let finalPrice = FIXED_PRICE + effect;
         let cost = (data.sumKwh * finalPrice) / 100;
-        
         return { kwh: data.sumKwh, cost: cost, effect: effect, finalPrice: finalPrice };
     }
 
@@ -408,43 +355,24 @@
 
     function drawHybridChart(labels, kwhData, spotData) {
         if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels);
-
         const ctx = document.getElementById('financeChart').getContext('2d');
         if (financeChart) financeChart.destroy();
-        
         financeChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [
-                    {
-                        type: 'line', label: 'Цена (c)', data: spotData,
-                        borderColor: '#e74c3c', backgroundColor: '#e74c3c',
-                        borderWidth: 2, tension: 0.3, pointRadius: 0, yAxisID: 'ySpot'
-                    },
-                    {
-                        type: 'bar', label: 'Расход (kWh)',
-                        data: kwhData.map(v => v > 0 ? v.toFixed(2) : "0"),
-                        backgroundColor: '#3498db', borderRadius: 4, yAxisID: 'yKwh'
-                    }
+                    { type: 'line', label: 'Цена (c)', data: spotData, borderColor: '#e74c3c', backgroundColor: '#e74c3c', borderWidth: 2, tension: 0.3, pointRadius: 0, yAxisID: 'ySpot' },
+                    { type: 'bar', label: 'Расход (kWh)', data: kwhData.map(v => v > 0 ? v.toFixed(2) : "0"), backgroundColor: '#3498db', borderRadius: 4, yAxisID: 'yKwh' }
                 ]
             },
             options: {
-                responsive: true, maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
+                responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
                 plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: {size: 10} } } },
                 scales: {
                     x: { grid: { display: false }, ticks: { maxRotation: 90, minRotation: 90, font: {size: 9} } },
-                    yKwh: { 
-                        type: 'linear', display: true, position: 'left', 
-                        title: { display: true, text: 'kWh', font: {size: 10} },
-                        grid: { borderDash: [5, 5] }, beginAtZero: true
-                    },
-                    ySpot: { 
-                        type: 'linear', display: true, position: 'right',
-                        title: { display: true, text: 'Cent', font: {size: 10} },
-                        grid: { display: false }
-                    }
+                    yKwh: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'kWh', font: {size: 10} }, grid: { borderDash: [5, 5] }, beginAtZero: true },
+                    ySpot: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Cent', font: {size: 10} }, grid: { display: false } }
                 }
             }
         });
