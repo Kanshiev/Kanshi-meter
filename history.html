@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вся История</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: #e2f3e5; 
+            display: flex; justify-content: center; padding: 15px; margin: 0;
+        }
+        .widget-container { width: 100%; max-width: 600px; }
+        
+        .nav-btn {
+            display: block; width: 100%; padding: 16px;
+            background-color: #2c3e50; color: white;
+            border: none; border-radius: 16px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            text-decoration: none; text-align: center; box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px;
+        }
+
+        .day-card {
+            background: white; border-radius: 24px; padding: 20px 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.06); margin-bottom: 25px;
+        }
+        
+        .day-header {
+            text-align: center; font-size: 1.1rem; font-weight: 900; color: #2c3e50;
+            margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .day-header span { color: #7f8c8d; font-weight: 600; font-size: 0.9rem; }
+
+        .chart-wrapper { position: relative; height: 220px; margin-bottom: 15px; }
+
+        .stats-box {
+            background: #f8f9fa; border-radius: 16px; padding: 15px;
+            border: 1px solid #f0f0f0;
+        }
+        
+        .main-stat {
+            text-align: center; font-size: 1.1rem; font-weight: 800; color: #2c3e50;
+            padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px dashed #bdc3c7;
+        }
+        .main-stat b { color: #e74c3c; font-size: 1.25rem; }
+        .main-stat span { color: #3498db; font-size: 1.25rem; font-weight: 900; }
+
+        .sub-stat {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.85rem; font-weight: 600; color: #555; margin-bottom: 6px;
+        }
+        .sub-stat:last-child { margin-bottom: 0; }
+        .sub-stat b { color: #111; font-weight: 800; }
+        .val-high { color: #e74c3c; font-weight: 800; }
+        .val-low { color: #27ae60; font-weight: 800; }
+        
+        .loading { text-align: center; font-weight: bold; color: #7f8c8d; padding: 40px; }
+    </style>
+</head>
+<body>
+
+<div class="widget-container">
+    <a href="finance.html" class="nav-btn">⬅ Назад к Финансам</a>
+    
+    <div id="history-container">
+        <div class="loading">Загрузка истории из базы данных...</div>
+    </div>
+</div>
+
+<script>
+    // --- ТАРИФНЫЕ НАСТРОЙКИ (Как в finance.html) ---
+    const FIXED_PRICE = 5.99; 
+    const OOMI_PERUS = 5.90;    
+    const SIIRTO_PERUS = 20.33; 
+    const SIIRTO_DAY = 2.69;    
+    const SIIRTO_NIGHT = 1.63;  
+    const VERO_C_KWH = 2.92;    
+    
+    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREfZuB82WO35dZRrsVl3XEaxyf1DrF35kXMZ5p7MbJTIAtqE5R9AUb3w-72A-sqIZ4Z8PWwDIUVqSV/pub?gid=0&single=true&output=tsv';
+    
+    const monthsRu = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+    
+    // Функция получения номера недели в году
+    function getWeekNumber(d) {
+        let date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay()||7));
+        let yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+        return Math.ceil(( ( (date - yearStart) / 86400000) + 1)/7);
+    }
+
+    function parseSheetDate(dateStr) {
+        let match = dateStr.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+        if (match) return new Date(match[3], match[2] - 1, match[1]);
+        return new Date(dateStr);
+    }
+
+    async function loadHistory() {
+        try {
+            const sheetRes = await fetch(SHEET_URL + '&_rnd=' + Date.now());
+            const sheetText = await sheetRes.text();
+            
+            const lines = sheetText.trim().split(/\r?\n/);
+            let dailyData = {};
+
+            // Парсим всю таблицу и разбиваем по дням
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split('\t');
+                if (cols.length < 6) continue;
+
+                let rowDate = parseSheetDate(cols[0]);
+                let dateKey = `${rowDate.getFullYear()}-${String(rowDate.getMonth()+1).padStart(2,'0')}-${String(rowDate.getDate()).padStart(2,'0')}`;
+
+                if (!dailyData[dateKey]) {
+                    dailyData[dateKey] = {
+                        dateObj: rowDate,
+                        kwhByHour: new Array(24).fill(0),
+                        spotByHour: new Array(24).fill(0),
+                        sumKwh: 0, sumSpot: 0, sumCost: 0, sumSiirto: 0, sumVero: 0,
+                        hoursCount: 0, spotsList: []
+                    };
+                }
+
+                let hr = parseInt(cols[1].split(':')[0], 10);
+                let spot = parseFloat(String(cols[2]).replace(',', '.'));
+                let kwh = parseFloat(String(cols[5]).replace(',', '.'));
+
+                if (!isNaN(spot) && !isNaN(kwh)) {
+                    dailyData[dateKey].kwhByHour[hr] += kwh;
+                    dailyData[dateKey].spotByHour[hr] = spot;
+                    
+                    if (kwh > 0 || !dailyData[dateKey].spotsList.includes(spot)) {
+                        dailyData[dateKey].spotsList.push(spot);
+                    }
+
+                    dailyData[dateKey].sumKwh += kwh;
+                    dailyData[dateKey].sumSpot += spot;
+                    dailyData[dateKey].sumCost += (kwh * spot);
+                    dailyData[dateKey].hoursCount++;
+
+                    let sPrice = (hr >= 7 && hr < 22) ? SIIRTO_DAY : SIIRTO_NIGHT;
+                    dailyData[dateKey].sumSiirto += (kwh * sPrice) / 100;
+                    dailyData[dateKey].sumVero += (kwh * VERO_C_KWH) / 100;
+                }
+            }
+
+            // Берем последние 7 дней (сортировка по убыванию даты)
+            const sortedDates = Object.keys(dailyData).sort((a, b) => b.localeCompare(a)).slice(0, 7);
+            
+            const container = document.getElementById('history-container');
+            container.innerHTML = ''; // Очищаем статус "Загрузка"
+
+            if(sortedDates.length === 0) {
+                container.innerHTML = '<div class="loading">В базе пока нет данных.</div>';
+                return;
+            }
+
+            // Рендерим карточки
+            sortedDates.forEach((dateKey) => {
+                let dData = dailyData[dateKey];
+                let dObj = dData.dateObj;
+                
+                let weekNum = getWeekNumber(dObj);
+                let formattedTitle = `${dObj.getDate()} ${monthsRu[dObj.getMonth()]}`;
+                
+                // Математика для одного дня
+                let avgSpot = dData.hoursCount > 0 ? (dData.sumSpot / dData.hoursCount) : 0;
+                let avgPersonal = dData.sumKwh > 0 ? (dData.sumCost / dData.sumKwh) : avgSpot;
+                let finalPrice = FIXED_PRICE + (avgPersonal - avgSpot);
+                let energyCost = (dData.sumKwh * finalPrice) / 100;
+                
+                let daysInMonth = new Date(dObj.getFullYear(), dObj.getMonth() + 1, 0).getDate();
+                let dailyBasicFee = (OOMI_PERUS + SIIRTO_PERUS) / daysInMonth;
+                let totalCost = energyCost + dData.sumSiirto + dData.sumVero + dailyBasicFee;
+
+                // Считаем экстремумы (исключаем нули, если скрипт в этот час не работал)
+                let validSpots = dData.spotsList.filter(s => s !== 0);
+                validSpots.sort((a,b) => b - a); // по убыванию
+                
+                // Удаляем дубликаты цен для красоты отображения топа
+                let uniqueSpots = [...new Set(validSpots)];
+                
+                let topMax = uniqueSpots.slice(0, 3).map(n => n.toFixed(1)).join(', ');
+                let topMin = uniqueSpots.slice(-3).reverse().map(n => n.toFixed(1)).join(', ');
+                
+                if(!topMax) topMax = "Нет данных";
+                if(!topMin) topMin = "Нет данных";
+
+                // Подготавливаем метки часов
+                let chartHours = [];
+                for(let h=0; h<24; h++) chartHours.push(`${h}:00`);
+
+                // Вставляем HTML блок
+                let htmlBlock = `
+                <div class="day-card">
+                    <div class="day-header">Неделя ${weekNum} <span>| ${formattedTitle}</span></div>
+                    <div class="chart-wrapper">
+                        <canvas id="chart-${dateKey}"></canvas>
+                    </div>
+                    <div class="stats-box">
+                        <div class="main-stat">
+                            Набежало: <span>${dData.sumKwh.toFixed(2)} kWh</span> <br>
+                            Стоило: <b>${totalCost.toFixed(2)} €</b>
+                        </div>
+                        <div class="sub-stat">
+                            Средняя цена за сутки (биржа): <b>${avgSpot.toFixed(2)} c/kWh</b>
+                        </div>
+                        <div class="sub-stat" style="margin-top: 10px;">
+                            Пик цен: <span class="val-high">${topMax} c</span>
+                        </div>
+                        <div class="sub-stat">
+                            Мин. цена: <span class="val-low">${topMin} c</span>
+                        </div>
+                    </div>
+                </div>`;
+                
+                container.insertAdjacentHTML('beforeend', htmlBlock);
+
+                // Отрисовываем график Chart.js
+                if (typeof ChartDataLabels !== 'undefined') Chart.unregister(ChartDataLabels);
+                let ctx = document.getElementById(`chart-${dateKey}`).getContext('2d');
+                
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: chartHours,
+                        datasets: [
+                            { type: 'line', label: 'Цена (c)', data: dData.spotByHour, borderColor: '#e74c3c', backgroundColor: '#e74c3c', borderWidth: 2, tension: 0.3, pointRadius: 0, yAxisID: 'ySpot' },
+                            { type: 'bar', label: 'Расход (kWh)', data: dData.kwhByHour.map(v => v > 0 ? v.toFixed(2) : "0"), backgroundColor: '#3498db', borderRadius: 4, yAxisID: 'yKwh' }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { maxRotation: 90, minRotation: 90, font: {size: 8} } },
+                            yKwh: { type: 'linear', display: true, position: 'left', ticks: { font: {size: 9} }, grid: { borderDash: [5, 5] }, beginAtZero: true },
+                            ySpot: { type: 'linear', display: true, position: 'right', ticks: { font: {size: 9} }, grid: { display: false } }
+                        }
+                    }
+                });
+            });
+
+        } catch (e) {
+            console.error("Ошибка загрузки истории:", e);
+            document.getElementById('history-container').innerHTML = '<div class="loading" style="color:#e74c3c;">Ошибка связи с базой данных</div>';
+        }
+    }
+
+    loadHistory();
+</script>
+
+</body>
+</html>
