@@ -75,7 +75,7 @@
         .total-price { background: #2c3e50; color: #fff; }
         .total-price span { color: #bdc3c7; }
 
-        /* НОВЫЙ КОМПАКТНЫЙ СТИЛЬ ДЛЯ ТАБЛИЦЫ-ЧЕКА */
+        /* КОМПАКТНАЯ ТАБЛИЦА-ЧЕК */
         .receipt-table {
             width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem;
         }
@@ -208,16 +208,15 @@
 </div>
 
 <script>
-    // --- ТОЧНЫЕ ДАННЫЕ ИЗ СЧЕТА KANSHIEV ANDREY ---
     const FIXED_PRICE = 5.99; 
     
-    const OOMI_PERUS = 5.90;    // Oomi Jousto 24 kk Perusmaksu
-    const SIIRTO_PERUS = 20.33; // Oulun Energia Aikasähkö 3x25 Perusmaksu
+    const OOMI_PERUS = 5.90;    
+    const SIIRTO_PERUS = 20.33; 
     
-    const SIIRTO_DAY = 2.69;    // Päiväenergia (обычно 07:00 - 22:00)
-    const SIIRTO_NIGHT = 1.63;  // Yöenergia (обычно 22:00 - 07:00)
+    const SIIRTO_DAY = 2.69;    
+    const SIIRTO_NIGHT = 1.63;  
     
-    const VERO_C_KWH = 2.92;    // Energiavero I (2.81) + Huoltovarmuusmaksu (0.11)
+    const VERO_C_KWH = 2.92;    
 
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREfZuB82WO35dZRrsVl3XEaxyf1DrF35kXMZ5p7MbJTIAtqE5R9AUb3w-72A-sqIZ4Z8PWwDIUVqSV/pub?gid=0&single=true&output=tsv';
     
@@ -284,10 +283,9 @@
 
             if (isNaN(spotPrice) || isNaN(hourlyKwh)) continue;
 
-            // Логика двухзонного тарифа на передачу (Aikasähkö)
             let currentSiirtoPrice = (hourNum >= 7 && hourNum < 22) ? SIIRTO_DAY : SIIRTO_NIGHT;
-            let hourlySiirtoCost = (hourlyKwh * currentSiirtoPrice) / 100; // в Евро
-            let hourlyVeroCost = (hourlyKwh * VERO_C_KWH) / 100;           // в Евро
+            let hourlySiirtoCost = (hourlyKwh * currentSiirtoPrice) / 100; 
+            let hourlyVeroCost = (hourlyKwh * VERO_C_KWH) / 100;           
 
             if (rowTime >= monthTime) {
                 stats.month.hoursCount++;
@@ -327,50 +325,52 @@
             todayChartSpot[h] = spotObj ? parseFloat((spotObj.PriceWithTax * 100).toFixed(2)) : 0;
         }
 
-        let tData = calculatePeriod(stats.today);
-        let wData = calculatePeriod(stats.week);
+        // --- ИСПРАВЛЕННАЯ ЛОГИКА ЕДИНОГО ТАРИФА ---
+        // Считаем Кулутусвакутус и итоговый тариф ТОЛЬКО за месяц, как это делает Oomi
         let mData = calculatePeriod(stats.month);
 
-        document.getElementById('kwh-today').innerText = tData.kwh.toFixed(2);
-        document.getElementById('kwh-week').innerText = wData.kwh.toFixed(1);
-        document.getElementById('kwh-month').innerText = mData.kwh.toFixed(1);
+        // Применяем эту единую месячную цену (mData.finalPrice) ко всем дням для идеальной точности
+        let todayEnergyCost = (stats.today.sumKwh * mData.finalPrice) / 100;
+        let weekEnergyCost = (stats.week.sumKwh * mData.finalPrice) / 100;
+        let monthEnergyCost = mData.cost;
 
-        document.getElementById('cost-today').innerText = tData.cost.toFixed(2);
-        document.getElementById('cost-week').innerText = wData.cost.toFixed(2);
-        document.getElementById('cost-month').innerText = mData.cost.toFixed(2);
+        document.getElementById('kwh-today').innerText = stats.today.sumKwh.toFixed(2);
+        document.getElementById('kwh-week').innerText = stats.week.sumKwh.toFixed(1);
+        document.getElementById('kwh-month').innerText = stats.month.sumKwh.toFixed(1);
+
+        document.getElementById('cost-today').innerText = todayEnergyCost.toFixed(2);
+        document.getElementById('cost-week').innerText = weekEnergyCost.toFixed(2);
+        document.getElementById('cost-month').innerText = monthEnergyCost.toFixed(2);
 
         updateMathUI(mData.effect, mData.finalPrice);
 
-        // --- НОВАЯ ЛОГИКА АБОНЕНТСКОЙ ПЛАТЫ ---
         let daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         let fullMonthBasicFee = OOMI_PERUS + SIIRTO_PERUS;
         let dailyBasicFee = fullMonthBasicFee / daysInMonth; 
 
-        // Заполняем Таблицу-Чек напрямую
-        
         // СЕГОДНЯ
         let peToday = dailyBasicFee;
-        document.getElementById('rt-today-en').innerText = tData.cost.toFixed(2);
+        document.getElementById('rt-today-en').innerText = todayEnergyCost.toFixed(2);
         document.getElementById('rt-today-si').innerText = stats.today.sumSiirto.toFixed(2);
         document.getElementById('rt-today-ve').innerText = stats.today.sumVero.toFixed(2);
         document.getElementById('rt-today-pe').innerText = peToday.toFixed(2);
-        document.getElementById('rt-today-tot').innerText = (tData.cost + stats.today.sumSiirto + stats.today.sumVero + peToday).toFixed(2);
+        document.getElementById('rt-today-tot').innerText = (todayEnergyCost + stats.today.sumSiirto + stats.today.sumVero + peToday).toFixed(2);
 
         // 7 ДНЕЙ
         let peWeek = dailyBasicFee * 7;
-        document.getElementById('rt-week-en').innerText = wData.cost.toFixed(2);
+        document.getElementById('rt-week-en').innerText = weekEnergyCost.toFixed(2);
         document.getElementById('rt-week-si').innerText = stats.week.sumSiirto.toFixed(2);
         document.getElementById('rt-week-ve').innerText = stats.week.sumVero.toFixed(2);
         document.getElementById('rt-week-pe').innerText = peWeek.toFixed(2);
-        document.getElementById('rt-week-tot').innerText = (wData.cost + stats.week.sumSiirto + stats.week.sumVero + peWeek).toFixed(2);
+        document.getElementById('rt-week-tot').innerText = (weekEnergyCost + stats.week.sumSiirto + stats.week.sumVero + peWeek).toFixed(2);
 
-        // МЕСЯЦ (Берем полную абонентскую плату, чтобы совпадало со счетом)
+        // МЕСЯЦ
         let peMonth = fullMonthBasicFee;
-        document.getElementById('rt-month-en').innerText = mData.cost.toFixed(2);
+        document.getElementById('rt-month-en').innerText = monthEnergyCost.toFixed(2);
         document.getElementById('rt-month-si').innerText = stats.month.sumSiirto.toFixed(2);
         document.getElementById('rt-month-ve').innerText = stats.month.sumVero.toFixed(2);
         document.getElementById('rt-month-pe').innerText = peMonth.toFixed(2);
-        document.getElementById('rt-month-tot').innerText = (mData.cost + stats.month.sumSiirto + stats.month.sumVero + peMonth).toFixed(2);
+        document.getElementById('rt-month-tot').innerText = (monthEnergyCost + stats.month.sumSiirto + stats.month.sumVero + peMonth).toFixed(2);
 
         drawHybridChart(chartHours, todayChartKwh, todayChartSpot);
         
