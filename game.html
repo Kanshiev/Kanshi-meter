@@ -3,22 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ферма Антоши 7.0 🚜</title>
+    <title>Ферма Антоши 8.0 🌪️</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body { 
             font-family: 'Segoe UI', sans-serif; 
-            /* Твоя сгенерированная картинка */
             background-color: #8bc34a;
             background-image: url('farmAnton.png');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
+            background-size: cover; background-position: center; background-attachment: fixed;
             color: #333; display: flex; flex-direction: column; align-items: center; padding: 10px; 
         }
         
         .system-controls { display: flex; gap: 5px; width: 100%; max-width: 440px; margin-bottom: 8px; justify-content: space-between; }
-        .sys-btn { flex: 1; background: rgba(255,255,255,0.9); border: 2px solid #ccc; padding: 6px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; color: #555; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .sys-btn { flex: 1; background: rgba(255,255,255,0.9); border: 2px solid #ccc; padding: 6px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; color: #555; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: 0.2s; }
         .sys-btn:active { transform: translateY(2px); box-shadow: none; }
         .sys-btn.active-pause { background: #ff5252; color: white; border-color: #d50000; }
         .sys-btn.active-music { background: #4caf50; color: white; border-color: #2e7d32; }
@@ -40,7 +37,15 @@
         .farm-container { position: relative; width: 100%; max-width: 440px; margin-bottom: 8px; }
         .farm-zone { background: rgba(141, 110, 99, 0.95); padding: 10px; border-radius: 15px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; box-shadow: inset 0 5px 10px rgba(0,0,0,0.4); }
         
-        .pause-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); color: white; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; z-index: 100; display: none; backdrop-filter: blur(2px); }
+        .pause-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); color: white; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; z-index: 50; display: none; backdrop-filter: blur(2px); }
+
+        /* Окно стихийных бедствий */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; padding: 20px; }
+        .modal-box { background: white; padding: 20px; border-radius: 15px; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .modal-title { font-size: 22px; font-weight: bold; margin-bottom: 10px; color: #d32f2f; }
+        .modal-text { font-size: 15px; margin-bottom: 20px; color: #444; }
+        .modal-btn { background: #ff9800; border: none; padding: 10px 20px; font-size: 16px; font-weight: bold; color: white; border-radius: 8px; cursor: pointer; box-shadow: 0 4px #e65100; }
+        .modal-btn:active { transform: translateY(4px); box-shadow: 0 0 #e65100; }
 
         .plot { background: #5d4037; aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; border: 2px solid #4e342e; }
         .plot.locked { background: #3e2723; border-color: #261411; }
@@ -75,7 +80,7 @@
 </head>
 <body>
 
-    <audio id="bg-music" loop><source src="music.mp3" type="audio/mpeg"></audio>
+    <audio id="bg-music"></audio>
 
     <div class="system-controls">
         <button class="sys-btn" id="btn-pause" onclick="togglePause()">⏸ Пауза</button>
@@ -114,15 +119,14 @@
         <div class="market-section active" id="sec-seeds"></div>
         <div class="market-section" id="sec-trees"></div>
         <div class="market-section" id="sec-services">
-            <!-- Работники -->
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">👷‍♂️</span><div><strong>Рабочий</strong><br><small>Сажает и собирает (15м)</small></div></div><button class="btn" onclick="buyService('worker')">200 🪙</button></div>
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">🤠</span><div><strong>Охотник</strong><br><small>Защита от кротов/зайцев (10м)</small></div></div><button class="btn" onclick="buyService('hunter')">200 🪙</button></div>
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">👦👧</span><div><strong>Пионеры</strong><br><small>Собирают улиток (10м)</small></div></div><button class="btn" onclick="buyService('pioneers')">50 🪙</button></div>
-            <!-- Полив -->
+            
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">🚿</span><div><strong>Лейка</strong><br><small>+5% к скорости (5м)</small></div></div><button class="btn" onclick="buyWatering('can', 50, 300, 1.05)">50 🪙</button></div>
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">💦</span><div><strong>Шланг</strong><br><small>+10% к скорости (10м)</small></div></div><button class="btn" onclick="buyWatering('hose', 150, 600, 1.10)">150 🪙</button></div>
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">💧</span><div><strong>Капельница</strong><br><small>Ускорение на 20м</small></div></div><button class="btn" onclick="buyWatering('drip', 500, 1200, 1.20)">500 🪙</button></div>
-            <!-- Новые Бустеры -->
+            
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">💩</span><div><strong>Навоз</strong><br><small>Рост x3, вредители x2 (3м)</small></div></div><button class="btn" onclick="buyBooster('manure', 500, 180, 3, 2)">500 🪙</button></div>
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">☢️</span><div><strong>Супер Навоз</strong><br><small>Рост x6, вредители x4 (5м)</small></div></div><button class="btn" onclick="buyBooster('super_manure', 2000, 300, 6, 4)">2k 🪙</button></div>
         </div>
@@ -140,10 +144,58 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="disaster-modal">
+        <div class="modal-box">
+            <div class="modal-title" id="modal-title">ВНИМАНИЕ!</div>
+            <div class="modal-text" id="modal-text">Текст бедствия</div>
+            <button class="modal-btn" onclick="closeDisasterModal()">Понятно, идём работать!</button>
+        </div>
+    </div>
+
 <script>
     let isPaused = false;
+    let isDisasterActive = false; // Пауза от модального окна
+    let gameState = { money: 5, selectedSeed: 0, currentArea: 0, nextDisasterTime: getNextDisasterTime() };
+
+    // --- ПЛЕЙЛИСТ И МУЗЫКА ---
+    const playlist = ['music1.mp3', 'music2.mp3', 'music3.mp3', 'music4.mp3'];
+    let currentTrackIdx = 0;
     let isMusicPlaying = false;
-    let gameState = { money: 5, selectedSeed: 0, currentArea: 0 };
+    const musicPlayer = document.getElementById('bg-music');
+
+    musicPlayer.addEventListener('ended', () => {
+        currentTrackIdx = (currentTrackIdx + 1) % playlist.length;
+        musicPlayer.src = playlist[currentTrackIdx];
+        musicPlayer.play().catch(e => console.log("Музыка не найдена"));
+    });
+
+    function toggleMusic() {
+        const musicBtn = document.getElementById('btn-music');
+        if (isMusicPlaying) { 
+            musicPlayer.pause(); isMusicPlaying = false; 
+            musicBtn.classList.remove('active-music'); musicBtn.innerText = "🎵 Музыка"; 
+        } else {
+            if (!musicPlayer.src || musicPlayer.src === "") {
+                musicPlayer.src = playlist[currentTrackIdx];
+            }
+            musicPlayer.play().then(() => {
+                isMusicPlaying = true; musicBtn.classList.add('active-music'); musicBtn.innerText = "🔇 Выключить";
+            }).catch(e => { alert("Музыка не найдена. Убедитесь, что файлы music1.mp3 - music4.mp3 лежат рядом с игрой!"); });
+        }
+    }
+
+    // --- ЧИТ-КОД "asd" ---
+    let keyBuffer = '';
+    document.addEventListener('keydown', (e) => {
+        keyBuffer += e.key.toLowerCase();
+        if (keyBuffer.length > 3) keyBuffer = keyBuffer.slice(-3); // Держим только последние 3 нажатия
+        if (keyBuffer === 'asd') {
+            gameState.money += 10000;
+            keyBuffer = ''; // сброс
+            updateUI();
+            console.log("Чит-код активирован! +10000 монет");
+        }
+    });
 
     const crops = [
         { id: 0, type: 'veggies', name: "Морковь", emoji: "🥕", seedPrice: 1, sellPrice: 3, time: 60 },
@@ -176,7 +228,7 @@
             type: type, nextPlotPrice: 15, obstaclePrice: 45, plots: [],
             dripLevel: 0, teamLevel: 0, workerLevel: 0,
             watering: { type: null, timeLeft: 0, mult: 1.0 },
-            booster: { type: null, timeLeft: 0, growthMult: 1, pests: 1 }, // НОВОЕ: Система бустеров
+            booster: { type: null, timeLeft: 0, growthMult: 1, pests: 1 }, 
             worker: { active: false, time: 0, cropId: null },
             hunter: { active: false, time: 0 },
             pioneers: { active: false, time: 0 }
@@ -196,7 +248,6 @@
         return area;
     }
 
-    // Каталог цен апгрейдов для восстановления текста на кнопках
     const upgradePrices = {
         'upg-drip-1': '10k 🪙', 'upg-drip-2': '30k 🪙', 'upg-drip-3': '100k 🪙',
         'upg-team-1': '5k 🪙', 'upg-team-2': '15k 🪙', 'upg-team-3': '50k 🪙',
@@ -204,7 +255,7 @@
     };
 
     function saveGame() {
-        if(isPaused) return alert("Снимите игру с паузы перед сохранением!");
+        if(isPaused || isDisasterActive) return alert("Снимите игру с паузы перед сохранением!");
         const saveObj = { state: gameState, areas: farmAreas };
         localStorage.setItem('antonFarmSave', JSON.stringify(saveObj));
         alert("Ура! Игра успешно сохранена 💾");
@@ -216,14 +267,17 @@
             const parsed = JSON.parse(savedData);
             gameState = parsed.state;
             
-            // Загружаем поля и добавляем новые параметры (для старых сохранений)
+            // Если в старом сохранении нет таймера бедствий
+            if (!gameState.nextDisasterTime) gameState.nextDisasterTime = getNextDisasterTime();
+
             farmAreas = parsed.areas.map(a => {
                 if(!a.booster) a.booster = { type: null, timeLeft: 0, growthMult: 1, pests: 1 };
                 return a;
             });
             
-            isPaused = false;
+            isPaused = false; isDisasterActive = false;
             document.getElementById('pause-screen').style.display = 'none';
+            document.getElementById('disaster-modal').style.display = 'none';
             document.getElementById('btn-pause').classList.remove('active-pause');
             document.getElementById('btn-pause').innerText = "⏸ Пауза";
 
@@ -233,6 +287,7 @@
     }
 
     function togglePause() {
+        if (isDisasterActive) return; // Нельзя отжать паузу во время бедствия
         isPaused = !isPaused;
         const pauseScreen = document.getElementById('pause-screen');
         const pauseBtn = document.getElementById('btn-pause');
@@ -240,22 +295,11 @@
         else { pauseScreen.style.display = 'none'; pauseBtn.classList.remove('active-pause'); pauseBtn.innerText = "⏸ Пауза"; }
     }
 
-    function toggleMusic() {
-        const music = document.getElementById('bg-music');
-        const musicBtn = document.getElementById('btn-music');
-        if (isMusicPlaying) { music.pause(); isMusicPlaying = false; musicBtn.classList.remove('active-music'); musicBtn.innerText = "🎵 Музыка"; } 
-        else {
-            music.play().then(() => {
-                isMusicPlaying = true; musicBtn.classList.add('active-music'); musicBtn.innerText = "🔇 Выключить";
-            }).catch(e => { alert("Музыка не найдена. Убедитесь, что файл music.mp3 лежит рядом с игрой!"); });
-        }
-    }
-
     function initGame() {
         farmAreas.push(generateArea('veggies', true));
         renderShop(); renderGrid(); updateUI();
         setInterval(gameTick, 1000);
-        setInterval(spawnPest, 10000); // Спавн проверяется каждые 10 секунд
+        setInterval(spawnPest, 10000); 
     }
 
     function switchTab(tab) {
@@ -305,7 +349,6 @@
         if(area.hunter.active) hp.innerHTML += `<div class="helper-badge">🤠 Охотник (${formatTime(area.hunter.time)})<button class="fire-btn" onclick="fire('hunter')">✖</button></div>`;
         if(area.pioneers.active) hp.innerHTML += `<div class="helper-badge pioneers">👦 Пионеры (${formatTime(area.pioneers.time)})</div>`; 
 
-        // ИСПРАВЛЕНИЕ БАГА: Восстановление цен на кнопках
         const setupUpgradeBtn = (id, currentLvl, targetLvl) => {
             let btn = document.getElementById(id);
             if(!btn) return;
@@ -316,14 +359,9 @@
             }
         };
 
-        setupUpgradeBtn('upg-drip-1', area.dripLevel, 1);
-        setupUpgradeBtn('upg-drip-2', area.dripLevel, 2);
-        setupUpgradeBtn('upg-drip-3', area.dripLevel, 3);
-        setupUpgradeBtn('upg-team-1', area.teamLevel, 1);
-        setupUpgradeBtn('upg-team-2', area.teamLevel, 2);
-        setupUpgradeBtn('upg-team-3', area.teamLevel, 3);
-        setupUpgradeBtn('upg-worker-1', area.workerLevel, 1);
-        setupUpgradeBtn('upg-worker-2', area.workerLevel, 2);
+        setupUpgradeBtn('upg-drip-1', area.dripLevel, 1); setupUpgradeBtn('upg-drip-2', area.dripLevel, 2); setupUpgradeBtn('upg-drip-3', area.dripLevel, 3);
+        setupUpgradeBtn('upg-team-1', area.teamLevel, 1); setupUpgradeBtn('upg-team-2', area.teamLevel, 2); setupUpgradeBtn('upg-team-3', area.teamLevel, 3);
+        setupUpgradeBtn('upg-worker-1', area.workerLevel, 1); setupUpgradeBtn('upg-worker-2', area.workerLevel, 2);
     }
 
     function changeArea(dir) { gameState.currentArea += dir; updateUI(); renderGrid(); }
@@ -376,7 +414,7 @@
     }
 
     function handlePlotClick(index) {
-        if (isPaused) return; 
+        if (isPaused || isDisasterActive) return; 
         let area = farmAreas[gameState.currentArea]; let plot = area.plots[index];
 
         if (plot.state === 'clear' && plot.pest) {
@@ -415,7 +453,7 @@
     }
 
     function buyService(type) {
-        if (isPaused) return;
+        if (isPaused || isDisasterActive) return;
         let area = farmAreas[gameState.currentArea];
         if(gameState.money < 200 && (type === 'worker' || type === 'hunter')) return alert("Мало монет!");
         if(gameState.money < 50 && type === 'pioneers') return alert("Мало монет!");
@@ -428,7 +466,7 @@
     }
 
     function buyWatering(type, price, duration, baseMult) {
-        if (isPaused) return; let area = farmAreas[gameState.currentArea];
+        if (isPaused || isDisasterActive) return; let area = farmAreas[gameState.currentArea];
         if(gameState.money >= price) {
             gameState.money -= price; let finalMult = baseMult;
             if(type === 'drip') { finalMult = area.dripLevel === 1 ? 1.30 : (area.dripLevel === 2 ? 1.40 : (area.dripLevel === 3 ? 1.50 : 1.20)); }
@@ -437,26 +475,90 @@
     }
 
     function buyBooster(type, price, duration, gMult, pMult) {
-        if (isPaused) return; let area = farmAreas[gameState.currentArea];
+        if (isPaused || isDisasterActive) return; let area = farmAreas[gameState.currentArea];
         if(gameState.money >= price) {
             gameState.money -= price; area.booster = { type: type, timeLeft: duration, growthMult: gMult, pests: pMult }; updateUI();
         } else alert("Мало монет!");
     }
 
     function buyUpgrade(category, level, price) {
-        if (isPaused) return; let area = farmAreas[gameState.currentArea];
+        if (isPaused || isDisasterActive) return; let area = farmAreas[gameState.currentArea];
         if(area[category+'Level'] >= level) return;
         if(area[category+'Level'] < level - 1) return alert("Сначала купите предыдущий уровень!");
         if(gameState.money >= price) { gameState.money -= price; area[category+'Level'] = level; updateUI(); } else alert("Мало монет!");
     }
 
     function fire(type) {
-        if (isPaused) return; let area = farmAreas[gameState.currentArea];
-        if(confirm("Точно уволить сотрудника на этом поле? Деньги не вернутся!")) { area[type].active = false; area[type].time = 0; updateUI(); }
+        if (isPaused || isDisasterActive) return; let area = farmAreas[gameState.currentArea];
+        if(confirm("Точно уволить сотрудника? Деньги не вернутся!")) { area[type].active = false; area[type].time = 0; updateUI(); }
     }
 
+    // --- ЛОГИКА БЕДСТВИЙ ---
+    function getNextDisasterTime() {
+        return 300 + Math.floor(Math.random() * 300); // 5 - 10 минут (300-600 секунд)
+    }
+
+    function triggerDisaster() {
+        let area = farmAreas[gameState.currentArea]; // Бьем по текущему полю
+        let types = ['lightning', 'flood', 'drought'];
+        let disaster = types[Math.floor(Math.random() * types.length)];
+        let affectedCount = 0;
+        
+        let title = ""; let text = "";
+
+        if (disaster === 'lightning') {
+            title = "⚡ УДАР МОЛНИИ!";
+            text = "Гроза сожгла несколько ваших грядок! Теперь там обгорелые пни, которые нужно выкорчевать.";
+            area.plots.forEach(p => {
+                if(p.state === 'clear' && Math.random() < 0.3 && affectedCount < 4) {
+                    p.state = 'obstacle'; p.obstacleType = '🪵'; p.status = 'empty'; p.cropId = null; p.pest = null;
+                    affectedCount++;
+                }
+            });
+        } else if (disaster === 'flood') {
+            title = "🌊 НАВОДНЕНИЕ!";
+            text = "Река вышла из берегов и затопила часть поля. Вам нужно оплатить работы по осушению (расчистить грядки от болот).";
+            area.plots.forEach(p => {
+                if(p.state === 'clear' && Math.random() < 0.3 && affectedCount < 4) {
+                    p.state = 'obstacle'; p.obstacleType = '💦'; p.status = 'empty'; p.cropId = null; p.pest = null;
+                    affectedCount++;
+                }
+            });
+        } else if (disaster === 'drought') {
+            title = "☀️ ЖЕСТОКАЯ ЗАСУХА!";
+            text = "Солнце спалило урожай, а вода испарилась. Весь активный полив отменён, а растущие посевы погибли! (Созревший урожай чудом уцелел).";
+            area.watering.timeLeft = 0; area.watering.mult = 1.0;
+            area.plots.forEach(p => {
+                if(p.state === 'clear' && p.status === 'growing') {
+                    p.status = 'empty'; p.cropId = null; p.isGolden = false;
+                }
+            });
+        }
+
+        // Открываем модальное окно и ставим флаг
+        isDisasterActive = true;
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-text').innerText = text;
+        document.getElementById('disaster-modal').style.display = 'flex';
+        renderGrid();
+    }
+
+    function closeDisasterModal() {
+        document.getElementById('disaster-modal').style.display = 'none';
+        isDisasterActive = false;
+    }
+
+    // --- ОСНОВНОЙ ЦИКЛ ---
     function gameTick() {
-        if (isPaused) return;
+        if (isPaused || isDisasterActive) return;
+
+        // Проверка бедствий
+        gameState.nextDisasterTime--;
+        if (gameState.nextDisasterTime <= 0) {
+            triggerDisaster();
+            gameState.nextDisasterTime = getNextDisasterTime();
+            return; // Пропускаем остальной тик
+        }
 
         farmAreas.forEach((area) => {
             if(area.watering.timeLeft > 0) area.watering.timeLeft--; else area.watering.mult = 1.0;
@@ -466,7 +568,6 @@
             if(area.hunter.active && --area.hunter.time <= 0) area.hunter.active = false;
             if(area.pioneers.active && --area.pioneers.time <= 0) area.pioneers.active = false;
 
-            // Итоговый множитель роста (Полив * Навоз)
             let totalGrowthMult = area.watering.mult * area.booster.growthMult;
 
             area.plots.forEach((plot, pIdx) => {
@@ -503,7 +604,7 @@
     }
 
     function spawnPest() {
-        if (isPaused) return;
+        if (isPaused || isDisasterActive) return;
 
         farmAreas.forEach((area) => {
             let validPlots = [];
@@ -514,7 +615,6 @@
             });
 
             if (validPlots.length > 0) {
-                // Если бустер активен - спавним больше вредителей. Иначе базовый шанс 30% на 1 штуку.
                 let spawnCount = area.booster.timeLeft > 0 ? area.booster.pests : (Math.random() < 0.3 ? 1 : 0);
 
                 for(let i=0; i<spawnCount; i++) {
