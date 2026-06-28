@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ферма Антоши 9.0 🛡️</title>
+    <title>Ферма Антоши 9.1 🛡️</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body { 
@@ -37,7 +37,6 @@
         .farm-container { position: relative; width: 100%; max-width: 440px; margin-bottom: 8px; }
         .farm-zone { background: rgba(141, 110, 99, 0.95); padding: 10px; border-radius: 15px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; box-shadow: inset 0 5px 10px rgba(0,0,0,0.4); transition: 0.3s; }
         
-        /* Анимация тревоги, когда крот съедает урожай */
         @keyframes flashRed {
             0% { box-shadow: inset 0 0 20px rgba(255,0,0,0.8); background-color: rgba(255,0,0,0.3); }
             50% { box-shadow: inset 0 0 50px rgba(255,0,0,1); background-color: rgba(255,0,0,0.6); }
@@ -126,9 +125,7 @@
         <div class="market-section active" id="sec-seeds"></div>
         <div class="market-section" id="sec-trees"></div>
         <div class="market-section" id="sec-services">
-            <!-- Страховка -->
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">🛡️</span><div><strong>Страховка</strong><br><small>Выплата х3 при стихии (1м)</small></div></div><button class="btn" onclick="buyInsurance(100, 60)">100 🪙</button></div>
-            
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">👷‍♂️</span><div><strong>Рабочий</strong><br><small>Сажает и собирает (15м)</small></div></div><button class="btn" onclick="buyService('worker')">200 🪙</button></div>
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">🤠</span><div><strong>Охотник</strong><br><small>Защита от кротов/зайцев (10м)</small></div></div><button class="btn" onclick="buyService('hunter')">200 🪙</button></div>
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">👦👧</span><div><strong>Пионеры</strong><br><small>Собирают улиток (10м)</small></div></div><button class="btn" onclick="buyService('pioneers')">50 🪙</button></div>
@@ -168,7 +165,7 @@
     let isDisasterActive = false; 
     let gameState = { money: 5, selectedSeed: 0, currentArea: 0, nextDisasterTime: getNextDisasterTime() };
 
-    const playlist = ['music.mp3','music1.mp3', 'music2.mp3', 'music3.mp3', 'music4.mp3'];
+    const playlist = ['music.mp3', 'music1.mp3', 'music2.mp3', 'music3.mp3', 'music4.mp3'];
     let currentTrackIdx = 0; let isMusicPlaying = false;
     const musicPlayer = document.getElementById('bg-music');
 
@@ -501,17 +498,14 @@
         if(confirm("Точно уволить сотрудника? Деньги не вернутся!")) { area[type].active = false; area[type].time = 0; updateUI(); }
     }
 
-    // --- ЛОГИКА БЕДСТВИЙ (Облегченная 1 клетка + Страховка) ---
-    function getNextDisasterTime() {
-        return 300 + Math.floor(Math.random() * 300); // 5 - 10 минут
-    }
+    function getNextDisasterTime() { return 300 + Math.floor(Math.random() * 300); }
 
     function triggerDisaster() {
         let area = farmAreas[gameState.currentArea]; 
         let types = ['lightning', 'flood', 'drought'];
         let disaster = types[Math.floor(Math.random() * types.length)];
         let title = ""; let text = "";
-        let totalLoss = 0; // Для расчёта страховки
+        let totalLoss = 0; 
 
         if (disaster === 'lightning' || disaster === 'flood') {
             title = disaster === 'lightning' ? "⚡ УДАР МОЛНИИ!" : "🌊 НАВОДНЕНИЕ!";
@@ -526,7 +520,7 @@
                     let c = crops.find(cr => cr.id === p.cropId);
                     if (c) totalLoss += c.sellPrice;
                 }
-                totalLoss += area.obstaclePrice; // Добавляем стоимость расчистки пня
+                totalLoss += area.obstaclePrice; 
                 p.state = 'obstacle'; p.obstacleType = disaster === 'lightning' ? '🪵' : '💦';
                 p.status = 'empty'; p.cropId = null; p.pest = null;
             }
@@ -546,7 +540,6 @@
             }
         }
 
-        // Логика выплат страховки
         if (area.insuranceTime > 0 && totalLoss > 0) {
             let payout = totalLoss * 3;
             gameState.money += payout;
@@ -567,7 +560,6 @@
         isDisasterActive = false;
     }
 
-    // --- ОСНОВНОЙ ЦИКЛ ---
     function gameTick() {
         if (isPaused || isDisasterActive) return;
 
@@ -576,7 +568,7 @@
             triggerDisaster(); gameState.nextDisasterTime = getNextDisasterTime(); return; 
         }
 
-        let triggerRedFlash = false; // Флаг для мигания поля
+        let triggerRedFlash = false; 
 
         farmAreas.forEach((area) => {
             if(area.insuranceTime > 0) area.insuranceTime--;
@@ -590,22 +582,19 @@
             let totalGrowthMult = area.watering.mult * area.booster.growthMult;
 
             area.plots.forEach((plot, pIdx) => {
+                // ИСПРАВЛЕНИЕ: ПОРЯДОК ХОДА (сначала рабочий, потом вредители)
+                
+                // 1. Авто-Охотники и Пионеры
                 if(area.hunter.active && plot.pest && (plot.pest.type === 'mole' || plot.pest.type === 'hare')) { plot.pest = null; gameState.money += 5; }
                 if(area.pioneers.active && plot.pest && plot.pest.type === 'snail') { plot.pest.hp--; if(plot.pest.hp <= 0) { plot.pest = null; gameState.money += 10; } }
 
+                // 2. Рост
                 if (plot.state === 'clear' && plot.status === 'growing' && !plot.pest) {
                     plot.timeLeft -= totalGrowthMult;
                     if (plot.timeLeft <= 0) plot.status = 'ready';
                 }
 
-                if (plot.pest) {
-                    plot.pest.time--;
-                    if(plot.pest.time <= 0) { 
-                        if (plot.pest.type === 'mole' || plot.pest.type === 'hare') triggerRedFlash = true; // Засекли съеденное растение!
-                        plot.pest = null; plot.status = 'empty'; plot.cropId = null; plot.isGolden = false; 
-                    }
-                }
-
+                // 3. Рабочий (Только если нет вредителя)
                 if(area.worker.active && plot.state === 'clear' && !plot.pest) {
                     let targetCrop = crops.find(c => c.id === area.worker.cropId);
                     if(plot.status === 'ready') {
@@ -620,14 +609,22 @@
                         plot.status = 'growing'; plot.cropId = targetCrop.id; plot.timeLeft = targetCrop.time; plot.isGolden = Math.random() < 0.1;
                     }
                 }
+
+                // 4. Логика уничтожения вредителями В КОНЦЕ
+                if (plot.pest) {
+                    plot.pest.time--;
+                    if(plot.pest.time <= 0) { 
+                        if (plot.pest.type === 'mole' || plot.pest.type === 'hare') triggerRedFlash = true; 
+                        plot.pest = null; plot.status = 'empty'; plot.cropId = null; plot.isGolden = false; 
+                    }
+                }
             });
         });
 
-        // Если урожай украли, поле мигает красным!
         if (triggerRedFlash) {
             const grid = document.getElementById('farm-grid');
             grid.classList.add('flash-red');
-            setTimeout(() => grid.classList.remove('flash-red'), 2000); // Отключаем через 2 секунды
+            setTimeout(() => grid.classList.remove('flash-red'), 2000); 
         }
 
         updateUI(); renderGrid();
