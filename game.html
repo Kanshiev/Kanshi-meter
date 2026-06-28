@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ферма Антоши 2.0 🥕</title>
+    <title>Ферма Антоши 3.0 🚀</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body {
@@ -24,9 +24,42 @@
             max-width: 440px;
             text-align: center;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
-        .stats { font-size: 22px; font-weight: bold; }
+        .stats { font-size: 24px; font-weight: bold; }
+
+        /* Панель активных наёмников с анимациями */
+        .active-helpers {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 440px;
+            margin-bottom: 8px;
+        }
+        .helper-badge {
+            flex: 1;
+            background: #fff3e0;
+            border: 2px solid #ffb74d;
+            border-radius: 10px;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .animated-worker { animation: workMove 0.6s infinite alternate ease-in-out; font-size: 20px; }
+        .animated-hunter { animation: huntPulse 0.5s infinite alternate ease-in-out; font-size: 20px; }
+        
+        @keyframes workMove { 
+            from { transform: rotate(-15deg) translateX(-3px); } 
+            to { transform: rotate(15deg) translateX(3px); } 
+        }
+        @keyframes huntPulse { 
+            from { transform: scale(0.9); filter: drop-shadow(0 0 2px red); } 
+            to { transform: scale(1.1); filter: drop-shadow(0 0 6px red); } 
+        }
         
         /* Сетка 5x4 */
         .farm-zone {
@@ -39,7 +72,7 @@
             width: 100%;
             max-width: 440px;
             box-shadow: inset 0 5px 10px rgba(0,0,0,0.3);
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .plot {
             background: #5d4037;
@@ -73,8 +106,8 @@
             font-weight: bold;
             position: absolute;
             bottom: 2px;
-            background: rgba(0,0,0,0.4);
-            padding: 1px 2px;
+            background: rgba(0,0,0,0.6);
+            padding: 1px 3px;
             border-radius: 3px;
         }
         
@@ -82,68 +115,44 @@
             position: absolute;
             font-size: 26px;
             z-index: 5;
-            animation: bounce 0.4s infinite alternate;
+            animation: molePop 0.3s ease-out;
         }
-        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-4px); } }
+        @keyframes molePop { from { transform: scale(0); } to { transform: scale(1); } }
 
-        /* Блок улучшений (Полив) */
-        .upgrades-panel {
-            background: #e0f7fa;
-            border: 2px solid #4dd0e1;
-            width: 100%;
-            max-width: 440px;
-            border-radius: 12px;
-            padding: 10px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .upgrade-info { font-size: 13px; }
-        
-        /* Магазин семян */
+        /* Вкладки / Магазины */
         .shop {
             background: white;
             width: 100%;
             max-width: 440px;
             border-radius: 15px;
-            padding: 12px;
+            padding: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .shop-title { font-weight: bold; margin-bottom: 8px; text-align: center; color: #555; font-size: 14px; }
-        .seed-list {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            max-height: 180px;
-            overflow-y: auto;
+        .tabs { display: flex; gap: 5px; margin-bottom: 8px; }
+        .tab-btn {
+            flex: 1; padding: 6px; border: none; background: #e0e0e0; 
+            font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 12px;
         }
+        .tab-btn.active { background: #7bc043; color: white; }
+
+        .market-section { display: none; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
+        .market-section.active { display: flex; }
+
         .seed-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 6px 10px;
-            border: 2px solid #f0f0f0;
-            border-radius: 8px;
-            background: #fafafa;
-            font-size: 13px;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 6px 10px; border: 2px solid #f0f0f0; border-radius: 8px;
+            background: #fafafa; font-size: 13px;
         }
         .seed-item.selected { border-color: #7bc043; background: #e8f5e9; }
         .seed-info { display: flex; align-items: center; gap: 8px; }
 
         .btn {
-            background: #ffb347;
-            border: none;
-            padding: 6px 12px;
-            font-size: 12px;
-            font-weight: bold;
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 3px #cc8e39;
+            background: #ffb347; border: none; padding: 6px 12px;
+            font-size: 12px; font-weight: bold; color: white;
+            border-radius: 8px; cursor: pointer; box-shadow: 0 3px #cc8e39;
         }
         .btn:active { transform: translateY(2px); box-shadow: 0 1px #cc8e39; }
-        .btn:disabled { background: #ccc !important; box-shadow: none; cursor: not-allowed; }
+        .btn:disabled { background: #ccc !important; box-shadow: none; cursor: not-allowed; color: #666; }
     </style>
 </head>
 <body>
@@ -152,22 +161,60 @@
         <div class="stats">Монеты: <span id="money-display">5</span> 🪙</div>
     </header>
 
-    <!-- Блок улучшений -->
-    <div class="upgrades-panel">
-        <div class="upgrade-info">
-            <strong>Система полива 💧</strong><br>
-            <span id="water-status">Ускоряет рост всех овощей на 20%</span>
-        </div>
-        <button class="btn" id="buy-water-btn" onclick="buyWaterUpgrade()">Купить за 40 🪙</button>
+    <!-- Активные помощники -->
+    <div class="active-helpers" id="helpers-panel" style="display: none;">
+        <!-- Сюда динамически добавляются рабочий и охотник -->
     </div>
 
     <!-- Поле 5x4 -->
     <div class="farm-zone" id="farm-grid"></div>
 
-    <!-- Магазин -->
+    <!-- Магазины -->
     <div class="shop">
-        <div class="shop-title">Выбери семена для посадки:</div>
-        <div class="seed-list" id="seed-market"></div>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('seeds')">🌱 Семена</button>
+            <button class="tab-btn" onclick="switchTab('upgrades')">🛠️ Сервисы / Наёмники</button>
+        </div>
+        
+        <!-- Секция семян -->
+        <div class="market-section active" id="sec-seeds"></div>
+        
+        <!-- Секция улучшений -->
+        <div class="market-section" id="sec-upgrades">
+            <!-- Полив -->
+            <div class="seed-item">
+                <div class="seed-info">
+                    <span style="font-size:20px">💧</span>
+                    <div>
+                        <strong>Капельный полив</strong><br>
+                        <small>Ускоряет рост овощей на 20% (Навсегда)</small>
+                    </div>
+                </div>
+                <button class="btn" id="btn-upgrade-water" onclick="buyWaterUpgrade()">40 🪙</button>
+            </div>
+            <!-- Охотник -->
+            <div class="seed-item">
+                <div class="seed-info">
+                    <span style="font-size:20px">🤠</span>
+                    <div>
+                        <strong>Охотник на кротов</strong><br>
+                        <small>Авто-удар по кротам и +5🪙 за каждого (10 мин)</small>
+                    </div>
+                </div>
+                <button class="btn" id="btn-upgrade-hunter" onclick="buyHunter()">40 🪙</button>
+            </div>
+            <!-- Рабочий -->
+            <div class="seed-item">
+                <div class="seed-info">
+                    <span style="font-size:20px">👷‍♂️</span>
+                    <div>
+                        <strong>Авто-Рабочий</strong><br>
+                        <small>Сажает/собирает выбранный овощ (15 мин)</small>
+                    </div>
+                </div>
+                <button class="btn" id="btn-upgrade-worker" onclick="buyWorker()">200 🪙</button>
+            </div>
+        </div>
     </div>
 
 <script>
@@ -175,10 +222,17 @@
         money: 5,
         selectedSeed: 0,
         waterUpgrade: false,
-        nextPlotPrice: 15
+        nextPlotPrice: 15,
+        obstacleClearPrice: 45, // В три раза выше старта обычной грядки
+        
+        workerActive: false,
+        workerTimeLeft: 0,
+        workerCropId: null,
+        
+        hunterActive: false,
+        hunterTimeLeft: 0
     };
 
-    // 10 овощей
     const cropsCatalog = [
         { id: 0, name: "Морковь", emoji: "🥕", seedPrice: 1, sellPrice: 3, time: 60 },
         { id: 1, name: "Репка", emoji: "🧅", seedPrice: 3, sellPrice: 8, time: 90 },
@@ -194,58 +248,83 @@
 
     let plots = [];
 
-    // Перемешивание массива для случайного распределения препятствий
-    function shuffle(array) {
-        return array.sort(() => Math.random() - 0.5);
-    }
+    function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
 
     function initGame() {
-        // Создаем заготовку из 20 грядок
         let indices = [];
         for(let i = 0; i < 20; i++) {
             indices.push(i);
             plots.push({ state: 'locked', obstacleType: null, status: 'empty', cropId: null, timeLeft: 0, isGolden: false, hasMole: false });
         }
-        
         shuffle(indices);
-        
-        // 3 грядки доступны сразу
-        for(let i = 0; i < 3; i++) {
-            plots[indices[i]].state = 'clear';
-        }
-        
-        // 4 грядки (20% от 20) — пни и камни
+        for(let i = 0; i < 3; i++) plots[indices[i]].state = 'clear';
         for(let i = 3; i < 7; i++) {
             plots[indices[i]].state = 'obstacle';
             plots[indices[i]].obstacleType = Math.random() > 0.5 ? '🪵' : '🪨';
         }
-        
-        // Остальные 13 остаются в состоянии 'locked'
         
         renderShop();
         renderGrid();
         updateUI();
         
         setInterval(gameTick, 1000);
-        setInterval(spawnMole, 30000); // Крот пытается прийти каждые 30 секунд
+        setInterval(spawnMole, 25000); // Крот прибегает раз в 25 сек
+    }
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.market-section').forEach(s => s.classList.remove('active'));
+        if(tab === 'seeds') {
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            document.getElementById('sec-seeds').classList.add('active');
+        } else {
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            document.getElementById('sec-upgrades').classList.add('active');
+        }
+    }
+
+    function formatTime(seconds) {
+        let m = Math.floor(seconds / 60);
+        let s = seconds % 60;
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
     }
 
     function updateUI() {
         document.getElementById('money-display').innerText = gameState.money;
         
         // Кнопка полива
-        const waterBtn = document.getElementById('buy-water-btn');
-        if (gameState.waterUpgrade) {
-            waterBtn.innerText = "АКТИВЕН 💧";
-            waterBtn.disabled = true;
-            document.getElementById('water-status').innerText = "Полив запущен! Скорость роста +20%";
-        } else {
-            waterBtn.disabled = false;
+        const waterBtn = document.getElementById('btn-upgrade-water');
+        if(gameState.waterUpgrade) { waterBtn.innerText = "Куплено"; waterBtn.disabled = true; }
+
+        // Обновление панели наемников под хэдером
+        const helpersPanel = document.getElementById('helpers-panel');
+        helpersPanel.innerHTML = '';
+        let hasHelpers = false;
+
+        if (gameState.workerActive) {
+            hasHelpers = true;
+            let cropEmoji = cropsCatalog[gameState.workerCropId].emoji;
+            helpersPanel.innerHTML += `
+                <div class="helper-badge">
+                    <div class="animated-worker">👷‍♂️</div>
+                    <div>Рабочий (${formatTime(gameState.workerTimeLeft)})<br><span style="font-size:9px">Растит: ${cropEmoji}</span></div>
+                </div>
+            `;
         }
+        if (gameState.hunterActive) {
+            hasHelpers = true;
+            helpersPanel.innerHTML += `
+                <div class="helper-badge" style="border-color:#4dd0e1; background:#e0f7fa;">
+                    <div class="animated-hunter">🤠🎯</div>
+                    <div>Охотник (${formatTime(gameState.hunterTimeLeft)})<br><span style="font-size:9px">Защита от кротов</span></div>
+                </div>
+            `;
+        }
+        helpersPanel.style.display = hasHelpers ? 'flex' : 'none';
     }
 
     function renderShop() {
-        const market = document.getElementById('seed-market');
+        const market = document.getElementById('sec-seeds');
         market.innerHTML = '';
         cropsCatalog.forEach((crop) => {
             const item = document.createElement('div');
@@ -259,7 +338,7 @@
                     <span style="font-size:20px">${crop.emoji}</span>
                     <div>
                         <strong>${crop.name}</strong><br>
-                        <small>Рост: ${displayTime}с | Выручка: ${crop.sellPrice}🪙</small>
+                        <small>Рост: ${displayTime}с | Доход: ${crop.sellPrice}🪙</small>
                     </div>
                 </div>
                 <div>Семена: ${crop.seedPrice} 🪙</div>
@@ -275,7 +354,6 @@
         plots.forEach((plot, index) => {
             const div = document.createElement('div');
             div.className = 'plot';
-            // Единый обработчик кликов решает проблему с пропаданием событий!
             div.onclick = () => handlePlotGeneralClick(index);
 
             if (plot.state === 'locked') {
@@ -284,21 +362,25 @@
             } 
             else if (plot.state === 'obstacle') {
                 div.classList.add('obstacle');
-                div.innerHTML = `<span class="emoji">${plot.obstacleType}</span><div class="price-tag">15🪙</div>`;
+                div.innerHTML = `<span class="emoji">${plot.obstacleType}</span><div class="price-tag">${gameState.obstacleClearPrice}🪙</div>`;
             } 
             else if (plot.state === 'clear') {
-                if (plot.hasMole) {
-                    div.innerHTML = `<div class="mole">🦫</div>`;
-                }
-                
                 if (plot.status === 'empty') {
-                    div.innerHTML += `<span class="emoji">🟫</span>`;
+                    div.innerHTML = `<span class="emoji">🟫</span>`;
                 } else if (plot.status === 'growing') {
-                    div.innerHTML += `<span class="emoji">🌱</span><div class="timer">${plot.timeLeft}с</div>`;
+                    div.innerHTML = `<span class="emoji">🌱</span><div class="timer">${plot.timeLeft}с</div>`;
                 } else if (plot.status === 'ready') {
                     const crop = cropsCatalog[plot.cropId];
                     let emojiToShow = plot.isGolden ? crop.emoji + "✨" : crop.emoji;
-                    div.innerHTML += `<span class="emoji">${emojiToShow}</span><div class="timer" style="background:#4caf50">Сбор!</div>`;
+                    div.innerHTML = `<span class="emoji">${emojiToShow}</span><div class="timer" style="background:#4caf50">Сбор!</div>`;
+                }
+
+                // Крот рисуется поверх земли/растения
+                if (plot.hasMole) {
+                    const moleDiv = document.createElement('div');
+                    moleDiv.className = 'mole';
+                    moleDiv.innerText = '🦫';
+                    div.appendChild(moleDiv);
                 }
             }
             grid.appendChild(div);
@@ -308,48 +390,43 @@
     function handlePlotGeneralClick(index) {
         let plot = plots[index];
 
-        // 1. Обезвреживание крота
-        if (plot.hasMole) {
+        // 1. Клик по кроту (ручной)
+        if (plot.state === 'clear' && plot.hasMole) {
             plot.hasMole = false;
-            gameState.money += 5; // Награда за бдительность
-            updateUI();
-            renderShop();
-            renderGrid();
+            gameState.money += 5;
+            updateUI(); renderGrid();
             return;
         }
 
-        // 2. Расчистка пня или камня
+        // 2. Выкорчевывание пней и камней (Прогрессивное!)
         if (plot.state === 'obstacle') {
-            if (gameState.money >= 15) {
-                gameState.money -= 15;
+            if (gameState.money >= gameState.obstacleClearPrice) {
+                gameState.money -= gameState.obstacleClearPrice;
                 plot.state = 'clear';
                 plot.status = 'empty';
-                updateUI();
-                renderShop();
-                renderGrid();
+                gameState.obstacleClearPrice += 35; // Цена растёт!
+                updateUI(); renderShop(); renderGrid();
             } else {
-                alert("Не хватает 15 монет, чтобы выкорчевать это препятствие!");
+                alert(`Нужно ${gameState.obstacleClearPrice} монет для очистки этого участка!`);
             }
             return;
         }
 
-        // 3. Покупка новой грядки из закрытых
+        // 3. Покупка закрытой грядки
         if (plot.state === 'locked') {
             if (gameState.money >= gameState.nextPlotPrice) {
                 gameState.money -= gameState.nextPlotPrice;
                 plot.state = 'clear';
                 plot.status = 'empty';
-                gameState.nextPlotPrice += 10; // Каждая следующая грядка чуть дороже
-                updateUI();
-                renderShop();
-                renderGrid();
+                gameState.nextPlotPrice += 10;
+                updateUI(); renderShop(); renderGrid();
             } else {
-                alert(`Нужно ${gameState.nextPlotPrice} монет для открытия этой грядки!`);
+                alert(`Нужно ${gameState.nextPlotPrice} монет для открытия!`);
             }
             return;
         }
 
-        // 4. Обычная логика грядки (Посадка / Сбор)
+        // 4. Посадка / Сбор
         if (plot.state === 'clear') {
             if (plot.status === 'empty') {
                 let activeCrop = cropsCatalog[gameState.selectedSeed];
@@ -357,61 +434,103 @@
                     gameState.money -= activeCrop.seedPrice;
                     plot.status = 'growing';
                     plot.cropId = activeCrop.id;
-                    
-                    // Расчет времени с учетом полива (-20%)
-                    let baseTime = activeCrop.time;
-                    plot.timeLeft = gameState.waterUpgrade ? Math.ceil(baseTime * 0.8) : baseTime;
-                    
-                    plot.isGolden = Math.random() < 0.1; // 10% шанс мега-урожая
-                    
-                    updateUI();
-                    renderShop();
-                    renderGrid();
-                } else {
-                    alert("Не хватает монет на семена!");
+                    plot.timeLeft = gameState.waterUpgrade ? Math.ceil(activeCrop.time * 0.8) : activeCrop.time;
+                    plot.isGolden = Math.random() < 0.1;
+                    updateUI(); renderGrid();
                 }
             } else if (plot.status === 'ready') {
                 let crop = cropsCatalog[plot.cropId];
-                let finalPrice = plot.isGolden ? crop.sellPrice * 3 : crop.sellPrice;
-                gameState.money += finalPrice;
-                
+                gameState.money += plot.isGolden ? crop.sellPrice * 3 : crop.sellPrice;
                 plot.status = 'empty';
                 plot.cropId = null;
                 plot.isGolden = false;
-                
-                updateUI();
-                renderShop();
-                renderGrid();
+                updateUI(); renderGrid();
             }
         }
     }
 
+    // Покупка улучшений
     function buyWaterUpgrade() {
         if (gameState.money >= 40 && !gameState.waterUpgrade) {
-            gameState.money -= 40;
-            gameState.waterUpgrade = true;
-            updateUI();
-            renderShop();
-            renderGrid();
-        } else if (!gameState.waterUpgrade) {
-            alert("Нужно 40 монет для покупки полива!");
+            gameState.money -= 40; gameState.waterUpgrade = true;
+            updateUI(); renderShop();
         }
+    }
+
+    function buyHunter() {
+        if (gameState.money >= 40) {
+            gameState.money -= 40;
+            gameState.hunterActive = true;
+            gameState.hunterTimeLeft += 600; // Добавляем 10 минут
+            updateUI();
+        } else { alert("Недостаточно монет для найма Охотника!"); }
+    }
+
+    function buyWorker() {
+        if (gameState.money >= 200) {
+            gameState.money -= 200;
+            gameState.workerActive = true;
+            gameState.workerCropId = gameState.selectedSeed; // Фиксируем овощ!
+            gameState.workerTimeLeft += 900; // Добавляем 15 минут
+            updateUI();
+            alert(`Рабочий нанят! Он будет автоматически растить: ${cropsCatalog[gameState.workerCropId].name}`);
+        } else { alert("Недостаточно монет для найма Рабочего!"); }
     }
 
     function gameTick() {
+        // Уменьшение таймеров наёмников
+        if (gameState.workerActive) {
+            gameState.workerTimeLeft--;
+            if (gameState.workerTimeLeft <= 0) gameState.workerActive = false;
+        }
+        if (gameState.hunterActive) {
+            gameState.hunterTimeLeft--;
+            if (gameState.hunterTimeLeft <= 0) gameState.hunterActive = false;
+        }
+
+        // Логика Охотника (Уничтожает кротов мгновенно)
+        if (gameState.hunterActive) {
+            plots.forEach((plot, index) => {
+                if (plot.state === 'clear' && plot.hasMole) {
+                    plot.hasMole = false;
+                    gameState.money += 5; // Награда капает Антоше на счёт автоматического
+                }
+            });
+        }
+
+        // Логика Рабочего (Автоматическая посадка и сбор)
+        if (gameState.workerActive) {
+            let targetCrop = cropsCatalog[gameState.workerCropId];
+            plots.forEach((plot, index) => {
+                if (plot.state === 'clear') {
+                    // Автосбор любого созревшего урожая
+                    if (plot.status === 'ready') {
+                        handlePlotGeneralClick(index);
+                    }
+                    // Автопосадка целевого овоща, если есть монеты
+                    if (plot.status === 'empty' && gameState.money >= targetCrop.seedPrice && !plot.hasMole) {
+                        let currentBackup = gameState.selectedSeed;
+                        gameState.selectedSeed = gameState.workerCropId;
+                        handlePlotGeneralClick(index);
+                        gameState.selectedSeed = currentBackup;
+                    }
+                }
+            });
+        }
+
+        // Рост растений
         plots.forEach((plot) => {
             if (plot.state === 'clear' && plot.status === 'growing') {
                 plot.timeLeft--;
-                if (plot.timeLeft <= 0) {
-                    plot.status = 'ready';
-                }
+                if (plot.timeLeft <= 0) plot.status = 'ready';
             }
         });
+
+        updateUI();
         renderGrid();
     }
 
     function spawnMole() {
-        // Крот выбирает только те грядки, где что-то растет или готово, и где его еще нет
         let validPlots = [];
         plots.forEach((plot, idx) => {
             if (plot.state === 'clear' && (plot.status === 'growing' || plot.status === 'ready') && !plot.hasMole) {
@@ -424,9 +543,9 @@
             plots[randomIdx].hasMole = true;
             renderGrid();
             
-            // Если крота не прогнали за 8 секунд — он уничтожает грядку
+            // Крот уходит через 8 секунд, если его не прогнали
             setTimeout(() => {
-                if (plots[randomIdx].hasMole) {
+                if (plots[randomIdx] && plots[randomIdx].hasMole) {
                     plots[randomIdx].hasMole = false;
                     plots[randomIdx].status = 'empty';
                     plots[randomIdx].cropId = null;
