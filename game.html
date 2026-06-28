@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ферма Антоши 4.0 🚀</title>
+    <title>Ферма Антоши 4.1 🌳</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body { font-family: 'Segoe UI', sans-serif; background: #e2f0d9; color: #333; display: flex; flex-direction: column; align-items: center; padding: 10px; }
@@ -26,7 +26,8 @@
         .plot.locked { background: #3e2723; border-color: #261411; }
         .plot.obstacle { background: #78909c; border-color: #455a64; }
         
-        .plot .emoji { font-size: 24px; z-index: 2; }
+        .plot .crop-label { font-size: 9px; position: absolute; top: 2px; color: white; background: rgba(0,0,0,0.5); padding: 1px 3px; border-radius: 3px; z-index: 3; max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; }
+        .plot .emoji { font-size: 24px; z-index: 2; margin-top: 5px; }
         .plot .timer { font-size: 9px; background: rgba(0,0,0,0.7); color: white; padding: 1px 3px; border-radius: 3px; position: absolute; bottom: 2px; z-index: 4; }
         .plot .price-tag { font-size: 9px; color: #ffeb3b; font-weight: bold; position: absolute; bottom: 2px; background: rgba(0,0,0,0.6); padding: 1px 3px; border-radius: 3px; }
         
@@ -41,7 +42,7 @@
         .tab-btn { flex: 0 0 auto; padding: 6px 10px; border: none; background: #e0e0e0; font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 12px; }
         .tab-btn.active { background: #7bc043; color: white; }
 
-        .market-section { display: none; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+        .market-section { display: none; flex-direction: column; gap: 6px; max-height: 250px; overflow-y: auto; }
         .market-section.active { display: flex; }
         .shop-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border: 2px solid #f0f0f0; border-radius: 8px; background: #fafafa; font-size: 13px; }
         .shop-item.selected { border-color: #7bc043; background: #e8f5e9; }
@@ -73,7 +74,7 @@
     <div class="shop">
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('seeds')">🌱 Семена</button>
-            <button class="tab-btn" onclick="switchTab('trees')">🌳 Деревья</button>
+            <button class="tab-btn" onclick="switchTab('trees')">🌳 Сад</button>
             <button class="tab-btn" onclick="switchTab('services')">👷 Услуги</button>
             <button class="tab-btn" onclick="switchTab('upgrades')">🚀 Апгрейды</button>
         </div>
@@ -81,11 +82,10 @@
         <div class="market-section active" id="sec-seeds"></div>
         <div class="market-section" id="sec-trees"></div>
         <div class="market-section" id="sec-services">
-            <!-- Работники -->
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">👷‍♂️</span><div><strong>Рабочий</strong><br><small>Сажает и собирает (15м)</small></div></div><button class="btn" onclick="buyService('worker')">200 🪙</button></div>
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">🤠</span><div><strong>Охотник</strong><br><small>Стреляет кротов/зайцев (10м)</small></div></div><button class="btn" onclick="buyService('hunter')">200 🪙</button></div>
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">👦👧</span><div><strong>Пионеры</strong><br><small>Собирают улиток (10м)</small></div></div><button class="btn" onclick="buyService('pioneers')">50 🪙</button></div>
-            <!-- Полив временный -->
+            
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">🚿</span><div><strong>Лейка</strong><br><small>+5% к росту (5м)</small></div></div><button class="btn" onclick="buyWatering('can', 50, 300, 1.05)">50 🪙</button></div>
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">💦</span><div><strong>Шланг</strong><br><small>+10% к росту (10м)</small></div></div><button class="btn" onclick="buyWatering('hose', 150, 600, 1.10)">150 🪙</button></div>
             <div class="shop-item"><div class="item-info"><span style="font-size:20px">💧</span><div><strong>Капельница</strong><br><small>+20% (+бонусы) (20м)</small></div></div><button class="btn" onclick="buyWatering('drip', 500, 1200, 1.20)">500 🪙</button></div>
@@ -99,25 +99,37 @@
 
 <script>
     let gameState = {
-        money: 5, selectedSeed: 0, currentArea: 0,
-        dripLevel: 0, // 0,1,2,3
+        money: 5, selectedSeed: 0, currentArea: 0, dripLevel: 0,
         watering: { type: null, timeLeft: 0, mult: 1.0 },
         worker: { active: false, time: 0, cropId: null },
         hunter: { active: false, time: 0 },
         pioneers: { active: false, time: 0 }
     };
 
+    // Полный каталог растений (10 овощей + 10 кустов/деревьев)
     const crops = [
         { id: 0, type: 'veggies', name: "Морковь", emoji: "🥕", seedPrice: 1, sellPrice: 3, time: 60 },
         { id: 1, type: 'veggies', name: "Репка", emoji: "🧅", seedPrice: 3, sellPrice: 8, time: 90 },
         { id: 2, type: 'veggies', name: "Картошка", emoji: "🥔", seedPrice: 8, sellPrice: 22, time: 120 },
-        { id: 3, type: 'veggies', name: "Помидор", emoji: "🍅", seedPrice: 60, sellPrice: 200, time: 210 },
-        { id: 4, type: 'veggies', name: "Арбуз", emoji: "🍉", seedPrice: 1000, sellPrice: 4000, time: 420 },
-        // Деревья
-        { id: 5, type: 'trees', name: "Малина", emoji: "🍇", seedPrice: 5000, sellPrice: 15000, time: 600 },
-        { id: 6, type: 'trees', name: "Вишня", emoji: "🍒", seedPrice: 20000, sellPrice: 60000, time: 900 },
-        { id: 7, type: 'trees', name: "Груша", emoji: "🍐", seedPrice: 50000, sellPrice: 160000, time: 1200 },
-        { id: 8, type: 'trees', name: "Яблоня", emoji: "🍎", seedPrice: 100000, sellPrice: 350000, time: 1800 }
+        { id: 3, type: 'veggies', name: "Брокколи", emoji: "🥦", seedPrice: 15, sellPrice: 45, time: 150 },
+        { id: 4, type: 'veggies', name: "Кукуруза", emoji: "🌽", seedPrice: 30, sellPrice: 95, time: 180 },
+        { id: 5, type: 'veggies', name: "Помидор", emoji: "🍅", seedPrice: 60, sellPrice: 200, time: 210 },
+        { id: 6, type: 'veggies', name: "Баклажан", emoji: "🍆", seedPrice: 120, sellPrice: 410, time: 240 },
+        { id: 7, type: 'veggies', name: "Тыква", emoji: "🎃", seedPrice: 250, sellPrice: 900, time: 300 },
+        { id: 8, type: 'veggies', name: "Клубника", emoji: "🍓", seedPrice: 500, sellPrice: 1900, time: 360 },
+        { id: 9, type: 'veggies', name: "Арбуз", emoji: "🍉", seedPrice: 1000, sellPrice: 4000, time: 420 },
+        
+        // Сад: Кусты и деревья
+        { id: 10, type: 'trees', name: "Черника", emoji: "🫐", seedPrice: 5000, sellPrice: 15000, time: 600 },
+        { id: 11, type: 'trees', name: "Смородина", emoji: "🍇", seedPrice: 10000, sellPrice: 32000, time: 720 },
+        { id: 12, type: 'trees', name: "Лимон", emoji: "🍋", seedPrice: 25000, sellPrice: 85000, time: 900 },
+        { id: 13, type: 'trees', name: "Апельсин", emoji: "🍊", seedPrice: 50000, sellPrice: 180000, time: 1200 },
+        { id: 14, type: 'trees', name: "Вишня", emoji: "🍒", seedPrice: 100000, sellPrice: 380000, time: 1500 },
+        { id: 15, type: 'trees', name: "Персик", emoji: "🍑", seedPrice: 250000, sellPrice: 950000, time: 1800 },
+        { id: 16, type: 'trees', name: "Груша", emoji: "🍐", seedPrice: 500000, sellPrice: 2000000, time: 2400 },
+        { id: 17, type: 'trees', name: "Яблоня", emoji: "🍎", seedPrice: 1000000, sellPrice: 4200000, time: 3600 },
+        { id: 18, type: 'trees', name: "Кокос", emoji: "🥥", seedPrice: 2500000, sellPrice: 11000000, time: 4800 },
+        { id: 19, type: 'trees', name: "Манго", emoji: "🥭", seedPrice: 5000000, sellPrice: 23000000, time: 7200 }
     ];
 
     let farmAreas = [];
@@ -134,7 +146,6 @@
             for(let i=0; i<3; i++) area.plots[indices[i]].state = 'clear';
             for(let i=3; i<7; i++) { area.plots[indices[i]].state = 'obstacle'; area.plots[indices[i]].obstacleType = Math.random() > 0.5 ? '🪵' : '🪨'; }
         } else {
-            // Если покупаем сад, там сразу всё 'locked', но камни тоже есть
             for(let i=0; i<6; i++) { area.plots[indices[i]].state = 'obstacle'; area.plots[indices[i]].obstacleType = Math.random() > 0.5 ? '🪵' : '🪨'; }
         }
         return area;
@@ -144,7 +155,7 @@
         farmAreas.push(generateArea('veggies', true));
         renderShop(); renderGrid(); updateUI();
         setInterval(gameTick, 1000);
-        setInterval(spawnPest, 15000); // Чаще, так как вредителей много
+        setInterval(spawnPest, 15000); 
     }
 
     function switchTab(tab) {
@@ -165,11 +176,11 @@
         document.getElementById('prev-area').disabled = gameState.currentArea === 0;
         document.getElementById('next-area').disabled = gameState.currentArea === farmAreas.length - 1;
 
-        // Показ кнопки покупки нового участка
         let allClear = area.plots.every(p => p.state === 'clear');
         let isLastArea = gameState.currentArea === farmAreas.length - 1;
         let newAreaPrice = 200000 * Math.pow(10, farmAreas.length - 1);
         let buyBtn = document.getElementById('buy-area-btn');
+        
         if (allClear && isLastArea) {
             buyBtn.style.display = 'block';
             buyBtn.innerText = `Купить новый сад за ${newAreaPrice} 🪙`;
@@ -183,10 +194,9 @@
             };
         } else { buyBtn.style.display = 'none'; }
 
-        // Панель наемников
         let hp = document.getElementById('helpers-panel');
         hp.innerHTML = '';
-        if(gameState.watering.time > 0) hp.innerHTML += `<div class="helper-badge water">💦 Полив (${formatTime(gameState.watering.time)})</div>`;
+        if(gameState.watering.time > 0) hp.innerHTML += `<div class="helper-badge water">💦 Полив (${formatTime(gameState.watering.timeLeft)})</div>`;
         if(gameState.worker.active) {
             hp.innerHTML += `<div class="helper-badge">👷 Рабочий (${formatTime(gameState.worker.time)})<button class="fire-btn" onclick="fire('worker')">✖</button></div>`;
         }
@@ -194,10 +204,9 @@
             hp.innerHTML += `<div class="helper-badge">🤠 Охотник (${formatTime(gameState.hunter.time)})<button class="fire-btn" onclick="fire('hunter')">✖</button></div>`;
         }
         if(gameState.pioneers.active) {
-            hp.innerHTML += `<div class="helper-badge pioneers">👦 Пионеры (${formatTime(gameState.pioneers.time)})</div>`; // Без увольнения
+            hp.innerHTML += `<div class="helper-badge pioneers">👦 Пионеры (${formatTime(gameState.pioneers.time)})</div>`; 
         }
 
-        // Кнопки апгрейдов полива
         for(let i=1; i<=3; i++) {
             if(gameState.dripLevel >= i) {
                 let u = document.getElementById(`upg-drip-${i}`);
@@ -247,17 +256,22 @@
                 if (plot.status === 'empty') {
                     div.innerHTML = `<span class="emoji">🟫</span>`;
                 } else if (plot.status === 'growing') {
-                    let crop = crops.find(c => c.id === plot.cropId);
-                    let maxTime = crop.time;
-                    let pct = Math.floor(((maxTime - plot.timeLeft) / maxTime) * 100);
-                    div.innerHTML = `<span class="emoji">🌱</span><div class="timer">${pct}%</div>`;
+                    const crop = crops.find(c => c.id === plot.cropId);
+                    div.innerHTML = `
+                        <div class="crop-label">${crop.name}</div>
+                        <span class="emoji">🌱</span>
+                        <div class="timer">${Math.ceil(plot.timeLeft)}с</div>
+                    `;
                 } else if (plot.status === 'ready') {
                     const crop = crops.find(c => c.id === plot.cropId);
                     let e = plot.isGolden ? crop.emoji + "✨" : crop.emoji;
-                    div.innerHTML = `<span class="emoji">${e}</span><div class="timer" style="background:#4caf50">Сбор!</div>`;
+                    div.innerHTML = `
+                        <div class="crop-label">${crop.name}</div>
+                        <span class="emoji">${e}</span>
+                        <div class="timer" style="background:#4caf50">Сбор!</div>
+                    `;
                 }
 
-                // Вредители
                 if (plot.pest) {
                     let pInfo = { 'mole':'🦫', 'hare':'🐇', 'snail':'🐌' };
                     let hpBadge = plot.pest.type === 'snail' ? `<div class="pest-hp">${plot.pest.hp}</div>` : '';
@@ -272,18 +286,16 @@
         let area = farmAreas[gameState.currentArea];
         let plot = area.plots[index];
 
-        // 1. Вредители
         if (plot.state === 'clear' && plot.pest) {
             if (plot.pest.type === 'snail') {
                 plot.pest.hp--;
                 if(plot.pest.hp <= 0) { plot.pest = null; gameState.money += 10; }
             } else {
-                plot.pest = null; gameState.money += 5; // Крот или Заяц
+                plot.pest = null; gameState.money += 5;
             }
             updateUI(); renderGrid(); return;
         }
 
-        // 2. Расчистка
         if (plot.state === 'obstacle') {
             if (gameState.money >= area.obstaclePrice) {
                 gameState.money -= area.obstaclePrice;
@@ -294,7 +306,6 @@
             return;
         }
 
-        // 3. Открытие
         if (plot.state === 'locked') {
             if (gameState.money >= area.nextPlotPrice) {
                 gameState.money -= area.nextPlotPrice;
@@ -305,10 +316,9 @@
             return;
         }
 
-        // 4. Посадка/Сбор
         if (plot.state === 'clear') {
-            let activeCrop = crops.find(c => c.id === gameState.selectedSeed);
             if (plot.status === 'empty') {
+                let activeCrop = crops.find(c => c.id === gameState.selectedSeed);
                 if (area.type !== activeCrop.type) {
                     alert(`Это семя можно сажать только на участке типа: ${activeCrop.type === 'veggies'?'Овощи':'Сад'}!`);
                     return;
@@ -316,12 +326,14 @@
                 if (gameState.money >= activeCrop.seedPrice) {
                     gameState.money -= activeCrop.seedPrice;
                     plot.status = 'growing'; plot.cropId = activeCrop.id;
-                    plot.timeLeft = activeCrop.time; // Полное время, прогресс считается динамически
+                    plot.timeLeft = activeCrop.time; 
                     plot.isGolden = Math.random() < 0.1;
                     updateUI(); renderGrid();
                 } else alert("Нет денег на семена!");
             } else if (plot.status === 'ready') {
-                let finalPrice = plot.isGolden ? activeCrop.sellPrice * 3 : activeCrop.sellPrice;
+                // ИСПРАВЛЕНИЕ БАГА: Берем цену именно того растения, которое выросло!
+                let cropPlanted = crops.find(c => c.id === plot.cropId);
+                let finalPrice = plot.isGolden ? cropPlanted.sellPrice * 3 : cropPlanted.sellPrice;
                 gameState.money += finalPrice;
                 plot.status = 'empty'; plot.cropId = null; plot.isGolden = false;
                 updateUI(); renderGrid();
@@ -329,7 +341,6 @@
         }
     }
 
-    // --- Магазин Услуг ---
     function buyService(type) {
         if(type === 'worker' && gameState.money >= 200) {
             gameState.money -= 200; gameState.worker = { active: true, time: 900, cropId: gameState.selectedSeed };
@@ -348,7 +359,6 @@
         if(gameState.money >= price) {
             gameState.money -= price;
             let finalMult = baseMult;
-            // Учет апгрейдов капельницы
             if(type === 'drip') {
                 if(gameState.dripLevel === 1) finalMult = 1.30;
                 if(gameState.dripLevel === 2) finalMult = 1.40;
@@ -376,7 +386,6 @@
     }
 
     function gameTick() {
-        // Таймеры услуг
         if(gameState.watering.timeLeft > 0) gameState.watering.timeLeft--;
         else gameState.watering.mult = 1.0;
 
@@ -388,23 +397,19 @@
 
         farmAreas.forEach((area, aIdx) => {
             area.plots.forEach((plot, pIdx) => {
-                // Авто-Охотник
                 if(gameState.hunter.active && plot.pest && (plot.pest.type === 'mole' || plot.pest.type === 'hare')) {
                     plot.pest = null; gameState.money += 5;
                 }
-                // Авто-Пионеры
                 if(gameState.pioneers.active && plot.pest && plot.pest.type === 'snail') {
                     plot.pest.hp--;
                     if(plot.pest.hp <= 0) { plot.pest = null; gameState.money += 10; }
                 }
 
-                // Рост растений (учитывая полив)
                 if (plot.state === 'clear' && plot.status === 'growing' && !plot.pest) {
                     plot.timeLeft -= (1 * mult);
                     if (plot.timeLeft <= 0) plot.status = 'ready';
                 }
 
-                // Вредители кушают урожай
                 if (plot.pest) {
                     plot.pest.time--;
                     if(plot.pest.time <= 0) {
@@ -412,12 +417,10 @@
                     }
                 }
 
-                // Авто-Рабочий
                 if(gameState.worker.active && plot.state === 'clear' && !plot.pest) {
                     let targetCrop = crops.find(c => c.id === gameState.worker.cropId);
                     if(plot.status === 'ready') {
-                        // Если он сажал одно, а выросло другое, он всё равно соберет
-                        let c = crops.find(cr => cr.id === plot.cropId);
+                        let c = crops.find(cr => cr.id === plot.cropId); // Сбор честный
                         gameState.money += plot.isGolden ? c.sellPrice * 3 : c.sellPrice;
                         plot.status = 'empty'; plot.cropId = null; plot.isGolden = false;
                     }
@@ -443,14 +446,14 @@
 
         if (validPlots.length > 0) {
             let target = validPlots[Math.floor(Math.random() * validPlots.length)];
-            let pestType = 'snail'; // По умолчанию улитка
+            let pestType = 'snail'; 
             let rand = Math.random();
             
             if(target.type === 'veggies') { if(rand > 0.4) pestType = 'mole'; }
             else if(target.type === 'trees') { if(rand > 0.4) pestType = 'hare'; }
 
             let pestData = { type: pestType, time: 8, hp: 1 };
-            if(pestType === 'snail') { pestData.time = 15; pestData.hp = Math.floor(Math.random()*3)+5; } // Улитка: 5-7 hp, 15 сек
+            if(pestType === 'snail') { pestData.time = 15; pestData.hp = Math.floor(Math.random()*3)+5; } 
 
             farmAreas[target.a].plots[target.p].pest = pestData;
             renderGrid();
