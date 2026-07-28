@@ -8,29 +8,56 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
             background-color: #1e272e;
-            display: flex; justify-content: center; padding: 15px; margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 15px;
+            margin: 0;
         }
         .widget-container { width: 100%; max-width: 500px; }
-        
+
         .nav-btn {
-            display: block; width: 100%; padding: 16px; background-color: #2c3e50; color: white;
-            border: 1px solid #485460; border-radius: 16px; font-size: 16px; font-weight: bold; cursor: pointer;
-            text-decoration: none; text-align: center; box-sizing: border-box;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2); margin-bottom: 20px;
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background-color: #2c3e50;
+            color: white;
+            border: 1px solid #485460;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
         }
 
         .header-title {
-            text-align: center; font-size: 1.4rem; font-weight: 900; color: #d2dae2;
-            margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px;
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: #d2dae2;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        /* СЕТКА ДЛЯ ПЛИТОК */
-        .forecast-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .forecast-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
 
         .day-tile {
-            border-radius: 20px; padding: 15px;
-            display: flex; flex-direction: column; justify-content: space-between;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.15); position: relative; overflow: hidden;
+            border-radius: 20px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
         }
         .tile-wide { grid-column: span 2; padding: 20px; }
 
@@ -38,45 +65,162 @@
         .bg-normal { background: linear-gradient(135deg, #fdebd0 0%, #fad7a1 100%); color: #7e5109; border: 1px solid #f8c471; }
         .bg-expensive { background: linear-gradient(135deg, #fadbd8 0%, #f5b7b1 100%); color: #78281f; border: 1px solid #f1948a; }
 
-        /* ВНУТРЕННОСТИ ПЛИТКИ */
-        .tile-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-        
+        .tile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
         .tile-date { display: flex; flex-direction: column; }
         .tile-date b { font-size: 1.1rem; font-weight: 900; text-transform: uppercase; }
         .tile-date span { font-size: 0.75rem; font-weight: 700; opacity: 0.7; }
-        
-        /* Правый верхний угол (Статус + Цена) */
-        .tile-top-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-        .tile-status { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; padding: 4px 8px; border-radius: 8px; background: rgba(255,255,255,0.4); }
+
+        .tile-top-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+        .tile-status {
+            font-size: 0.7rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            padding: 4px 8px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.4);
+        }
         .tile-price { font-size: 1.05rem; font-weight: 900; }
         .tile-price span { font-size: 0.75rem; opacity: 0.75; font-weight: 800; }
         .price-exact { opacity: 1; }
         .price-est { opacity: 0.7; }
 
-        .tile-middle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
-        .tile-icon { font-size: 2.5rem; line-height: 1; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); }
+        .tile-middle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .tile-icon {
+            font-size: 2.5rem;
+            line-height: 1;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1));
+        }
         .tile-temps { text-align: right; }
-        .tile-temps b { display: block; font-size: 1.6rem; font-weight: 900; letter-spacing: -1px; }
-        .tile-temps span { font-size: 0.8rem; font-weight: 700; opacity: 0.7; }
+        .tile-temps b {
+            display: block;
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+        }
+        .tile-temps span {
+            font-size: 0.8rem;
+            font-weight: 700;
+            opacity: 0.7;
+        }
 
-        .tile-bottom { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 10px; }
-        .param { display: flex; flex-direction: column; align-items: center; text-align: center; }
-        .param span { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; opacity: 0.7; margin-bottom: 2px; }
+        .tile-bottom {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            padding-top: 10px;
+        }
+        .param {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .param span {
+            font-size: 0.6rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            opacity: 0.7;
+            margin-bottom: 2px;
+        }
         .param b { font-size: 0.9rem; font-weight: 900; }
-        .param i { font-style: normal; font-size: 0.9rem; margin-bottom: 2px; filter: grayscale(100%) opacity(0.8); }
+        .param i {
+            font-style: normal;
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+            filter: grayscale(100%) opacity(0.8);
+        }
 
-        .loading { text-align: center; font-weight: bold; color: #d2dae2; padding: 40px; }
+        .loading {
+            text-align: center;
+            font-weight: bold;
+            color: #d2dae2;
+            padding: 40px;
+        }
+
+        /* История */
+        .history-section { margin-top: 30px; }
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .hist-row {
+            background: #2c3e50;
+            border-radius: 14px;
+            padding: 12px 14px;
+            color: #ecf0f1;
+            border: 1px solid #34495e;
+        }
+        .hist-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .hist-date { font-weight: 800; font-size: 0.95rem; }
+        .hist-delta {
+            font-weight: 900;
+            font-size: 0.9rem;
+            padding: 3px 8px;
+            border-radius: 8px;
+        }
+        .delta-good { background: #27ae60; color: #fff; }
+        .delta-mid  { background: #f39c12; color: #fff; }
+        .delta-bad  { background: #e74c3c; color: #fff; }
+        .hist-prices {
+            display: flex;
+            gap: 16px;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+        }
+        .hist-prices span { opacity: 0.85; }
+        .hist-prices b { font-weight: 800; }
+        .hist-weather {
+            display: flex;
+            gap: 14px;
+            font-size: 0.78rem;
+            opacity: 0.75;
+        }
+        .hist-empty {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 20px;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
 
 <div class="widget-container">
     <a href="index.html" class="nav-btn">⬅ Назад к пульту</a>
-    
+
     <div class="header-title">Стратегия на 5 дней</div>
-    
+
     <div id="forecast-grid" class="forecast-grid">
         <div class="loading" id="loading-msg" style="grid-column: span 2;">Сканируем биржу и атмосферу...</div>
+    </div>
+
+    <div class="history-section">
+        <div class="header-title" style="font-size: 1.15rem; margin-bottom: 12px;">Предсказывали и сбылось</div>
+        <div id="history-list" class="history-list">
+            <div class="hist-empty">Загружаем историю...</div>
+        </div>
     </div>
 </div>
 
@@ -84,6 +228,7 @@
     const LAT = 65.01;
     const LON = 25.46;
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbypnKWrHwiPmjMsZtC-3HRY6Oe_9sCvTJPJwfngOvZycBNVGqc5y4tS6PNjQ-gK2JAO/exec';
+    const HISTORY_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJr45wBzKQWfbT-wnECB2rnRkb6FBw1ibQazH0tKjhdjK1EZYB9K_5mZ_h7xAdgq6VYaSDPvcyrNdU/pub?gid=1504214306&single=true&output=csv';
 
     const daysRu = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
     const monthsRu = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
@@ -101,21 +246,44 @@
         return '🌤️';
     }
 
-    // ========== ЛОГИРОВАНИЕ ==========
-    function getPredictions() {
-        try { return JSON.parse(localStorage.getItem('kanshi_preds') || '{}'); } 
-        catch { return {}; }
+    function parseNum(v) {
+        if (v === undefined || v === null || v === '') return null;
+        const n = parseFloat(String(v).replace(',', '.').replace(/\s/g, ''));
+        return isNaN(n) ? null : n;
     }
 
+    // Простой CSV-парсер с учётом кавычек
+    function parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const c = line[i];
+            if (c === '"') {
+                inQuotes = !inQuotes;
+            } else if (c === ',' && !inQuotes) {
+                result.push(current.trim());
+                current = '';
+            } else {
+                current += c;
+            }
+        }
+        result.push(current.trim());
+        return result;
+    }
+
+    // ========== localStorage ==========
+    function getPredictions() {
+        try { return JSON.parse(localStorage.getItem('kanshi_preds') || '{}'); }
+        catch { return {}; }
+    }
     function savePredictions(obj) {
         localStorage.setItem('kanshi_preds', JSON.stringify(obj));
     }
-
     function getLogged() {
-        try { return JSON.parse(localStorage.getItem('kanshi_logged') || '{}'); } 
+        try { return JSON.parse(localStorage.getItem('kanshi_logged') || '{}'); }
         catch { return {}; }
     }
-
     function markLogged(date) {
         const logged = getLogged();
         logged[date] = true;
@@ -143,18 +311,14 @@
         const today = new Date().toISOString().slice(0, 10);
 
         for (const dateStr of Object.keys(preds)) {
-            // Логируем только если уже есть реальная цена и ещё не логировали
             if (!dailySpotAvgs[dateStr] || logged[dateStr]) continue;
             if (dateStr > today) continue;
 
             const pred = preds[dateStr];
-
-            // Берём реальную погоду за этот день (архив)
             try {
                 const archUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${LAT}&longitude=${LON}&start_date=${dateStr}&end_date=${dateStr}&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,sunshine_duration,precipitation_probability_max&timezone=Europe%2FHelsinki`;
                 const archRes = await fetch(archUrl);
                 const arch = await archRes.json();
-
                 if (!arch.daily || !arch.daily.time || arch.daily.time.length === 0) continue;
 
                 const payload = {
@@ -172,18 +336,93 @@
                     prediction_date: pred.prediction_date,
                     notes: ''
                 };
-
                 await sendToSheet(payload);
             } catch (e) {
                 console.error('Ошибка архива погоды для', dateStr, e);
             }
         }
     }
-    // ========== КОНЕЦ ЛОГИРОВАНИЯ ==========
 
+    // ========== ИСТОРИЯ ==========
+    async function loadHistory() {
+        const container = document.getElementById('history-list');
+        try {
+            const res = await fetch(HISTORY_CSV + '&_t=' + Date.now());
+            const text = await res.text();
+            const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+
+            if (lines.length < 2) {
+                container.innerHTML = '<div class="hist-empty">Пока нет записей. Копим данные...</div>';
+                return;
+            }
+
+            const rows = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = parseCSVLine(lines[i]);
+                if (cols.length < 7) continue;
+
+                const date = cols[0];
+                const actual = parseNum(cols[1]);
+                const predicted = parseNum(cols[2]);
+                const tMin = parseNum(cols[3]);
+                const tMax = parseNum(cols[4]);
+                const wind = parseNum(cols[5]);
+                const sun = parseNum(cols[6]);
+
+                if (!date || actual === null || predicted === null) continue;
+
+                rows.push({ date, actual, predicted, tMin, tMax, wind, sun });
+            }
+
+            // свежие сверху
+            rows.reverse();
+            const last = rows.slice(0, 7);
+
+            if (last.length === 0) {
+                container.innerHTML = '<div class="hist-empty">Пока нет записей. Копим данные...</div>';
+                return;
+            }
+
+            container.innerHTML = last.map(r => {
+                const delta = r.actual - r.predicted;
+                const abs = Math.abs(delta);
+                let deltaClass = 'delta-mid';
+                if (abs <= 1.5) deltaClass = 'delta-good';
+                else if (abs >= 4) deltaClass = 'delta-bad';
+
+                const parts = r.date.split('-');
+                const day = parseInt(parts[2], 10);
+                const monthIdx = parseInt(parts[1], 10) - 1;
+                const dateLabel = `${day} ${monthsRu[monthIdx] || ''}`;
+                const sign = delta > 0 ? '+' : '';
+
+                return `
+                <div class="hist-row">
+                    <div class="hist-top">
+                        <div class="hist-date">${dateLabel}</div>
+                        <div class="hist-delta ${deltaClass}">${sign}${delta.toFixed(1)} c</div>
+                    </div>
+                    <div class="hist-prices">
+                        <div><span>Прогноз</span> <b>${r.predicted.toFixed(1)}</b></div>
+                        <div><span>Факт</span> <b>${r.actual.toFixed(1)}</b></div>
+                    </div>
+                    <div class="hist-weather">
+                        <span>🌡️ ${r.tMin ?? '–'}…${r.tMax ?? '–'}°</span>
+                        <span>💨 ${r.wind ?? '–'} м/с</span>
+                        <span>☀️ ${r.sun ?? '–'} ч</span>
+                    </div>
+                </div>`;
+            }).join('');
+
+        } catch (e) {
+            console.error('Ошибка истории', e);
+            container.innerHTML = '<div class="hist-empty">Не удалось загрузить историю</div>';
+        }
+    }
+
+    // ========== ОСНОВНОЙ ПРОГНОЗ ==========
     async function loadForecast() {
         try {
-            // 1. Цены биржи
             const spotRes = await fetch('https://api.spot-hinta.fi/TodayAndDayForward');
             const spotData = await spotRes.json();
 
@@ -199,15 +438,13 @@
                 for (let d in sums) dailySpotAvgs[d] = sums[d] / counts[d];
             }
 
-            // 2. Погода
             const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,sunshine_duration,precipitation_probability_max&timezone=Europe%2FHelsinki&forecast_days=5`;
             const weatherRes = await fetch(weatherUrl);
             const data = await weatherRes.json();
 
-            let todayDateStr = data.daily.time[0];
-            let basePriceForPrediction = dailySpotAvgs[todayDateStr] || 5.0;
+            const todayDateStr = data.daily.time[0];
+            const basePriceForPrediction = dailySpotAvgs[todayDateStr] || 5.0;
 
-            // Сразу пробуем залогировать завершённые дни
             await tryLogCompletedDays(dailySpotAvgs);
 
             const grid = document.getElementById('forecast-grid');
@@ -219,7 +456,6 @@
             for (let i = 0; i < 5; i++) {
                 const dateStr = data.daily.time[i];
                 const d = new Date(dateStr);
-
                 const isToday = i === 0;
                 const dayName = isToday ? "Сегодня" : i === 1 ? "Завтра" : daysRu[d.getDay()];
                 const dateFormatted = `${d.getDate()} ${monthsRu[d.getMonth()]}`;
@@ -231,7 +467,6 @@
                 const pop = data.daily.precipitation_probability_max[i] || 0;
                 const weatherIcon = getWeatherIcon(data.daily.weather_code[i]);
 
-                // --- АЛГОРИТМ ПРЕДСКАЗАНИЯ ---
                 let riskScore = 0;
                 if (tempMin < -20) riskScore += 4.5;
                 else if (tempMin < -10) riskScore += 3.0;
@@ -246,20 +481,18 @@
                 else if (sunHours < 3) riskScore += 1;
 
                 let displayPriceHtml = "";
-                let predictedPrice = null;
 
-                if (dailySpotAvgs[dateStr]) {
-                    let exactPrice = dailySpotAvgs[dateStr];
+                if (dailySpotAvgs[dateStr] !== undefined) {
+                    const exactPrice = dailySpotAvgs[dateStr];
                     displayPriceHtml = `<div class="tile-price price-exact">✓ ${exactPrice.toFixed(1)} <span>c</span></div>`;
                     if (exactPrice < 3.0) riskScore = -2;
                     else if (exactPrice > 8.0) riskScore = 2;
                     else riskScore = 0;
                 } else {
-                    predictedPrice = basePriceForPrediction + (riskScore * 1.2);
+                    let predictedPrice = basePriceForPrediction + (riskScore * 1.2);
                     if (predictedPrice < -2) predictedPrice = -1.5;
                     displayPriceHtml = `<div class="tile-price price-est">≈ ${predictedPrice.toFixed(1)} <span>c</span></div>`;
 
-                    // Сохраняем прогноз в localStorage
                     preds[dateStr] = {
                         predicted: predictedPrice,
                         base: basePriceForPrediction,
@@ -268,20 +501,19 @@
                     };
                 }
 
-                // Цвета
                 let bgClass, statusText;
                 if (riskScore <= -1.0) {
                     bgClass = "bg-cheap"; statusText = "Дешево";
-                } else if (riskScore > -1.0 && riskScore <= 1.5) {
+                } else if (riskScore <= 1.5) {
                     bgClass = "bg-normal"; statusText = "Средне";
                 } else {
                     bgClass = "bg-expensive"; statusText = "Дорого";
                 }
 
-                let wideClass = isToday ? "tile-wide" : "";
-                let displayDayName = isToday ? "Сегодня" : dayName;
+                const wideClass = isToday ? "tile-wide" : "";
+                const displayDayName = isToday ? "Сегодня" : dayName;
 
-                let tileHTML = `
+                const tileHTML = `
                 <div class="day-tile ${bgClass} ${wideClass}">
                     <div class="tile-header">
                         <div class="tile-date">
@@ -309,12 +541,13 @@
                 grid.insertAdjacentHTML('beforeend', tileHTML);
             }
 
-            // Записываем обновлённые предсказания
             savePredictions(preds);
+            await loadHistory();
 
         } catch (error) {
             console.error("Ошибка прогноза:", error);
-            document.getElementById('loading-msg').innerHTML = '<span style="color:#e74c3c;">Ошибка сети</span>';
+            const msg = document.getElementById('loading-msg');
+            if (msg) msg.innerHTML = '<span style="color:#e74c3c;">Ошибка сети</span>';
         }
     }
 
