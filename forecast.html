@@ -51,7 +51,7 @@
         .tile-price { font-size: 1.05rem; font-weight: 900; }
         .tile-price span { font-size: 0.75rem; opacity: 0.75; font-weight: 800; }
         .price-exact { opacity: 1; }
-        .price-est { opacity: 0.7; } /* Слегка прозрачный для примерной цены */
+        .price-est { opacity: 0.7; }
 
         .tile-middle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
         .tile-icon { font-size: 2.5rem; line-height: 1; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1)); }
@@ -83,76 +83,160 @@
 <script>
     const LAT = 65.01;
     const LON = 25.46;
-    
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbypnKWrHwiPmjMsZtC-3HRY6Oe_9sCvTJPJwfngOvZycBNVGqc5y4tS6PNjQ-gK2JAO/exec';
+
     const daysRu = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-    const daysRuFull = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
     const monthsRu = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
 
     function getWeatherIcon(code) {
-        if (code === 0) return '☀️'; 
-        if (code === 1 || code === 2) return '⛅'; 
-        if (code === 3) return '☁️'; 
-        if (code >= 45 && code <= 48) return '🌫️'; 
-        if (code >= 51 && code <= 67) return '🌧️'; 
-        if (code >= 71 && code <= 77) return '❄️'; 
-        if (code >= 80 && code <= 82) return '🌦️'; 
-        if (code >= 85 && code <= 86) return '🌨️'; 
-        if (code >= 95) return '⛈️'; 
+        if (code === 0) return '☀️';
+        if (code === 1 || code === 2) return '⛅';
+        if (code === 3) return '☁️';
+        if (code >= 45 && code <= 48) return '🌫️';
+        if (code >= 51 && code <= 67) return '🌧️';
+        if (code >= 71 && code <= 77) return '❄️';
+        if (code >= 80 && code <= 82) return '🌦️';
+        if (code >= 85 && code <= 86) return '🌨️';
+        if (code >= 95) return '⛈️';
         return '🌤️';
     }
 
+    // ========== ЛОГИРОВАНИЕ ==========
+    function getPredictions() {
+        try { return JSON.parse(localStorage.getItem('kanshi_preds') || '{}'); } 
+        catch { return {}; }
+    }
+
+    function savePredictions(obj) {
+        localStorage.setItem('kanshi_preds', JSON.stringify(obj));
+    }
+
+    function getLogged() {
+        try { return JSON.parse(localStorage.getItem('kanshi_logged') || '{}'); } 
+        catch { return {}; }
+    }
+
+    function markLogged(date) {
+        const logged = getLogged();
+        logged[date] = true;
+        localStorage.setItem('kanshi_logged', JSON.stringify(logged));
+    }
+
+    async function sendToSheet(payload) {
+        try {
+            await fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload)
+            });
+            console.log('Лог отправлен:', payload.date);
+            markLogged(payload.date);
+        } catch (e) {
+            console.error('Ошибка отправки лога', e);
+        }
+    }
+
+    async function tryLogCompletedDays(dailySpotAvgs) {
+        const preds = getPredictions();
+        const logged = getLogged();
+        const today = new Date().toISOString().slice(0, 10);
+
+        for (const dateStr of Object.keys(preds)) {
+            // Логируем только если уже есть реальная цена и ещё не логировали
+            if (!dailySpotAvgs[dateStr] || logged[dateStr]) continue;
+            if (dateStr > today) continue;
+
+            const pred = preds[dateStr];
+
+            // Берём реальную погоду за этот день (архив)
+            try {
+                const archUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${LAT}&longitude=${LON}&start_date=${dateStr}&end_date=${dateStr}&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,sunshine_duration,precipitation_probability_max&timezone=Europe%2FHelsinki`;
+                const archRes = await fetch(archUrl);
+                const arch = await archRes.json();
+
+                if (!arch.daily || !arch.daily.time || arch.daily.time.length === 0) continue;
+
+                const payload = {
+                    date: dateStr,
+                    actual_avg_c: +dailySpotAvgs[dateStr].toFixed(2),
+                    predicted_avg_c: +pred.predicted.toFixed(2),
+                    temp_min: Math.round(arch.daily.temperature_2m_min[0]),
+                    temp_max: Math.round(arch.daily.temperature_2m_max[0]),
+                    wind_max_ms: +(arch.daily.wind_speed_10m_max[0] / 3.6).toFixed(1),
+                    sun_hours: +(arch.daily.sunshine_duration[0] / 3600).toFixed(1),
+                    precip_prob: arch.daily.precipitation_probability_max?.[0] || 0,
+                    weather_code: arch.daily.weather_code[0],
+                    base_used: +pred.base.toFixed(2),
+                    risk_score: +pred.risk.toFixed(2),
+                    prediction_date: pred.prediction_date,
+                    notes: ''
+                };
+
+                await sendToSheet(payload);
+            } catch (e) {
+                console.error('Ошибка архива погоды для', dateStr, e);
+            }
+        }
+    }
+    // ========== КОНЕЦ ЛОГИРОВАНИЯ ==========
+
     async function loadForecast() {
         try {
-            // 1. Запрашиваем цены биржи (для точных данных)
+            // 1. Цены биржи
             const spotRes = await fetch('https://api.spot-hinta.fi/TodayAndDayForward');
             const spotData = await spotRes.json();
-            
-            // Группируем цены по дням, чтобы найти средние
+
             let dailySpotAvgs = {};
             if (spotData && spotData.length > 0) {
-                let sums = {}; let counts = {};
+                let sums = {}, counts = {};
                 spotData.forEach(item => {
                     let dateKey = item.DateTime.substring(0, 10);
                     if (!sums[dateKey]) { sums[dateKey] = 0; counts[dateKey] = 0; }
-                    sums[dateKey] += (item.PriceWithTax * 100); 
+                    sums[dateKey] += (item.PriceWithTax * 100);
                     counts[dateKey]++;
                 });
-                for (let d in sums) { dailySpotAvgs[d] = sums[d] / counts[d]; }
+                for (let d in sums) dailySpotAvgs[d] = sums[d] / counts[d];
             }
 
-            // 2. Запрашиваем погоду
+            // 2. Погода
             const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,sunshine_duration,precipitation_probability_max&timezone=Europe%2FHelsinki&forecast_days=5`;
             const weatherRes = await fetch(weatherUrl);
             const data = await weatherRes.json();
 
-            // Определяем "Базовую цену" на сегодня для будущих предсказаний
             let todayDateStr = data.daily.time[0];
-            let basePriceForPrediction = dailySpotAvgs[todayDateStr] || 5.0; // Если API биржи лежит, берем 5 центов
+            let basePriceForPrediction = dailySpotAvgs[todayDateStr] || 5.0;
+
+            // Сразу пробуем залогировать завершённые дни
+            await tryLogCompletedDays(dailySpotAvgs);
 
             const grid = document.getElementById('forecast-grid');
             grid.innerHTML = '';
 
+            const preds = getPredictions();
+            const predictionDate = new Date().toISOString().slice(0, 10);
+
             for (let i = 0; i < 5; i++) {
                 const dateStr = data.daily.time[i];
                 const d = new Date(dateStr);
-                
+
                 const isToday = i === 0;
-                const dayName = isToday ? "Сегодня" : i === 1 ? "Завтра" : (isToday ? daysRuFull[d.getDay()] : daysRu[d.getDay()]);
+                const dayName = isToday ? "Сегодня" : i === 1 ? "Завтра" : daysRu[d.getDay()];
                 const dateFormatted = `${d.getDate()} ${monthsRu[d.getMonth()]}`;
-                
+
                 const tempMax = Math.round(data.daily.temperature_2m_max[i]);
                 const tempMin = Math.round(data.daily.temperature_2m_min[i]);
-                const windMs = (data.daily.wind_speed_10m_max[i] / 3.6).toFixed(1); 
-                const sunHours = (data.daily.sunshine_duration[i] / 3600).toFixed(1); 
-                const pop = data.daily.precipitation_probability_max[i] || 0; 
+                const windMs = (data.daily.wind_speed_10m_max[i] / 3.6).toFixed(1);
+                const sunHours = (data.daily.sunshine_duration[i] / 3600).toFixed(1);
+                const pop = data.daily.precipitation_probability_max[i] || 0;
                 const weatherIcon = getWeatherIcon(data.daily.weather_code[i]);
 
-                // --- АЛГОРИТМ ПРЕДСКАЗАНИЯ ЦЕНЫ ---
-                let riskScore = 0; 
+                // --- АЛГОРИТМ ПРЕДСКАЗАНИЯ ---
+                let riskScore = 0;
                 if (tempMin < -20) riskScore += 4.5;
                 else if (tempMin < -10) riskScore += 3.0;
                 else if (tempMin < -5) riskScore += 1.5;
-                else if (tempMin > 15) riskScore -= 0.5; 
+                else if (tempMin > 15) riskScore -= 0.5;
 
                 if (windMs > 9) riskScore -= 3.5;
                 else if (windMs > 6) riskScore -= 2;
@@ -161,28 +245,30 @@
                 if (sunHours > 10) riskScore -= 1;
                 else if (sunHours < 3) riskScore += 1;
 
-                // --- ЛОГИКА ЦЕНЫ ДЛЯ ИНТЕРФЕЙСА ---
                 let displayPriceHtml = "";
-                
+                let predictedPrice = null;
+
                 if (dailySpotAvgs[dateStr]) {
-                    // Если есть точные данные от биржи (Сегодня и Завтра после обеда)
                     let exactPrice = dailySpotAvgs[dateStr];
                     displayPriceHtml = `<div class="tile-price price-exact">✓ ${exactPrice.toFixed(1)} <span>c</span></div>`;
-                    
-                    // Перезаписываем riskScore фактом для правильного цвета карточки
                     if (exactPrice < 3.0) riskScore = -2;
                     else if (exactPrice > 8.0) riskScore = 2;
                     else riskScore = 0;
                 } else {
-                    // Если данных нет (дни 3, 4, 5) - Предсказываем!
-                    // Берем базу (цену сегодня) и умножаем риск-фактор на 1.2 цента (сила влияния погоды)
-                    let predictedPrice = basePriceForPrediction + (riskScore * 1.2);
-                    if (predictedPrice < -2) predictedPrice = -1.5; // Ниже -1.5c обычно не падает
-                    
+                    predictedPrice = basePriceForPrediction + (riskScore * 1.2);
+                    if (predictedPrice < -2) predictedPrice = -1.5;
                     displayPriceHtml = `<div class="tile-price price-est">≈ ${predictedPrice.toFixed(1)} <span>c</span></div>`;
+
+                    // Сохраняем прогноз в localStorage
+                    preds[dateStr] = {
+                        predicted: predictedPrice,
+                        base: basePriceForPrediction,
+                        risk: riskScore,
+                        prediction_date: predictionDate
+                    };
                 }
 
-                // --- ЦВЕТА И СТАТУСЫ ---
+                // Цвета
                 let bgClass, statusText;
                 if (riskScore <= -1.0) {
                     bgClass = "bg-cheap"; statusText = "Дешево";
@@ -195,7 +281,6 @@
                 let wideClass = isToday ? "tile-wide" : "";
                 let displayDayName = isToday ? "Сегодня" : dayName;
 
-                // Рендер Плитки
                 let tileHTML = `
                 <div class="day-tile ${bgClass} ${wideClass}">
                     <div class="tile-header">
@@ -208,7 +293,6 @@
                             ${displayPriceHtml}
                         </div>
                     </div>
-                    
                     <div class="tile-middle">
                         <div class="tile-icon">${weatherIcon}</div>
                         <div class="tile-temps">
@@ -216,29 +300,18 @@
                             <span>Ночью ${tempMin}°</span>
                         </div>
                     </div>
-                    
                     <div class="tile-bottom">
-                        <div class="param">
-                            <i>💨</i>
-                            <span>Ветер</span>
-                            <b>${windMs}</b>
-                        </div>
-                        <div class="param">
-                            <i>☀️</i>
-                            <span>Солнце</span>
-                            <b>${sunHours}ч</b>
-                        </div>
-                        <div class="param">
-                            <i>💧</i>
-                            <span>Осадки</span>
-                            <b>${pop}%</b>
-                        </div>
+                        <div class="param"><i>💨</i><span>Ветер</span><b>${windMs}</b></div>
+                        <div class="param"><i>☀️</i><span>Солнце</span><b>${sunHours}ч</b></div>
+                        <div class="param"><i>💧</i><span>Осадки</span><b>${pop}%</b></div>
                     </div>
                 </div>`;
-                
                 grid.insertAdjacentHTML('beforeend', tileHTML);
             }
-            
+
+            // Записываем обновлённые предсказания
+            savePredictions(preds);
+
         } catch (error) {
             console.error("Ошибка прогноза:", error);
             document.getElementById('loading-msg').innerHTML = '<span style="color:#e74c3c;">Ошибка сети</span>';
