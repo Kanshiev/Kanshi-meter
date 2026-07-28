@@ -1,522 +1,528 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вся История</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-            background: #e2f3e5;
-            margin: 0;
-            padding: 12px;
-            display: flex;
-            justify-content: center;
-        }
-        .wrap { width: 100%; max-width: 520px; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Вся История</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: #e2f3e5;
+  margin: 0; padding: 12px;
+  display: flex; justify-content: center;
+}
+.wrap { width: 100%; max-width: 560px; }
 
-        .nav-btn {
-            display: block; width: 100%; padding: 14px;
-            background: #2c3e50; color: #fff; border: none; border-radius: 14px;
-            font-size: 15px; font-weight: 700; text-align: center; text-decoration: none;
-            margin-bottom: 16px;
-        }
+.nav-btn {
+  display: block; width: 100%; padding: 14px;
+  background: #2c3e50; color: #fff; border: none; border-radius: 14px;
+  font-size: 15px; font-weight: 700; text-align: center; text-decoration: none;
+  margin-bottom: 14px;
+}
 
-        /* Summary */
-        .summary {
-            background: #fff;
-            border-radius: 18px;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-        }
-        .summary-title {
-            font-size: 0.75rem; font-weight: 800; color: #7f8c8d;
-            text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;
-        }
-        .summary-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-        }
-        .sum-item {
-            background: #f8f9fa; border-radius: 12px; padding: 10px 12px;
-        }
-        .sum-item .label { font-size: 0.7rem; color: #7f8c8d; font-weight: 600; }
-        .sum-item .value { font-size: 1.15rem; font-weight: 900; color: #2c3e50; margin-top: 2px; }
-        .sum-item .value.green { color: #27ae60; }
-        .sum-item .value.red { color: #e74c3c; }
+/* Tabs */
+.tabs {
+  display: flex; background: #fff; border-radius: 14px; padding: 4px;
+  margin-bottom: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.tab {
+  flex: 1; text-align: center; padding: 10px 4px;
+  font-size: 0.85rem; font-weight: 800; color: #7f8c8d;
+  border-radius: 11px; cursor: pointer; border: none; background: transparent;
+}
+.tab.active { background: #2c3e50; color: #fff; }
 
-        /* Tabs */
-        .tabs {
-            display: flex; background: #fff; border-radius: 14px; padding: 4px;
-            margin-bottom: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-        }
-        .tab {
-            flex: 1; text-align: center; padding: 10px 6px;
-            font-size: 0.85rem; font-weight: 800; color: #7f8c8d;
-            border-radius: 11px; cursor: pointer; border: none; background: transparent;
-            transition: 0.15s;
-        }
-        .tab.active {
-            background: #2c3e50; color: #fff;
-        }
+/* Full card (like original) */
+.full-card {
+  background: #fff; border-radius: 20px; padding: 16px 14px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06); margin-bottom: 12px;
+}
+.card-title {
+  text-align: center; font-size: 1.05rem; font-weight: 900; color: #2c3e50;
+  margin-bottom: 12px; text-transform: uppercase;
+}
+.card-title span { color: #7f8c8d; font-weight: 600; font-size: 0.85rem; }
+.chart-wrap { position: relative; height: 200px; margin-bottom: 12px; }
 
-        /* Compact rows */
-        .list { display: flex; flex-direction: column; gap: 8px; }
-        .row {
-            background: #fff; border-radius: 14px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-            overflow: hidden;
-        }
-        .row-head {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 12px 14px; cursor: pointer; gap: 10px;
-        }
-        .row-head:active { background: #f8f9fa; }
-        .row-left { min-width: 0; }
-        .row-title { font-weight: 800; font-size: 0.95rem; color: #2c3e50; }
-        .row-sub { font-size: 0.75rem; color: #95a5a6; margin-top: 2px; }
-        .row-right { text-align: right; flex-shrink: 0; }
-        .row-kwh { font-weight: 800; font-size: 0.95rem; color: #3498db; }
-        .row-cost { font-size: 0.8rem; color: #2c3e50; font-weight: 700; }
-        .row-badge {
-            display: inline-block; margin-top: 3px;
-            font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 6px;
-        }
-        .badge-good { background: #eafaf1; color: #27ae60; }
-        .badge-bad { background: #fdedec; color: #e74c3c; }
+.stats {
+  background: #f8f9fa; border-radius: 14px; padding: 12px; border: 1px solid #f0f0f0;
+}
+.main-stat {
+  text-align: center; font-size: 1rem; font-weight: 800; color: #2c3e50;
+  padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px dashed #bdc3c7;
+}
+.main-stat b { color: #e74c3c; font-size: 1.15rem; }
+.main-stat span { color: #3498db; font-size: 1.15rem; font-weight: 900; }
+.sub-stat {
+  display: flex; justify-content: space-between; font-size: 0.82rem;
+  font-weight: 600; color: #555; margin-bottom: 5px;
+}
+.sub-stat b { color: #111; }
+.val-high { color: #e74c3c; font-weight: 800; }
+.val-low { color: #27ae60; font-weight: 800; }
 
-        .row-body {
-            display: none; padding: 0 14px 14px;
-            border-top: 1px solid #f0f0f0;
-        }
-        .row.open .row-body { display: block; }
-        .row.open .row-head { border-bottom: 1px solid #f0f0f0; }
+.vs-box { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #bdc3c7; }
+.vs-title {
+  text-align: center; font-size: 0.75rem; font-weight: 900; color: #7f8c8d;
+  text-transform: uppercase; margin-bottom: 10px;
+}
+.vs-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.78rem; margin-bottom: 7px;
+}
+.vs-row b { font-size: 0.95rem; color: #2c3e50; }
+.badge {
+  padding: 2px 6px; border-radius: 6px; font-size: 0.62rem;
+  font-weight: 800; text-transform: uppercase;
+}
+.badge.good { background: #eafaf1; color: #27ae60; }
+.badge.bad { background: #fdedec; color: #e74c3c; }
+.badge.neutral { background: #2c3e50; color: #fff; }
 
-        .chart-box { height: 160px; margin: 12px 0 10px; }
+/* Compact rows */
+.compact-list { display: flex; flex-direction: column; gap: 8px; }
+.row {
+  background: #fff; border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04); overflow: hidden;
+}
+.row-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; cursor: pointer; gap: 8px;
+}
+.row-head:active { background: #f8f9fa; }
+.row-title { font-weight: 800; font-size: 0.92rem; color: #2c3e50; }
+.row-sub { font-size: 0.72rem; color: #95a5a6; margin-top: 2px; }
+.row-right { text-align: right; flex-shrink: 0; }
+.row-kwh { font-weight: 800; font-size: 0.92rem; color: #3498db; }
+.row-cost { font-size: 0.78rem; color: #2c3e50; font-weight: 700; }
+.row-badge {
+  display: inline-block; margin-top: 2px;
+  font-size: 0.62rem; font-weight: 800; padding: 2px 6px; border-radius: 5px;
+}
+.badge-good { background: #eafaf1; color: #27ae60; }
+.badge-bad { background: #fdedec; color: #e74c3c; }
 
-        .details {
-            background: #f8f9fa; border-radius: 12px; padding: 12px;
-            font-size: 0.8rem;
-        }
-        .det-row {
-            display: flex; justify-content: space-between; margin-bottom: 6px;
-        }
-        .det-row:last-child { margin-bottom: 0; }
-        .det-row span { color: #7f8c8d; }
-        .det-row b { color: #2c3e50; }
+.row-body { display: none; padding: 0 12px 12px; border-top: 1px solid #f0f0f0; }
+.row.open .row-body { display: block; }
 
-        .vs-mini {
-            margin-top: 10px; padding-top: 10px; border-top: 1px dashed #dfe6e9;
-        }
-        .vs-mini-title {
-            font-size: 0.7rem; font-weight: 800; color: #95a5a6;
-            text-transform: uppercase; margin-bottom: 8px;
-        }
-        .vs-line {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 5px; font-size: 0.78rem;
-        }
-        .vs-line b { font-size: 0.9rem; }
-
-        .loading { text-align: center; color: #7f8c8d; padding: 50px 20px; font-weight: 600; }
-        .empty { text-align: center; color: #95a5a6; padding: 30px; font-style: italic; }
-    </style>
+.loading { text-align: center; color: #7f8c8d; padding: 50px 20px; font-weight: 600; }
+.empty { text-align: center; color: #95a5a6; padding: 30px; font-style: italic; }
+</style>
 </head>
 <body>
 <div class="wrap">
-    <a href="finance.html" class="nav-btn">⬅ Назад к Финансам</a>
-
-    <div id="loading" class="loading">Загрузка истории...</div>
-
-    <div id="app" style="display:none;">
-        <div class="summary" id="summary"></div>
-
-        <div class="tabs">
-            <button class="tab active" data-tab="days">Дни</button>
-            <button class="tab" data-tab="weeks">Недели</button>
-            <button class="tab" data-tab="months">Месяцы</button>
-        </div>
-
-        <div id="list" class="list"></div>
+  <a href="finance.html" class="nav-btn">⬅ Назад к Финансам</a>
+  <div id="loading" class="loading">Загрузка истории...</div>
+  <div id="app" style="display:none">
+    <div class="tabs">
+      <button class="tab active" data-tab="days">Дни</button>
+      <button class="tab" data-tab="weeks">Недели</button>
+      <button class="tab" data-tab="months">Месяцы</button>
     </div>
+    <div id="content"></div>
+  </div>
 </div>
 
 <script>
-    const FIXED_PRICE = 5.99;
-    const PURE_FIXED_PRICE = 8.99;
-    const SPOT_MARGIN = 0.40;
-    const OOMI_PERUS = 5.90;
-    const SIIRTO_PERUS = 20.33;
-    const SIIRTO_DAY = 2.69;
-    const SIIRTO_NIGHT = 1.63;
-    const VERO_C_KWH = 2.92;
+const FIXED_PRICE = 5.99;
+const PURE_FIXED_PRICE = 8.99;
+const SPOT_MARGIN = 0.40;
+const OOMI_PERUS = 5.90;
+const SIIRTO_PERUS = 20.33;
+const SIIRTO_DAY = 2.69;
+const SIIRTO_NIGHT = 1.63;
+const VERO_C_KWH = 2.92;
 
-    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREfZuB82WO35dZRrsVl3XEaxyf1DrF35kXMZ5p7MbJTIAtqE5R9AUb3w-72A-sqIZ4Z8PWwDIUVqSV/pub?gid=0&single=true&output=tsv';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREfZuB82WO35dZRrsVl3XEaxyf1DrF35kXMZ5p7MbJTIAtqE5R9AUb3w-72A-sqIZ4Z8PWwDIUVqSV/pub?gid=0&single=true&output=tsv';
 
-    const shortMonths = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
-    const monthsFull = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-    const daysRu = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const shortMonths = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+const monthsFull = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const daysRu = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 
-    let daysMap = {}, weeksMap = {}, monthsMap = {};
-    let charts = {};
+let daysMap = {}, weeksMap = {}, monthsMap = {};
+let charts = {};
 
-    function getISOWeek(d) {
-        const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-        const dayNum = date.getUTCDay() || 7;
-        date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-        return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+function getISOWeek(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+}
+
+function parseSheetDate(str) {
+  const m = str.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+  return new Date(str);
+}
+
+function createPeriod() {
+  return { sumKwh:0, sumSpot:0, sumCost:0, sumSiirto:0, sumVero:0, sumPerus:0, hoursCount:0, spotsList:[] };
+}
+
+function merge(t, s) {
+  t.sumKwh += s.sumKwh; t.sumSpot += s.sumSpot; t.sumCost += s.sumCost;
+  t.hoursCount += s.hoursCount; t.sumSiirto += s.sumSiirto; t.sumVero += s.sumVero;
+  t.sumPerus += s.sumPerus; t.spotsList.push(...s.spotsList);
+}
+
+function calc(d) {
+  const avgSpot = d.hoursCount > 0 ? d.sumSpot / d.hoursCount : 0;
+  const avgPersonal = d.sumKwh > 0 ? d.sumCost / d.sumKwh : avgSpot;
+  const effect = avgPersonal - avgSpot;
+  const finalPrice = FIXED_PRICE + effect;
+  const myEnergy = (d.sumKwh * finalPrice) / 100;
+  const pureSpot = (d.sumCost + d.sumKwh * SPOT_MARGIN) / 100;
+  const pureFixed = (d.sumKwh * PURE_FIXED_PRICE) / 100;
+  const total = myEnergy + d.sumSiirto + d.sumVero + d.sumPerus;
+  return {
+    avgSpot, finalPrice, myEnergy, pureSpot, pureFixed, total,
+    diffSpot: pureSpot - myEnergy,
+    diffFixed: pureFixed - myEnergy
+  };
+}
+
+function getExtremes(d) {
+  const valid = [...new Set(d.spotsList.filter(s => s !== 0))].sort((a,b) => b - a);
+  return {
+    topMax: valid.slice(0, 3).map(n => n.toFixed(1)).join(', ') || '—',
+    topMin: valid.slice(-3).reverse().map(n => n.toFixed(1)).join(', ') || '—'
+  };
+}
+
+async function load() {
+  try {
+    const [spotRes, sheetRes] = await Promise.all([
+      fetch('https://api.spot-hinta.fi/TodayAndDayForward'),
+      fetch(SHEET_URL + '&_rnd=' + Date.now())
+    ]);
+    const spotData = await spotRes.json();
+    const sheetText = await sheetRes.text();
+    process(spotData, sheetText);
+  } catch (e) {
+    console.error(e);
+    document.getElementById('loading').innerHTML = '<span style="color:#e74c3c">Ошибка загрузки</span>';
+  }
+}
+
+function process(spotData, sheetText) {
+  const lines = sheetText.trim().split(/\r?\n/);
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split('\t');
+    if (cols.length < 6) continue;
+
+    const rowDate = parseSheetDate(cols[0]);
+    const dateKey = rowDate.getFullYear() + '-' +
+      String(rowDate.getMonth()+1).padStart(2,'0') + '-' +
+      String(rowDate.getDate()).padStart(2,'0');
+
+    if (!daysMap[dateKey]) {
+      daysMap[dateKey] = {
+        dateObj: rowDate, data: createPeriod(),
+        kwhByHour: new Array(24).fill(0),
+        spotByHour: new Array(24).fill(0)
+      };
     }
 
-    function parseSheetDate(str) {
-        const m = str.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-        if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
-        return new Date(str);
-    }
+    const hr = parseInt(cols[1].split(':')[0], 10);
+    const spot = parseFloat(String(cols[2]).replace(',', '.'));
+    const kwh = parseFloat(String(cols[5]).replace(',', '.'));
 
-    function createPeriod() {
-        return { sumKwh: 0, sumSpot: 0, sumCost: 0, sumSiirto: 0, sumVero: 0, sumPerus: 0, hoursCount: 0, spotsList: [] };
-    }
+    if (!isNaN(spot) && !isNaN(kwh)) {
+      daysMap[dateKey].kwhByHour[hr] += kwh;
+      daysMap[dateKey].spotByHour[hr] = spot;
+      if (kwh > 0 || !daysMap[dateKey].data.spotsList.includes(spot))
+        daysMap[dateKey].data.spotsList.push(spot);
 
-    function merge(t, s) {
-        t.sumKwh += s.sumKwh;
-        t.sumSpot += s.sumSpot;
-        t.sumCost += s.sumCost;
-        t.hoursCount += s.hoursCount;
-        t.sumSiirto += s.sumSiirto;
-        t.sumVero += s.sumVero;
-        t.sumPerus += s.sumPerus;
-        t.spotsList.push(...s.spotsList);
-    }
+      daysMap[dateKey].data.sumKwh += kwh;
+      daysMap[dateKey].data.sumSpot += spot;
+      daysMap[dateKey].data.sumCost += kwh * spot;
+      daysMap[dateKey].data.hoursCount++;
 
-    function calc(d) {
-        const avgSpot = d.hoursCount > 0 ? d.sumSpot / d.hoursCount : 0;
-        const avgPersonal = d.sumKwh > 0 ? d.sumCost / d.sumKwh : avgSpot;
-        const effect = avgPersonal - avgSpot;
-        const finalPrice = FIXED_PRICE + effect;
-        const myEnergy = (d.sumKwh * finalPrice) / 100;
-        const pureSpot = (d.sumCost + d.sumKwh * SPOT_MARGIN) / 100;
-        const pureFixed = (d.sumKwh * PURE_FIXED_PRICE) / 100;
-        const total = myEnergy + d.sumSiirto + d.sumVero + d.sumPerus;
-        const diffSpot = pureSpot - myEnergy;
-        const diffFixed = pureFixed - myEnergy;
-        return { avgSpot, finalPrice, myEnergy, pureSpot, pureFixed, total, diffSpot, diffFixed };
+      const sPrice = (hr >= 7 && hr < 22) ? SIIRTO_DAY : SIIRTO_NIGHT;
+      daysMap[dateKey].data.sumSiirto += (kwh * sPrice) / 100;
+      daysMap[dateKey].data.sumVero += (kwh * VERO_C_KWH) / 100;
     }
+  }
 
-    async function load() {
-        try {
-            const [spotRes, sheetRes] = await Promise.all([
-                fetch('https://api.spot-hinta.fi/TodayAndDayForward'),
-                fetch(SHEET_URL + '&_rnd=' + Date.now())
-            ]);
-            const spotData = await spotRes.json();
-            const sheetText = await sheetRes.text();
-            process(spotData, sheetText);
-        } catch (e) {
-            console.error(e);
-            document.getElementById('loading').innerHTML = '<span style="color:#e74c3c">Ошибка загрузки</span>';
+  // актуальные цены на сегодня
+  const todayApi = spotData.filter(s => new Date(s.DateTime).toISOString().slice(0,10) === todayStr);
+  if (daysMap[todayStr]) {
+    todayApi.forEach(s => {
+      const h = new Date(s.DateTime).getHours();
+      daysMap[todayStr].spotByHour[h] = +(s.PriceWithTax * 100).toFixed(2);
+    });
+  }
+
+  for (const key in daysMap) {
+    const dObj = daysMap[key].dateObj;
+    const dData = daysMap[key].data;
+    const daysInMonth = new Date(dObj.getFullYear(), dObj.getMonth()+1, 0).getDate();
+    dData.sumPerus = (OOMI_PERUS + SIIRTO_PERUS) / daysInMonth;
+
+    const weekKey = dObj.getFullYear() + '-W' + String(getISOWeek(dObj)).padStart(2,'0');
+    const monthKey = dObj.getFullYear() + '-' + String(dObj.getMonth()+1).padStart(2,'0');
+
+    if (!weeksMap[weekKey]) {
+      weeksMap[weekKey] = {
+        weekNum: getISOWeek(dObj), year: dObj.getFullYear(),
+        data: createPeriod(),
+        kwhByDay: new Array(7).fill(0),
+        spotByDay: new Array(7).fill(0)
+      };
+    }
+    const dow = (dObj.getDay() || 7) - 1;
+    weeksMap[weekKey].kwhByDay[dow] += dData.sumKwh;
+    weeksMap[weekKey].spotByDay[dow] = dData.hoursCount > 0 ? dData.sumSpot / dData.hoursCount : 0;
+    merge(weeksMap[weekKey].data, dData);
+
+    if (!monthsMap[monthKey]) {
+      monthsMap[monthKey] = {
+        monthIdx: dObj.getMonth(), year: dObj.getFullYear(), daysInMonth,
+        data: createPeriod(),
+        kwhByDay: new Array(daysInMonth).fill(0),
+        spotByDay: new Array(daysInMonth).fill(0)
+      };
+    }
+    const dom = dObj.getDate() - 1;
+    monthsMap[monthKey].kwhByDay[dom] += dData.sumKwh;
+    monthsMap[monthKey].spotByDay[dom] = dData.hoursCount > 0 ? dData.sumSpot / dData.hoursCount : 0;
+    merge(monthsMap[monthKey].data, dData);
+  }
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  switchTab('days');
+
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      switchTab(btn.dataset.tab);
+    });
+  });
+}
+
+function buildFullCard(title, labels, kwhArr, spotArr, d, c, extremes, chartId, type) {
+  const badgeSpot = c.diffSpot >= 0
+    ? `<span class="badge good">Выгода +${c.diffSpot.toFixed(2)} €</span>`
+    : `<span class="badge bad">Переплата ${c.diffSpot.toFixed(2)} €</span>`;
+  const badgeFixed = c.diffFixed >= 0
+    ? `<span class="badge good">Выгода +${c.diffFixed.toFixed(2)} €</span>`
+    : `<span class="badge bad">Переплата ${c.diffFixed.toFixed(2)} €</span>`;
+
+  return `
+  <div class="full-card">
+    <div class="card-title">${title}</div>
+    <div class="chart-wrap"><canvas id="${chartId}"></canvas></div>
+    <div class="stats">
+      <div class="main-stat">
+        Набежало: <span>${d.sumKwh.toFixed(2)} kWh</span><br>
+        Полная стоимость: <b>${c.total.toFixed(2)} €</b>
+      </div>
+      <div class="sub-stat">Средняя цена (биржа): <b>${c.avgSpot.toFixed(2)} c/kWh</b></div>
+      <div class="sub-stat" style="margin-top:8px">Пик цен: <span class="val-high">${extremes.topMax} c</span></div>
+      <div class="sub-stat">Мин. цена: <span class="val-low">${extremes.topMin} c</span></div>
+      <div class="vs-box">
+        <div class="vs-title">Битва Тарифов (энергия)</div>
+        <div class="vs-row">
+          <div>Твой Jousto</div>
+          <div><span class="badge neutral">Твой</span> <b>${c.myEnergy.toFixed(2)} €</b></div>
+        </div>
+        <div class="vs-row">
+          <div>Чистый Спот</div>
+          <div>${badgeSpot} <b>${c.pureSpot.toFixed(2)} €</b></div>
+        </div>
+        <div class="vs-row">
+          <div>Фикс 8.99</div>
+          <div>${badgeFixed} <b>${c.pureFixed.toFixed(2)} €</b></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function makeChart(chartId, labels, kwhArr, spotArr, type) {
+  if (charts[chartId]) { charts[chartId].destroy(); }
+  const ctx = document.getElementById(chartId).getContext('2d');
+  charts[chartId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'line', data: spotArr,
+          borderColor: '#e74c3c', borderWidth: 2, tension: 0.3,
+          pointRadius: type === 'day' ? 0 : 2, yAxisID: 'ySpot'
+        },
+        {
+          type: 'bar', data: kwhArr.map(v => +(+v).toFixed(2)),
+          backgroundColor: '#3498db', borderRadius: 3, yAxisID: 'yKwh'
         }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxRotation: 90, minRotation: 90, font: { size: type==='month'?8:9 } } },
+        yKwh: { position: 'left', beginAtZero: true, ticks: { font: { size: 9 } }, grid: { borderDash: [4,4] } },
+        ySpot: { position: 'right', ticks: { font: { size: 9 } }, grid: { display: false } }
+      }
     }
+  });
+}
 
-    function process(spotData, sheetText) {
-        const lines = sheetText.trim().split(/\r?\n/);
-        const todayStr = new Date().toISOString().slice(0, 10);
+function switchTab(tab) {
+  Object.values(charts).forEach(ch => ch.destroy());
+  charts = {};
 
-        for (let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split('\t');
-            if (cols.length < 6) continue;
+  const content = document.getElementById('content');
+  content.innerHTML = '';
 
-            const rowDate = parseSheetDate(cols[0]);
-            const dateKey = rowDate.getFullYear() + '-' +
-                String(rowDate.getMonth() + 1).padStart(2, '0') + '-' +
-                String(rowDate.getDate()).padStart(2, '0');
+  let keys, map, type;
+  if (tab === 'days') {
+    keys = Object.keys(daysMap).sort().reverse().slice(0, 7);
+    map = daysMap; type = 'day';
+  } else if (tab === 'weeks') {
+    keys = Object.keys(weeksMap).sort().reverse().slice(0, 8);
+    map = weeksMap; type = 'week';
+  } else {
+    keys = Object.keys(monthsMap).sort().reverse().slice(0, 8);
+    map = monthsMap; type = 'month';
+  }
 
-            if (!daysMap[dateKey]) {
-                daysMap[dateKey] = {
-                    dateObj: rowDate,
-                    data: createPeriod(),
-                    kwhByHour: new Array(24).fill(0),
-                    spotByHour: new Array(24).fill(0)
-                };
-            }
+  if (!keys.length) {
+    content.innerHTML = '<div class="empty">Данных пока нет</div>';
+    return;
+  }
 
-            const hr = parseInt(cols[1].split(':')[0], 10);
-            const spot = parseFloat(String(cols[2]).replace(',', '.'));
-            const kwh = parseFloat(String(cols[5]).replace(',', '.'));
+  // Первый элемент — сразу полный
+  const firstKey = keys[0];
+  const first = map[firstKey];
+  const d0 = first.data;
+  const c0 = calc(d0);
+  const ex0 = getExtremes(d0);
 
-            if (!isNaN(spot) && !isNaN(kwh)) {
-                daysMap[dateKey].kwhByHour[hr] += kwh;
-                daysMap[dateKey].spotByHour[hr] = spot;
-                if (kwh > 0 || !daysMap[dateKey].data.spotsList.includes(spot))
-                    daysMap[dateKey].data.spotsList.push(spot);
+  let title0, labels0, kwh0, spot0;
+  if (type === 'day') {
+    title0 = first.dateObj.getDate() + ' ' + shortMonths[first.dateObj.getMonth()] + ' ' + first.dateObj.getFullYear();
+    labels0 = Array.from({length:24}, (_,i) => i + ':00');
+    kwh0 = first.kwhByHour; spot0 = first.spotByHour;
+  } else if (type === 'week') {
+    title0 = 'Неделя ' + first.weekNum + ' <span>| ' + first.year + '</span>';
+    labels0 = daysRu; kwh0 = first.kwhByDay; spot0 = first.spotByDay;
+  } else {
+    title0 = monthsFull[first.monthIdx] + ' <span>| ' + first.year + '</span>';
+    labels0 = Array.from({length: first.daysInMonth}, (_,i) => i+1);
+    kwh0 = first.kwhByDay; spot0 = first.spotByDay;
+  }
 
-                daysMap[dateKey].data.sumKwh += kwh;
-                daysMap[dateKey].data.sumSpot += spot;
-                daysMap[dateKey].data.sumCost += kwh * spot;
-                daysMap[dateKey].data.hoursCount++;
+  const chartId0 = 'ch-main-' + type;
+  content.insertAdjacentHTML('beforeend', buildFullCard(title0, labels0, kwh0, spot0, d0, c0, ex0, chartId0, type));
+  setTimeout(() => makeChart(chartId0, labels0, kwh0, spot0, type), 30);
 
-                const sPrice = (hr >= 7 && hr < 22) ? SIIRTO_DAY : SIIRTO_NIGHT;
-                daysMap[dateKey].data.sumSiirto += (kwh * sPrice) / 100;
-                daysMap[dateKey].data.sumVero += (kwh * VERO_C_KWH) / 100;
-            }
-        }
+  // Остальные — компактные
+  if (keys.length > 1) {
+    const list = document.createElement('div');
+    list.className = 'compact-list';
+    list.style.marginTop = '8px';
 
-        // подтягиваем актуальные цены на сегодня
-        const todayApi = spotData.filter(s => new Date(s.DateTime).toISOString().slice(0, 10) === todayStr);
-        if (daysMap[todayStr]) {
-            todayApi.forEach(s => {
-                const h = new Date(s.DateTime).getHours();
-                daysMap[todayStr].spotByHour[h] = +(s.PriceWithTax * 100).toFixed(2);
-            });
-        }
+    keys.slice(1).forEach((key, idx) => {
+      const item = map[key];
+      const d = item.data;
+      const c = calc(d);
+      const ex = getExtremes(d);
 
-        // агрегация
-        for (const key in daysMap) {
-            const dObj = daysMap[key].dateObj;
-            const dData = daysMap[key].data;
-            const daysInMonth = new Date(dObj.getFullYear(), dObj.getMonth() + 1, 0).getDate();
-            dData.sumPerus = (OOMI_PERUS + SIIRTO_PERUS) / daysInMonth;
+      let title, labels, kwhArr, spotArr;
+      if (type === 'day') {
+        title = item.dateObj.getDate() + ' ' + shortMonths[item.dateObj.getMonth()];
+        labels = Array.from({length:24}, (_,i) => i + ':00');
+        kwhArr = item.kwhByHour; spotArr = item.spotByHour;
+      } else if (type === 'week') {
+        title = 'Неделя ' + item.weekNum + ' · ' + item.year;
+        labels = daysRu; kwhArr = item.kwhByDay; spotArr = item.spotByDay;
+      } else {
+        title = monthsFull[item.monthIdx] + ' ' + item.year;
+        labels = Array.from({length: item.daysInMonth}, (_,i) => i+1);
+        kwhArr = item.kwhByDay; spotArr = item.spotByDay;
+      }
 
-            const weekKey = dObj.getFullYear() + '-W' + String(getISOWeek(dObj)).padStart(2, '0');
-            const monthKey = dObj.getFullYear() + '-' + String(dObj.getMonth() + 1).padStart(2, '0');
+      const badgeClass = c.diffSpot >= 0 ? 'badge-good' : 'badge-bad';
+      const badgeText = (c.diffSpot >= 0 ? '+' : '') + c.diffSpot.toFixed(2) + ' €';
+      const rowId = type + '-' + idx;
+      const chartId = 'ch-' + rowId;
 
-            if (!weeksMap[weekKey]) {
-                weeksMap[weekKey] = {
-                    weekNum: getISOWeek(dObj), year: dObj.getFullYear(),
-                    data: createPeriod(),
-                    kwhByDay: new Array(7).fill(0),
-                    spotByDay: new Array(7).fill(0)
-                };
-            }
-            const dow = (dObj.getDay() || 7) - 1;
-            weeksMap[weekKey].kwhByDay[dow] += dData.sumKwh;
-            weeksMap[weekKey].spotByDay[dow] = dData.hoursCount > 0 ? dData.sumSpot / dData.hoursCount : 0;
-            merge(weeksMap[weekKey].data, dData);
+      const html = `
+      <div class="row" id="${rowId}">
+        <div class="row-head" onclick="toggleRow('${rowId}','${chartId}',${JSON.stringify(labels)},${JSON.stringify(kwhArr)},${JSON.stringify(spotArr)},'${type}',${JSON.stringify({title,d,c,ex}).replace(/"/g,'"')})">
+          <div>
+            <div class="row-title">${title}</div>
+            <div class="row-sub">ср. ${c.avgSpot.toFixed(1)} c</div>
+          </div>
+          <div class="row-right">
+            <div class="row-kwh">${d.sumKwh.toFixed(1)} kWh</div>
+            <div class="row-cost">${c.total.toFixed(2)} €</div>
+            <div class="row-badge ${badgeClass}">${badgeText}</div>
+          </div>
+        </div>
+        <div class="row-body" id="body-${rowId}"></div>
+      </div>`;
+      list.insertAdjacentHTML('beforeend', html);
+    });
+    content.appendChild(list);
+  }
+}
 
-            if (!monthsMap[monthKey]) {
-                monthsMap[monthKey] = {
-                    monthIdx: dObj.getMonth(), year: dObj.getFullYear(), daysInMonth,
-                    data: createPeriod(),
-                    kwhByDay: new Array(daysInMonth).fill(0),
-                    spotByDay: new Array(daysInMonth).fill(0)
-                };
-            }
-            const dom = dObj.getDate() - 1;
-            monthsMap[monthKey].kwhByDay[dom] += dData.sumKwh;
-            monthsMap[monthKey].spotByDay[dom] = dData.hoursCount > 0 ? dData.sumSpot / dData.hoursCount : 0;
-            merge(monthsMap[monthKey].data, dData);
-        }
+function toggleRow(rowId, chartId, labels, kwhArr, spotArr, type, meta) {
+  const row = document.getElementById(rowId);
+  const wasOpen = row.classList.contains('open');
 
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-
-        renderSummary();
-        switchTab('days');
-
-        document.querySelectorAll('.tab').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                switchTab(btn.dataset.tab);
-            });
-        });
+  document.querySelectorAll('.row.open').forEach(r => {
+    r.classList.remove('open');
+    const body = r.querySelector('.row-body');
+    if (body) body.innerHTML = '';
+  });
+  Object.keys(charts).forEach(id => {
+    if (id.startsWith('ch-') && id !== 'ch-main-day' && id !== 'ch-main-week' && id !== 'ch-main-month') {
+      if (charts[id]) { charts[id].destroy(); delete charts[id]; }
     }
+  });
 
-    function renderSummary() {
-        const dayKeys = Object.keys(daysMap).sort().reverse().slice(0, 7);
-        let kwh7 = 0, cost7 = 0, diff7 = 0;
-        dayKeys.forEach(k => {
-            const c = calc(daysMap[k].data);
-            kwh7 += daysMap[k].data.sumKwh;
-            cost7 += c.total;
-            diff7 += c.diffSpot;
-        });
+  if (!wasOpen) {
+    row.classList.add('open');
+    const body = document.getElementById('body-' + rowId);
+    const { title, d, c, ex } = meta;
 
-        const monthKeys = Object.keys(monthsMap).sort().reverse();
-        let monthHtml = '—';
-        if (monthKeys.length) {
-            const m = monthsMap[monthKeys[0]];
-            const c = calc(m.data);
-            monthHtml = c.total.toFixed(0) + ' €';
-        }
+    body.innerHTML = `
+      <div class="chart-wrap" style="height:180px;margin:10px 0"><canvas id="${chartId}"></canvas></div>
+      <div class="stats">
+        <div class="main-stat">
+          Набежало: <span>${d.sumKwh.toFixed(2)} kWh</span><br>
+          Полная стоимость: <b>${c.total.toFixed(2)} €</b>
+        </div>
+        <div class="sub-stat">Средняя цена: <b>${c.avgSpot.toFixed(2)} c/kWh</b></div>
+        <div class="sub-stat" style="margin-top:6px">Пик: <span class="val-high">${ex.topMax} c</span></div>
+        <div class="sub-stat">Мин: <span class="val-low">${ex.topMin} c</span></div>
+        <div class="vs-box">
+          <div class="vs-title">Битва Тарифов</div>
+          <div class="vs-row"><div>Jousto</div><div><b>${c.myEnergy.toFixed(2)} €</b></div></div>
+          <div class="vs-row"><div>Спот</div><div><b>${c.pureSpot.toFixed(2)} €</b></div></div>
+          <div class="vs-row"><div>Фикс 8.99</div><div><b>${c.pureFixed.toFixed(2)} €</b></div></div>
+        </div>
+      </div>`;
 
-        document.getElementById('summary').innerHTML = `
-            <div class="summary-title">Кратко</div>
-            <div class="summary-grid">
-                <div class="sum-item">
-                    <div class="label">7 дней · kWh</div>
-                    <div class="value">${kwh7.toFixed(1)}</div>
-                </div>
-                <div class="sum-item">
-                    <div class="label">7 дней · €</div>
-                    <div class="value">${cost7.toFixed(1)}</div>
-                </div>
-                <div class="sum-item">
-                    <div class="label">vs Спот (7 дн)</div>
-                    <div class="value ${diff7 >= 0 ? 'green' : 'red'}">${diff7 >= 0 ? '+' : ''}${diff7.toFixed(1)} €</div>
-                </div>
-                <div class="sum-item">
-                    <div class="label">Текущий месяц</div>
-                    <div class="value">${monthHtml}</div>
-                </div>
-            </div>`;
-    }
+    setTimeout(() => makeChart(chartId, labels, kwhArr, spotArr, type), 20);
+  }
+}
 
-    function switchTab(tab) {
-        // destroy old charts
-        Object.values(charts).forEach(ch => ch.destroy());
-        charts = {};
-
-        const list = document.getElementById('list');
-        list.innerHTML = '';
-
-        let keys, map, type;
-        if (tab === 'days') {
-            keys = Object.keys(daysMap).sort().reverse().slice(0, 14);
-            map = daysMap; type = 'day';
-        } else if (tab === 'weeks') {
-            keys = Object.keys(weeksMap).sort().reverse().slice(0, 12);
-            map = weeksMap; type = 'week';
-        } else {
-            keys = Object.keys(monthsMap).sort().reverse().slice(0, 12);
-            map = monthsMap; type = 'month';
-        }
-
-        if (!keys.length) {
-            list.innerHTML = '<div class="empty">Данных пока нет</div>';
-            return;
-        }
-
-        keys.forEach((key, idx) => {
-            const item = map[key];
-            const d = item.data;
-            const c = calc(d);
-
-            let title, labels, kwhArr, spotArr;
-            if (type === 'day') {
-                title = item.dateObj.getDate() + ' ' + shortMonths[item.dateObj.getMonth()];
-                labels = Array.from({length: 24}, (_, i) => i + ':00');
-                kwhArr = item.kwhByHour;
-                spotArr = item.spotByHour;
-            } else if (type === 'week') {
-                title = 'Неделя ' + item.weekNum + ' · ' + item.year;
-                labels = daysRu;
-                kwhArr = item.kwhByDay;
-                spotArr = item.spotByDay;
-            } else {
-                title = monthsFull[item.monthIdx] + ' ' + item.year;
-                labels = Array.from({length: item.daysInMonth}, (_, i) => i + 1);
-                kwhArr = item.kwhByDay;
-                spotArr = item.spotByDay;
-            }
-
-            const badgeClass = c.diffSpot >= 0 ? 'badge-good' : 'badge-bad';
-            const badgeText = (c.diffSpot >= 0 ? 'выгода +' : 'переплата ') + Math.abs(c.diffSpot).toFixed(2) + ' €';
-
-            const rowId = type + '-' + idx;
-            const chartId = 'ch-' + rowId;
-
-            const html = `
-            <div class="row" id="${rowId}">
-                <div class="row-head" onclick="toggleRow('${rowId}', '${chartId}', ${JSON.stringify(labels)}, ${JSON.stringify(kwhArr)}, ${JSON.stringify(spotArr)}, '${type}')">
-                    <div class="row-left">
-                        <div class="row-title">${title}</div>
-                        <div class="row-sub">ср. ${c.avgSpot.toFixed(1)} c/kWh</div>
-                    </div>
-                    <div class="row-right">
-                        <div class="row-kwh">${d.sumKwh.toFixed(1)} kWh</div>
-                        <div class="row-cost">${c.total.toFixed(2)} €</div>
-                        <div class="row-badge ${badgeClass}">${badgeText}</div>
-                    </div>
-                </div>
-                <div class="row-body">
-                    <div class="chart-box"><canvas id="${chartId}"></canvas></div>
-                    <div class="details">
-                        <div class="det-row"><span>Энергия (Jousto)</span><b>${c.myEnergy.toFixed(2)} €</b></div>
-                        <div class="det-row"><span>Доставка + налог + перus</span><b>${(c.total - c.myEnergy).toFixed(2)} €</b></div>
-                        <div class="det-row"><span>Итого</span><b>${c.total.toFixed(2)} €</b></div>
-                        <div class="vs-mini">
-                            <div class="vs-mini-title">Сравнение тарифов (только энергия)</div>
-                            <div class="vs-line"><span>Jousto</span><b>${c.myEnergy.toFixed(2)} €</b></div>
-                            <div class="vs-line"><span>Чистый спот</span><b>${c.pureSpot.toFixed(2)} €</b></div>
-                            <div class="vs-line"><span>Фикс 8.99</span><b>${c.pureFixed.toFixed(2)} €</b></div>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
-            list.insertAdjacentHTML('beforeend', html);
-        });
-    }
-
-    function toggleRow(rowId, chartId, labels, kwhArr, spotArr, type) {
-        const row = document.getElementById(rowId);
-        const wasOpen = row.classList.contains('open');
-
-        // закрываем все
-        document.querySelectorAll('.row.open').forEach(r => r.classList.remove('open'));
-
-        if (!wasOpen) {
-            row.classList.add('open');
-
-            // если график ещё не создан
-            if (!charts[chartId]) {
-                const ctx = document.getElementById(chartId).getContext('2d');
-                charts[chartId] = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels,
-                        datasets: [
-                            {
-                                type: 'line',
-                                data: spotArr,
-                                borderColor: '#e74c3c',
-                                borderWidth: 2,
-                                tension: 0.3,
-                                pointRadius: type === 'day' ? 0 : 2,
-                                yAxisID: 'ySpot'
-                            },
-                            {
-                                type: 'bar',
-                                data: kwhArr.map(v => +v.toFixed(2)),
-                                backgroundColor: '#3498db',
-                                borderRadius: 3,
-                                yAxisID: 'yKwh'
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: {
-                                grid: { display: false },
-                                ticks: { maxRotation: 90, minRotation: 90, font: { size: 8 } }
-                            },
-                            yKwh: {
-                                position: 'left',
-                                beginAtZero: true,
-                                ticks: { font: { size: 9 } },
-                                grid: { borderDash: [4, 4] }
-                            },
-                            ySpot: {
-                                position: 'right',
-                                ticks: { font: { size: 9 } },
-                                grid: { display: false }
-                            }
-                        }
-                    }
-                });
-            }
-        }
-    }
-
-    // делаем функцию глобальной для onclick
-    window.toggleRow = toggleRow;
-
-    load();
+window.toggleRow = toggleRow;
+load();
 </script>
 </body>
 </html>
