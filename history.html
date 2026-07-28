@@ -22,7 +22,6 @@ body {
   margin-bottom: 14px;
 }
 
-/* Tabs */
 .tabs {
   display: flex; background: #fff; border-radius: 14px; padding: 4px;
   margin-bottom: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
@@ -34,7 +33,6 @@ body {
 }
 .tab.active { background: #2c3e50; color: #fff; }
 
-/* Full card (like original) */
 .full-card {
   background: #fff; border-radius: 20px; padding: 16px 14px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.06); margin-bottom: 12px;
@@ -81,7 +79,6 @@ body {
 .badge.bad { background: #fdedec; color: #e74c3c; }
 .badge.neutral { background: #2c3e50; color: #fff; }
 
-/* Compact rows */
 .compact-list { display: flex; flex-direction: column; gap: 8px; }
 .row {
   background: #fff; border-radius: 14px;
@@ -89,7 +86,7 @@ body {
 }
 .row-head {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 14px; cursor: pointer; gap: 8px;
+  padding: 12px 14px; cursor: pointer; gap: 8px; user-select: none;
 }
 .row-head:active { background: #f8f9fa; }
 .row-title { font-weight: 800; font-size: 0.92rem; color: #2c3e50; }
@@ -143,6 +140,7 @@ const daysRu = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 
 let daysMap = {}, weeksMap = {}, monthsMap = {};
 let charts = {};
+let rowStore = {};   // данные для раскрытия строк
 
 function getISOWeek(d) {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -249,7 +247,6 @@ function process(spotData, sheetText) {
     }
   }
 
-  // актуальные цены на сегодня
   const todayApi = spotData.filter(s => new Date(s.DateTime).toISOString().slice(0,10) === todayStr);
   if (daysMap[todayStr]) {
     todayApi.forEach(s => {
@@ -308,7 +305,7 @@ function process(spotData, sheetText) {
   });
 }
 
-function buildFullCard(title, labels, kwhArr, spotArr, d, c, extremes, chartId, type) {
+function buildFullCard(title, d, c, extremes, chartId) {
   const badgeSpot = c.diffSpot >= 0
     ? `<span class="badge good">Выгода +${c.diffSpot.toFixed(2)} €</span>`
     : `<span class="badge bad">Переплата ${c.diffSpot.toFixed(2)} €</span>`;
@@ -348,8 +345,10 @@ function buildFullCard(title, labels, kwhArr, spotArr, d, c, extremes, chartId, 
 }
 
 function makeChart(chartId, labels, kwhArr, spotArr, type) {
-  if (charts[chartId]) { charts[chartId].destroy(); }
-  const ctx = document.getElementById(chartId).getContext('2d');
+  if (charts[chartId]) charts[chartId].destroy();
+  const el = document.getElementById(chartId);
+  if (!el) return;
+  const ctx = el.getContext('2d');
   charts[chartId] = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -379,8 +378,9 @@ function makeChart(chartId, labels, kwhArr, spotArr, type) {
 }
 
 function switchTab(tab) {
-  Object.values(charts).forEach(ch => ch.destroy());
+  Object.values(charts).forEach(ch => { try { ch.destroy(); } catch(e){} });
   charts = {};
+  rowStore = {};
 
   const content = document.getElementById('content');
   content.innerHTML = '';
@@ -402,9 +402,8 @@ function switchTab(tab) {
     return;
   }
 
-  // Первый элемент — сразу полный
-  const firstKey = keys[0];
-  const first = map[firstKey];
+  // === Первый элемент — полный ===
+  const first = map[keys[0]];
   const d0 = first.data;
   const c0 = calc(d0);
   const ex0 = getExtremes(d0);
@@ -424,101 +423,114 @@ function switchTab(tab) {
   }
 
   const chartId0 = 'ch-main-' + type;
-  content.insertAdjacentHTML('beforeend', buildFullCard(title0, labels0, kwh0, spot0, d0, c0, ex0, chartId0, type));
-  setTimeout(() => makeChart(chartId0, labels0, kwh0, spot0, type), 30);
+  content.insertAdjacentHTML('beforeend', buildFullCard(title0, d0, c0, ex0, chartId0));
+  setTimeout(() => makeChart(chartId0, labels0, kwh0, spot0, type), 40);
 
-  // Остальные — компактные
-  if (keys.length > 1) {
-    const list = document.createElement('div');
-    list.className = 'compact-list';
-    list.style.marginTop = '8px';
+  // === Остальные — компактные ===
+  if (keys.length < 2) return;
 
-    keys.slice(1).forEach((key, idx) => {
-      const item = map[key];
-      const d = item.data;
-      const c = calc(d);
-      const ex = getExtremes(d);
+  const list = document.createElement('div');
+  list.className = 'compact-list';
+  list.style.marginTop = '8px';
 
-      let title, labels, kwhArr, spotArr;
-      if (type === 'day') {
-        title = item.dateObj.getDate() + ' ' + shortMonths[item.dateObj.getMonth()];
-        labels = Array.from({length:24}, (_,i) => i + ':00');
-        kwhArr = item.kwhByHour; spotArr = item.spotByHour;
-      } else if (type === 'week') {
-        title = 'Неделя ' + item.weekNum + ' · ' + item.year;
-        labels = daysRu; kwhArr = item.kwhByDay; spotArr = item.spotByDay;
-      } else {
-        title = monthsFull[item.monthIdx] + ' ' + item.year;
-        labels = Array.from({length: item.daysInMonth}, (_,i) => i+1);
-        kwhArr = item.kwhByDay; spotArr = item.spotByDay;
-      }
+  keys.slice(1).forEach((key, idx) => {
+    const item = map[key];
+    const d = item.data;
+    const c = calc(d);
+    const ex = getExtremes(d);
 
-      const badgeClass = c.diffSpot >= 0 ? 'badge-good' : 'badge-bad';
-      const badgeText = (c.diffSpot >= 0 ? '+' : '') + c.diffSpot.toFixed(2) + ' €';
-      const rowId = type + '-' + idx;
-      const chartId = 'ch-' + rowId;
+    let title, labels, kwhArr, spotArr;
+    if (type === 'day') {
+      title = item.dateObj.getDate() + ' ' + shortMonths[item.dateObj.getMonth()];
+      labels = Array.from({length:24}, (_,i) => i + ':00');
+      kwhArr = item.kwhByHour; spotArr = item.spotByHour;
+    } else if (type === 'week') {
+      title = 'Неделя ' + item.weekNum + ' · ' + item.year;
+      labels = daysRu; kwhArr = item.kwhByDay; spotArr = item.spotByDay;
+    } else {
+      title = monthsFull[item.monthIdx] + ' ' + item.year;
+      labels = Array.from({length: item.daysInMonth}, (_,i) => i+1);
+      kwhArr = item.kwhByDay; spotArr = item.spotByDay;
+    }
 
-      const html = `
-      <div class="row" id="${rowId}">
-        <div class="row-head" onclick="toggleRow('${rowId}','${chartId}',${JSON.stringify(labels)},${JSON.stringify(kwhArr)},${JSON.stringify(spotArr)},'${type}',${JSON.stringify({title,d,c,ex}).replace(/"/g,'"')})">
-          <div>
-            <div class="row-title">${title}</div>
-            <div class="row-sub">ср. ${c.avgSpot.toFixed(1)} c</div>
-          </div>
-          <div class="row-right">
-            <div class="row-kwh">${d.sumKwh.toFixed(1)} kWh</div>
-            <div class="row-cost">${c.total.toFixed(2)} €</div>
-            <div class="row-badge ${badgeClass}">${badgeText}</div>
-          </div>
+    const badgeClass = c.diffSpot >= 0 ? 'badge-good' : 'badge-bad';
+    const badgeText = (c.diffSpot >= 0 ? '+' : '') + c.diffSpot.toFixed(2) + ' €';
+    const rowId = type + '-' + idx;
+    const chartId = 'ch-' + rowId;
+
+    // сохраняем данные для toggle
+    rowStore[rowId] = { labels, kwhArr, spotArr, type, d, c, ex, chartId };
+
+    const html = `
+    <div class="row" id="${rowId}">
+      <div class="row-head" onclick="toggleRow('${rowId}')">
+        <div>
+          <div class="row-title">${title}</div>
+          <div class="row-sub">ср. ${c.avgSpot.toFixed(1)} c</div>
         </div>
-        <div class="row-body" id="body-${rowId}"></div>
-      </div>`;
-      list.insertAdjacentHTML('beforeend', html);
-    });
-    content.appendChild(list);
-  }
+        <div class="row-right">
+          <div class="row-kwh">${d.sumKwh.toFixed(1)} kWh</div>
+          <div class="row-cost">${c.total.toFixed(2)} €</div>
+          <div class="row-badge ${badgeClass}">${badgeText}</div>
+        </div>
+      </div>
+      <div class="row-body" id="body-${rowId}"></div>
+    </div>`;
+    list.insertAdjacentHTML('beforeend', html);
+  });
+
+  content.appendChild(list);
 }
 
-function toggleRow(rowId, chartId, labels, kwhArr, spotArr, type, meta) {
+function toggleRow(rowId) {
   const row = document.getElementById(rowId);
+  if (!row) return;
+
   const wasOpen = row.classList.contains('open');
 
+  // закрываем все открытые
   document.querySelectorAll('.row.open').forEach(r => {
     r.classList.remove('open');
     const body = r.querySelector('.row-body');
     if (body) body.innerHTML = '';
   });
+
+  // чистим старые графики компактных строк
   Object.keys(charts).forEach(id => {
-    if (id.startsWith('ch-') && id !== 'ch-main-day' && id !== 'ch-main-week' && id !== 'ch-main-month') {
-      if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+    if (id.startsWith('ch-') && !id.startsWith('ch-main-')) {
+      try { charts[id].destroy(); } catch(e){}
+      delete charts[id];
     }
   });
 
-  if (!wasOpen) {
-    row.classList.add('open');
-    const body = document.getElementById('body-' + rowId);
-    const { title, d, c, ex } = meta;
+  if (wasOpen) return; // просто закрыли
 
-    body.innerHTML = `
-      <div class="chart-wrap" style="height:180px;margin:10px 0"><canvas id="${chartId}"></canvas></div>
-      <div class="stats">
-        <div class="main-stat">
-          Набежало: <span>${d.sumKwh.toFixed(2)} kWh</span><br>
-          Полная стоимость: <b>${c.total.toFixed(2)} €</b>
-        </div>
-        <div class="sub-stat">Средняя цена: <b>${c.avgSpot.toFixed(2)} c/kWh</b></div>
-        <div class="sub-stat" style="margin-top:6px">Пик: <span class="val-high">${ex.topMax} c</span></div>
-        <div class="sub-stat">Мин: <span class="val-low">${ex.topMin} c</span></div>
-        <div class="vs-box">
-          <div class="vs-title">Битва Тарифов</div>
-          <div class="vs-row"><div>Jousto</div><div><b>${c.myEnergy.toFixed(2)} €</b></div></div>
-          <div class="vs-row"><div>Спот</div><div><b>${c.pureSpot.toFixed(2)} €</b></div></div>
-          <div class="vs-row"><div>Фикс 8.99</div><div><b>${c.pureFixed.toFixed(2)} €</b></div></div>
-        </div>
-      </div>`;
+  const data = rowStore[rowId];
+  if (!data) return;
 
-    setTimeout(() => makeChart(chartId, labels, kwhArr, spotArr, type), 20);
-  }
+  row.classList.add('open');
+  const body = document.getElementById('body-' + rowId);
+  const { labels, kwhArr, spotArr, type, d, c, ex, chartId } = data;
+
+  body.innerHTML = `
+    <div class="chart-wrap" style="height:180px;margin:10px 0"><canvas id="${chartId}"></canvas></div>
+    <div class="stats">
+      <div class="main-stat">
+        Набежало: <span>${d.sumKwh.toFixed(2)} kWh</span><br>
+        Полная стоимость: <b>${c.total.toFixed(2)} €</b>
+      </div>
+      <div class="sub-stat">Средняя цена: <b>${c.avgSpot.toFixed(2)} c/kWh</b></div>
+      <div class="sub-stat" style="margin-top:6px">Пик: <span class="val-high">${ex.topMax} c</span></div>
+      <div class="sub-stat">Мин: <span class="val-low">${ex.topMin} c</span></div>
+      <div class="vs-box">
+        <div class="vs-title">Битва Тарифов</div>
+        <div class="vs-row"><div>Jousto</div><div><b>${c.myEnergy.toFixed(2)} €</b></div></div>
+        <div class="vs-row"><div>Спот</div><div><b>${c.pureSpot.toFixed(2)} €</b></div></div>
+        <div class="vs-row"><div>Фикс 8.99</div><div><b>${c.pureFixed.toFixed(2)} €</b></div></div>
+      </div>
+    </div>`;
+
+  setTimeout(() => makeChart(chartId, labels, kwhArr, spotArr, type), 30);
 }
 
 window.toggleRow = toggleRow;
