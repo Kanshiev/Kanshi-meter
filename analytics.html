@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аналитика Прогнозов</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: #1e272e;
+            color: #d2dae2;
+            display: flex;
+            justify-content: center;
+            padding: 15px;
+            margin: 0;
+        }
+        .widget-container { width: 100%; max-width: 600px; }
+
+        .nav-btn {
+            display: block; width: 100%; padding: 16px;
+            background-color: #2c3e50; color: white;
+            border: 1px solid #485460; border-radius: 16px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            text-decoration: none; text-align: center; box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); margin-bottom: 20px;
+            transition: transform 0.1s ease;
+        }
+        .nav-btn:active { transform: scale(0.98); }
+
+        .header-title {
+            text-align: center; font-size: 1.4rem; font-weight: 900;
+            color: #d2dae2; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .stats-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #2c3e50; border-radius: 20px; padding: 15px;
+            text-align: center; box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+            border: 1px solid #34495e;
+        }
+        .stat-card span { display: block; font-size: 0.75rem; font-weight: 700; opacity: 0.7; text-transform: uppercase; margin-bottom: 5px; }
+        .stat-card b { display: block; font-size: 1.8rem; font-weight: 900; }
+        .stat-card small { font-size: 0.9rem; font-weight: 600; opacity: 0.8; }
+        
+        .color-good { color: #2ecc71; }
+        .color-warn { color: #f1c40f; }
+
+        .chart-card {
+            background: #2c3e50; border-radius: 20px; padding: 15px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15); margin-bottom: 20px;
+            border: 1px solid #34495e; position: relative; height: 280px;
+        }
+        .chart-title {
+            text-align: center; font-size: 0.85rem; font-weight: 800;
+            opacity: 0.8; margin-bottom: 10px; text-transform: uppercase;
+        }
+
+        .loading { text-align: center; padding: 40px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="widget-container">
+    <a href="forecast.html" class="nav-btn">⬅ Назад к Стратегии</a>
+
+    <div class="header-title">Точность ИИ</div>
+
+    <div id="loading-msg" class="loading">Сканируем датасет...</div>
+
+    <div id="content" style="display: none;">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span>Средняя ошибка</span>
+                <b id="kpi-error" class="color-warn">--</b>
+                <small>цента</small>
+            </div>
+            <div class="stat-card">
+                <span>Точность (±2c)</span>
+                <b id="kpi-acc" class="color-good">--</b>
+                <small>попаданий</small>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-title">Факт vs Прогноз (Месяц)</div>
+            <canvas id="lineChart"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-title">Зависимость цены от Ветра</div>
+            <canvas id="scatterChart"></canvas>
+        </div>
+        
+        <div style="text-align: center; opacity: 0.5; font-size: 0.75rem; margin-top: -5px; font-weight: 600;">
+            Проанализировано дней: <span id="kpi-days">0</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const HISTORY_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJr45wBzKQWfbT-wnECB2rnRkb6FBw1ibQazH0tKjhdjK1EZYB9K_5mZ_h7xAdgq6VYaSDPvcyrNdU/pub?gid=1504214306&single=true&output=csv';
+
+    function parseNum(v) {
+        if (!v) return null;
+        const n = parseFloat(String(v).replace(',', '.').replace(/\s/g, ''));
+        return isNaN(n) ? null : n;
+    }
+
+    function parseCSVLine(line) {
+        const result = [];
+        let current = '', inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const c = line[i];
+            if (c === '"') inQuotes = !inQuotes;
+            else if (c === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+            else current += c;
+        }
+        result.push(current.trim());
+        return result;
+    }
+
+    async function loadAnalytics() {
+        try {
+            const res = await fetch(HISTORY_CSV + '&_t=' + Date.now());
+            const text = await res.text();
+            const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+            
+            const rows = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = parseCSVLine(lines[i]);
+                if (cols.length < 6) continue;
+                
+                const dateStr = cols[0];
+                const actual = parseNum(cols[1]);
+                const predicted = parseNum(cols[2]);
+                const wind = parseNum(cols[5]);
+                
+                if (dateStr && actual !== null && predicted !== null) {
+                    rows.push({ date: dateStr, actual, predicted, wind });
+                }
+            }
+
+            if (rows.length === 0) {
+                document.getElementById('loading-msg').innerText = "Нет данных для аналитики.";
+                return;
+            }
+
+            document.getElementById('loading-msg').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+
+            calculateKPIs(rows);
+            drawLineChart(rows);
+            drawScatterChart(rows);
+
+        } catch (e) {
+            console.error(e);
+            document.getElementById('loading-msg').innerText = "Ошибка загрузки данных.";
+        }
+    }
+
+    function calculateKPIs(rows) {
+        let totalError = 0;
+        let accurateHits = 0;
+
+        rows.forEach(r => {
+            const err = Math.abs(r.actual - r.predicted);
+            totalError += err;
+            if (err <= 2.0) accurateHits++; // Считаем попаданием ошибку до 2 центов
+        });
+
+        const avgError = totalError / rows.length;
+        const accuracyPct = (accurateHits / rows.length) * 100;
+
+        document.getElementById('kpi-error').innerText = avgError.toFixed(1);
+        document.getElementById('kpi-acc').innerText = Math.round(accuracyPct) + '%';
+        document.getElementById('kpi-days').innerText = rows.length;
+    }
+
+    function drawLineChart(rows) {
+        // Берем последние 30 дней для таймлайна
+        const slice = rows.slice(-30);
+        
+        const labels = slice.map(r => {
+            const parts = r.date.split('-');
+            return parts.length === 3 ? `${parts[2]}.${parts[1]}` : r.date;
+        });
+        const actualData = slice.map(r => r.actual);
+        const predictedData = slice.map(r => r.predicted);
+
+        const ctx = document.getElementById('lineChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Факт (c)',
+                        data: actualData,
+                        borderColor: '#00d2d3', // Циан
+                        backgroundColor: '#00d2d3',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        pointRadius: 2
+                    },
+                    {
+                        label: 'Прогноз (c)',
+                        data: predictedData,
+                        borderColor: '#feca57', // Желтый
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        tension: 0.3,
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { labels: { color: '#d2dae2', font: {size: 10} } }
+                },
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8395a7', maxRotation: 45, minRotation: 45, font: {size: 9} } },
+                    y: { grid: { color: 'rgba(255,255,255,0.1)', borderDash: [5, 5] }, ticks: { color: '#8395a7' } }
+                }
+            }
+        });
+    }
+
+    function drawScatterChart(rows) {
+        // Формируем точки (X = Ветер, Y = Фактическая цена)
+        const scatterData = rows
+            .filter(r => r.wind !== null)
+            .map(r => ({ x: r.wind, y: r.actual }));
+
+        const ctx = document.getElementById('scatterChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Цена от ветра',
+                    data: scatterData,
+                    backgroundColor: 'rgba(255, 107, 107, 0.6)', // Полупрозрачный красный
+                    borderColor: '#ff6b6b',
+                    pointRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { 
+                        title: { display: true, text: 'Скорость ветра (м/с)', color: '#8395a7' },
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#8395a7' }
+                    },
+                    y: { 
+                        title: { display: true, text: 'Цена (центы)', color: '#8395a7' },
+                        grid: { color: 'rgba(255,255,255,0.1)', borderDash: [5, 5] },
+                        ticks: { color: '#8395a7' }
+                    }
+                }
+            }
+        });
+    }
+
+    loadAnalytics();
+</script>
+
+</body>
+</html>
