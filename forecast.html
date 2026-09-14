@@ -227,7 +227,6 @@
 <script>
     const LAT = 65.01;
     const LON = 25.46;
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbypnKWrHwiPmjMsZtC-3HRY6Oe_9sCvTJPJwfngOvZycBNVGqc5y4tS6PNjQ-gK2JAO/exec';
     const HISTORY_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJr45wBzKQWfbT-wnECB2rnRkb6FBw1ibQazH0tKjhdjK1EZYB9K_5mZ_h7xAdgq6VYaSDPvcyrNdU/pub?gid=1504214306&single=true&output=csv';
 
     const daysRu = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
@@ -269,78 +268,6 @@
         }
         result.push(current.trim());
         return result;
-    }
-
-    // ========== localStorage ==========
-    function getPredictions() {
-        try { return JSON.parse(localStorage.getItem('kanshi_preds') || '{}'); }
-        catch { return {}; }
-    }
-    function savePredictions(obj) {
-        localStorage.setItem('kanshi_preds', JSON.stringify(obj));
-    }
-    function getLogged() {
-        try { return JSON.parse(localStorage.getItem('kanshi_logged') || '{}'); }
-        catch { return {}; }
-    }
-    function markLogged(date) {
-        const logged = getLogged();
-        logged[date] = true;
-        localStorage.setItem('kanshi_logged', JSON.stringify(logged));
-    }
-
-    async function sendToSheet(payload) {
-        try {
-            await fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify(payload)
-            });
-            console.log('Лог отправлен:', payload.date);
-            markLogged(payload.date);
-        } catch (e) {
-            console.error('Ошибка отправки лога', e);
-        }
-    }
-
-    // ========== ЗАПИСЬ В БАЗУ БЕЗ АРХИВА ==========
-    async function tryLogCompletedDays(dailySpotAvgs) {
-        const preds = getPredictions();
-        const logged = getLogged();
-
-        for (const dateStr of Object.keys(preds)) {
-            // Если мы уже сохраняли этот день или биржевой цены на него еще нет — пропускаем
-            if (!dailySpotAvgs[dateStr] || logged[dateStr]) continue;
-
-            const pred = preds[dateStr];
-            try {
-                // Вместо тормозного архива запрашиваем обычный прогноз погоды (он работает и для вчера)
-                const archUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&start_date=${dateStr}&end_date=${dateStr}&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,sunshine_duration,precipitation_probability_max&timezone=Europe%2FHelsinki`;
-                const archRes = await fetch(archUrl);
-                const arch = await archRes.json();
-                if (!arch.daily || !arch.daily.time || arch.daily.time.length === 0) continue;
-
-                const payload = {
-                    date: dateStr,
-                    actual_avg_c: +dailySpotAvgs[dateStr].toFixed(2),
-                    predicted_avg_c: +pred.predicted.toFixed(2),
-                    temp_min: Math.round(arch.daily.temperature_2m_min[0]),
-                    temp_max: Math.round(arch.daily.temperature_2m_max[0]),
-                    wind_max_ms: +(arch.daily.wind_speed_10m_max[0] / 3.6).toFixed(1),
-                    sun_hours: +(arch.daily.sunshine_duration[0] / 3600).toFixed(1),
-                    precip_prob: arch.daily.precipitation_probability_max?.[0] || 0,
-                    weather_code: arch.daily.weather_code[0],
-                    base_used: 0, // Устарело, но оставляем для структуры таблицы
-                    risk_score: 0, // Устарело
-                    prediction_date: pred.prediction_date,
-                    notes: 'Machine Learning KNN'
-                };
-                await sendToSheet(payload);
-            } catch (e) {
-                console.error('Ошибка получения погоды для записи', dateStr, e);
-            }
-        }
     }
 
     // ========== ИСТОРИЯ И АЛГОРИТМ ПРЕДСКАЗАНИЯ ==========
@@ -387,6 +314,7 @@
             else if (abs >= 4) deltaClass = 'delta-bad';
 
             const parts = r.date.split('-');
+            if(parts.length < 3) return '';
             const day = parseInt(parts[2], 10);
             const monthIdx = parseInt(parts[1], 10) - 1;
             const dateLabel = `${day} ${monthsRu[monthIdx] || ''}`;
@@ -411,9 +339,9 @@
         }).join('');
     }
 
-    // Тот самый ИИ (K-Nearest Neighbors) на основе твоей истории
+    // ИИ (K-Nearest Neighbors) на основе истории
     function predictSmartPrice(weather, historyRows) {
-        if (!historyRows || historyRows.length === 0) return 5.0; // Если база пуста, возвращаем среднюю 5
+        if (!historyRows || historyRows.length === 0) return 5.0; // Базовая цена, если пусто
 
         // Этап 1: Ищем похожие дни в таблице (Температура ±6 градусов, Ветер ±3 м/с)
         let matches = historyRows.filter(h => 
@@ -422,7 +350,7 @@
             Math.abs(h.wind - weather.windMs) <= 3
         );
 
-        // Этап 2: Если таких дней не было, расширяем поиск (Температура ±12 градусов, Ветер ±5 м/с)
+        // Этап 2: Расширяем поиск (Температура ±12 градусов, Ветер ±5 м/с)
         if (matches.length === 0) {
             matches = historyRows.filter(h => 
                 h.tMin !== null && h.wind !== null &&
@@ -431,7 +359,7 @@
             );
         }
 
-        // Этап 3: Если на улице творится аномалия и аналогов нет, берем среднее за последние 10 дней из таблицы
+        // Этап 3: Аналогов нет, берем среднее за последние 10 дней
         if (matches.length === 0) {
             matches = historyRows.slice(0, 10);
         }
@@ -468,16 +396,10 @@
             const weatherRes = await fetch(weatherUrl);
             const data = await weatherRes.json();
 
-            // 4. Отправляем записанные ранее прогнозы в таблицу (если по ним вышла биржевая цена)
-            await tryLogCompletedDays(dailySpotAvgs);
-
             const grid = document.getElementById('forecast-grid');
             grid.innerHTML = '';
 
-            const preds = getPredictions();
-            const predictionDate = new Date().toISOString().slice(0, 10);
-
-            // 5. Строим карточки и прогнозируем
+            // 4. Строим карточки и прогнозируем
             for (let i = 0; i < 5; i++) {
                 const dateStr = data.daily.time[i];
                 const d = new Date(dateStr);
@@ -497,23 +419,15 @@
 
                 let displayPriceHtml = "";
                 let finalPrice = 0;
-                let isPredicted = false;
 
-                // Если биржа уже отдала точную цену (сегодня или завтра после обеда)
+                // Если биржа уже отдала точную цену
                 if (dailySpotAvgs[dateStr] !== undefined) {
                     finalPrice = dailySpotAvgs[dateStr];
                     displayPriceHtml = `<div class="tile-price price-exact">✓ ${finalPrice.toFixed(1)} <span>c</span></div>`;
                 } else {
-                    // Если цены нет — вызываем наш ИИ на основе истории
+                    // Если цены нет — гадаем по истории
                     finalPrice = predictSmartPrice(weather, historyRows);
                     displayPriceHtml = `<div class="tile-price price-est">≈ ${finalPrice.toFixed(1)} <span>c</span></div>`;
-                    isPredicted = true;
-
-                    // Сохраняем прогноз в память, чтобы завтра записать его в Google Таблицу
-                    preds[dateStr] = {
-                        predicted: finalPrice,
-                        prediction_date: predictionDate
-                    };
                 }
 
                 // Раскрашиваем карточку
@@ -556,8 +470,6 @@
                 </div>`;
                 grid.insertAdjacentHTML('beforeend', tileHTML);
             }
-
-            savePredictions(preds);
 
         } catch (error) {
             console.error("Ошибка прогноза:", error);
