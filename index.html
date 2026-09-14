@@ -75,7 +75,10 @@
         }
         .btn-small {
             padding: 12px 10px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .square-btn-phases {
@@ -132,7 +135,7 @@
     
     <div class="nav-grid-small">
         <a href="finance.html" class="nav-btn btn-finance btn-small">💰 Финансы</a>
-        <a href="forecast.html" class="nav-btn btn-forecast btn-small">🌤 Стратегия</a>
+        <a href="forecast.html" class="nav-btn btn-forecast btn-small">🌤 Стратегия и Прогноз</a>
     </div>
 </div>
 
@@ -207,15 +210,11 @@
 
     async function updateShelly() {
         try {
-            const targetUrl = 'https://shelly-70-eu.shelly.cloud/device/status';
-            const proxyUrl = 'https://proxy.corsfix.com/?' + encodeURIComponent(targetUrl);
-            const requestBody = 'id=483fdac39873&auth_key=MWEzMWI0dWlk07E8AECF7EC066046A87D6410853E336FBB1D6F260B8376F3C047EE699E8019EA03F97657F6EF690';
+            // Твой личный, вечный прокси на Cloudflare
+            const proxyUrl = 'https://shelly-proxy.andrey-kanshiev.workers.dev/';
 
-            const response = await fetch(proxyUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: requestBody
-            });
+            // Обращаемся к нему напрямую
+            const response = await fetch(proxyUrl, { method: 'POST' });
 
             if (!response.ok) throw new Error(`Ошибка HTTP: ${response.status}`);
 
