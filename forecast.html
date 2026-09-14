@@ -31,7 +31,9 @@
             box-sizing: border-box;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             margin-bottom: 20px;
+            transition: transform 0.1s ease;
         }
+        .nav-btn:active { transform: scale(0.98); }
 
         .header-title {
             text-align: center;
@@ -208,7 +210,12 @@
 <body>
 
 <div class="widget-container">
-    <a href="index.html" class="nav-btn">⬅ Назад к пульту</a>
+    
+    <!-- Навигация: Пульт и Аналитика -->
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <a href="index.html" class="nav-btn" style="margin-bottom: 0;">⬅ Пульт</a>
+        <a href="analytics.html" class="nav-btn" style="margin-bottom: 0; background-color: #8e44ad;">📈 Аналитика</a>
+    </div>
 
     <div class="header-title">Стратегия на 5 дней</div>
 
