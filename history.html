@@ -44,44 +44,80 @@ body {
 .card-title span { color: #7f8c8d; font-weight: 600; font-size: 0.85rem; }
 .chart-wrap { position: relative; height: 200px; margin-bottom: 12px; }
 
+/* === ОБНОВЛЕННЫЙ БЛОК ДЕТАЛЬНОЙ СТАТИСТИКИ === */
 .stats {
-  background: #f8f9fa; border-radius: 14px; padding: 12px; border: 1px solid #f0f0f0;
+  background: #f8f9fa; border-radius: 16px; padding: 14px; border: 1px solid #eceff1;
 }
-.main-stat {
-  text-align: center; font-size: 1rem; font-weight: 800; color: #2c3e50;
-  padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px dashed #bdc3c7;
+.main-stat-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px dashed #cbd5e1;
 }
-.main-stat b { color: #e74c3c; font-size: 1.15rem; }
-.main-stat span { color: #3498db; font-size: 1.15rem; font-weight: 900; }
+.main-stat-box {
+  background: #fff; border-radius: 12px; padding: 10px; text-align: center;
+  border: 1px solid #f0f0f0;
+}
+.main-stat-label {
+  font-size: 0.7rem; font-weight: 700; color: #7f8c8d; text-transform: uppercase; margin-bottom: 4px;
+}
+.main-stat-val-kwh { color: #3498db; font-size: 1.2rem; font-weight: 900; }
+.main-stat-val-cost { color: #e74c3c; font-size: 1.2rem; font-weight: 900; }
+
+.section-label {
+  font-size: 0.72rem; font-weight: 900; color: #7f8c8d;
+  text-transform: uppercase; letter-spacing: 0.5px; margin: 10px 0 6px;
+}
 .sub-stat {
-  display: flex; justify-content: space-between; font-size: 0.82rem;
-  font-weight: 600; color: #555; margin-bottom: 5px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.82rem; font-weight: 600; color: #555; margin-bottom: 6px;
 }
-.sub-stat b { color: #111; }
+.sub-stat b { color: #1a1a1a; font-weight: 800; }
 .val-high { color: #e74c3c; font-weight: 800; }
 .val-low { color: #27ae60; font-weight: 800; }
 
-.vs-box { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #bdc3c7; }
+.cost-pills {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;
+  margin-top: 6px; margin-bottom: 10px;
+}
+.cost-pill {
+  background: #fff; border: 1px solid #eee; border-radius: 10px;
+  padding: 7px 10px; display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.76rem; color: #555; font-weight: 600;
+}
+.cost-pill b { color: #2c3e50; font-weight: 800; }
+
+/* === КРАСИВАЯ БИТВА ТАРИФОВ === */
+.vs-box { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #cbd5e1; }
 .vs-title {
-  text-align: center; font-size: 0.75rem; font-weight: 900; color: #7f8c8d;
-  text-transform: uppercase; margin-bottom: 10px;
+  text-align: center; font-size: 0.75rem; font-weight: 900; color: #2c3e50;
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;
 }
-.vs-row {
+.vs-card {
+  background: #fff; border: 1px solid #e9ecef; border-radius: 12px;
+  padding: 10px 12px; margin-bottom: 8px;
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 0.78rem; margin-bottom: 7px;
 }
-.vs-row b { font-size: 0.95rem; color: #2c3e50; }
+.vs-card:last-child { margin-bottom: 0; }
+.vs-card.mine {
+  border-color: #2c3e50; background: #f4f6f8;
+}
+.vs-left { display: flex; flex-direction: column; gap: 2px; }
+.vs-name { font-size: 0.85rem; font-weight: 800; color: #2c3e50; display: flex; align-items: center; gap: 6px; }
+.vs-rate { font-size: 0.72rem; color: #7f8c8d; font-weight: 600; }
+.vs-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.vs-price { font-size: 0.98rem; font-weight: 900; color: #2c3e50; }
+
 .badge {
-  padding: 2px 6px; border-radius: 6px; font-size: 0.62rem;
-  font-weight: 800; text-transform: uppercase;
+  padding: 3px 7px; border-radius: 6px; font-size: 0.65rem;
+  font-weight: 800; text-transform: uppercase; display: inline-block;
 }
 .badge.good { background: #eafaf1; color: #27ae60; }
 .badge.bad { background: #fdedec; color: #e74c3c; }
 .badge.neutral { background: #2c3e50; color: #fff; }
 
+/* === СПИСОК ПРОШЛЫХ ПЕРИОДОВ === */
 .compact-list { display: flex; flex-direction: column; gap: 8px; }
 .row {
-  background: #fff; border-radius: 14px;
+  background: #fff; border-radius: 16px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.04); overflow: hidden;
 }
 .row-head {
@@ -101,7 +137,7 @@ body {
 .badge-good { background: #eafaf1; color: #27ae60; }
 .badge-bad { background: #fdedec; color: #e74c3c; }
 
-.row-body { display: none; padding: 0 12px 12px; border-top: 1px solid #f0f0f0; }
+.row-body { display: none; padding: 0 12px 14px; border-top: 1px solid #f0f0f0; }
 .row.open .row-body { display: block; }
 
 .loading { text-align: center; color: #7f8c8d; padding: 50px 20px; font-weight: 600; }
@@ -140,7 +176,7 @@ const daysRu = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 
 let daysMap = {}, weeksMap = {}, monthsMap = {};
 let charts = {};
-let rowStore = {};   // данные для раскрытия строк
+let rowStore = {}; // данные для раскрытия строк
 
 function getISOWeek(d) {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -175,8 +211,11 @@ function calc(d) {
   const pureSpot = (d.sumCost + d.sumKwh * SPOT_MARGIN) / 100;
   const pureFixed = (d.sumKwh * PURE_FIXED_PRICE) / 100;
   const total = myEnergy + d.sumSiirto + d.sumVero + d.sumPerus;
+  const spotEffectiveRate = avgPersonal + SPOT_MARGIN;
+
   return {
-    avgSpot, finalPrice, myEnergy, pureSpot, pureFixed, total,
+    avgSpot, avgPersonal, effect, finalPrice, spotEffectiveRate,
+    myEnergy, pureSpot, pureFixed, total,
     diffSpot: pureSpot - myEnergy,
     diffFixed: pureFixed - myEnergy
   };
@@ -305,42 +344,91 @@ function process(spotData, sheetText) {
   });
 }
 
-function buildFullCard(title, d, c, extremes, chartId) {
+// Единый генератор подробной статистики и Битвы Тарифов (и для верхней карточки, и для раскрывающихся)
+function buildDetailedStats(d, c, extremes) {
   const badgeSpot = c.diffSpot >= 0
     ? `<span class="badge good">Выгода +${c.diffSpot.toFixed(2)} €</span>`
-    : `<span class="badge bad">Переплата ${c.diffSpot.toFixed(2)} €</span>`;
+    : `<span class="badge bad">Переплата ${Math.abs(c.diffSpot).toFixed(2)} €</span>`;
+
   const badgeFixed = c.diffFixed >= 0
     ? `<span class="badge good">Выгода +${c.diffFixed.toFixed(2)} €</span>`
-    : `<span class="badge bad">Переплата ${c.diffFixed.toFixed(2)} €</span>`;
+    : `<span class="badge bad">Переплата ${Math.abs(c.diffFixed).toFixed(2)} €</span>`;
 
+  const effectSign = c.effect > 0 ? '+' : '';
+  const effectClass = c.effect <= 0 ? 'val-low' : 'val-high';
+
+  return `
+  <div class="stats">
+    <div class="main-stat-grid">
+      <div class="main-stat-box">
+        <div class="main-stat-label">Потребление</div>
+        <div class="main-stat-val-kwh">${d.sumKwh.toFixed(2)} kWh</div>
+      </div>
+      <div class="main-stat-box">
+        <div class="main-stat-label">Полный счёт</div>
+        <div class="main-stat-val-cost">${c.total.toFixed(2)} €</div>
+      </div>
+    </div>
+
+    <div class="section-label">Из чего сложился полный счёт</div>
+    <div class="cost-pills">
+      <div class="cost-pill"><span>⚡ Энергия</span><b>${c.myEnergy.toFixed(2)} €</b></div>
+      <div class="cost-pill"><span>🔌 Передача</span><b>${d.sumSiirto.toFixed(2)} €</b></div>
+      <div class="cost-pill"><span>🏛 Налог</span><b>${d.sumVero.toFixed(2)} €</b></div>
+      <div class="cost-pill"><span>📅 Абонентка</span><b>${d.sumPerus.toFixed(2)} €</b></div>
+    </div>
+
+    <div class="section-label">Биржа и профиль потребления</div>
+    <div class="sub-stat"><span>Средняя цена биржи:</span> <b>${c.avgSpot.toFixed(2)} c/kWh</b></div>
+    <div class="sub-stat"><span>Твой спот-профиль:</span> <b>${c.avgPersonal.toFixed(2)} c/kWh</b></div>
+    <div class="sub-stat"><span>Эффект Jousto (профиль):</span> <span class="${effectClass}">${effectSign}${c.effect.toFixed(2)} c/kWh</span></div>
+    <div class="sub-stat"><span>Пик цен (топ-3):</span> <span class="val-high">${extremes.topMax} c</span></div>
+    <div class="sub-stat"><span>Мин. цена (топ-3):</span> <span class="val-low">${extremes.topMin} c</span></div>
+
+    <div class="vs-box">
+      <div class="vs-title">⚔️ Битва Тарифов (только энергия)</div>
+
+      <div class="vs-card mine">
+        <div class="vs-left">
+          <div class="vs-name">Твой Jousto <span class="badge neutral">Активен</span></div>
+          <div class="vs-rate">База ${FIXED_PRICE} c ${effectSign}${c.effect.toFixed(2)} c = <b>${c.finalPrice.toFixed(2)} c/kWh</b></div>
+        </div>
+        <div class="vs-right">
+          <div class="vs-price">${c.myEnergy.toFixed(2)} €</div>
+        </div>
+      </div>
+
+      <div class="vs-card">
+        <div class="vs-left">
+          <div class="vs-name">Чистый Спот</div>
+          <div class="vs-rate">Профиль + маржа ${SPOT_MARGIN.toFixed(2)} c = <b>${c.spotEffectiveRate.toFixed(2)} c/kWh</b></div>
+        </div>
+        <div class="vs-right">
+          <div class="vs-price">${c.pureSpot.toFixed(2)} €</div>
+          ${badgeSpot}
+        </div>
+      </div>
+
+      <div class="vs-card">
+        <div class="vs-left">
+          <div class="vs-name">Чистый Фикс</div>
+          <div class="vs-rate">Фиксированная ставка <b>${PURE_FIXED_PRICE} c/kWh</b></div>
+        </div>
+        <div class="vs-right">
+          <div class="vs-price">${c.pureFixed.toFixed(2)} €</div>
+          ${badgeFixed}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildFullCard(title, d, c, extremes, chartId) {
   return `
   <div class="full-card">
     <div class="card-title">${title}</div>
     <div class="chart-wrap"><canvas id="${chartId}"></canvas></div>
-    <div class="stats">
-      <div class="main-stat">
-        Набежало: <span>${d.sumKwh.toFixed(2)} kWh</span><br>
-        Полная стоимость: <b>${c.total.toFixed(2)} €</b>
-      </div>
-      <div class="sub-stat">Средняя цена (биржа): <b>${c.avgSpot.toFixed(2)} c/kWh</b></div>
-      <div class="sub-stat" style="margin-top:8px">Пик цен: <span class="val-high">${extremes.topMax} c</span></div>
-      <div class="sub-stat">Мин. цена: <span class="val-low">${extremes.topMin} c</span></div>
-      <div class="vs-box">
-        <div class="vs-title">Битва Тарифов (энергия)</div>
-        <div class="vs-row">
-          <div>Твой Jousto</div>
-          <div><span class="badge neutral">Твой</span> <b>${c.myEnergy.toFixed(2)} €</b></div>
-        </div>
-        <div class="vs-row">
-          <div>Чистый Спот</div>
-          <div>${badgeSpot} <b>${c.pureSpot.toFixed(2)} €</b></div>
-        </div>
-        <div class="vs-row">
-          <div>Фикс 8.99</div>
-          <div>${badgeFixed} <b>${c.pureFixed.toFixed(2)} €</b></div>
-        </div>
-      </div>
-    </div>
+    ${buildDetailedStats(d, c, extremes)}
   </div>`;
 }
 
@@ -454,7 +542,7 @@ function switchTab(tab) {
     }
 
     const badgeClass = c.diffSpot >= 0 ? 'badge-good' : 'badge-bad';
-    const badgeText = (c.diffSpot >= 0 ? '+' : '') + c.diffSpot.toFixed(2) + ' €';
+    const badgeText = (c.diffSpot >= 0 ? 'Выгода +' : 'Переплата ') + Math.abs(c.diffSpot).toFixed(2) + ' €';
     const rowId = type + '-' + idx;
     const chartId = 'ch-' + rowId;
 
@@ -466,7 +554,7 @@ function switchTab(tab) {
       <div class="row-head" onclick="toggleRow('${rowId}')">
         <div>
           <div class="row-title">${title}</div>
-          <div class="row-sub">ср. ${c.avgSpot.toFixed(1)} c</div>
+          <div class="row-sub">биржа ${c.avgSpot.toFixed(1)} c · твой Jousto ${c.finalPrice.toFixed(2)} c</div>
         </div>
         <div class="row-right">
           <div class="row-kwh">${d.sumKwh.toFixed(1)} kWh</div>
@@ -512,23 +600,11 @@ function toggleRow(rowId) {
   const body = document.getElementById('body-' + rowId);
   const { labels, kwhArr, spotArr, type, d, c, ex, chartId } = data;
 
+  // Выводим точно такой же полный разбор, как и в главной карточке
   body.innerHTML = `
-    <div class="chart-wrap" style="height:180px;margin:10px 0"><canvas id="${chartId}"></canvas></div>
-    <div class="stats">
-      <div class="main-stat">
-        Набежало: <span>${d.sumKwh.toFixed(2)} kWh</span><br>
-        Полная стоимость: <b>${c.total.toFixed(2)} €</b>
-      </div>
-      <div class="sub-stat">Средняя цена: <b>${c.avgSpot.toFixed(2)} c/kWh</b></div>
-      <div class="sub-stat" style="margin-top:6px">Пик: <span class="val-high">${ex.topMax} c</span></div>
-      <div class="sub-stat">Мин: <span class="val-low">${ex.topMin} c</span></div>
-      <div class="vs-box">
-        <div class="vs-title">Битва Тарифов</div>
-        <div class="vs-row"><div>Jousto</div><div><b>${c.myEnergy.toFixed(2)} €</b></div></div>
-        <div class="vs-row"><div>Спот</div><div><b>${c.pureSpot.toFixed(2)} €</b></div></div>
-        <div class="vs-row"><div>Фикс 8.99</div><div><b>${c.pureFixed.toFixed(2)} €</b></div></div>
-      </div>
-    </div>`;
+    <div class="chart-wrap" style="height:190px;margin:12px 0"><canvas id="${chartId}"></canvas></div>
+    ${buildDetailedStats(d, c, ex)}
+  `;
 
   setTimeout(() => makeChart(chartId, labels, kwhArr, spotArr, type), 30);
 }
