@@ -48,7 +48,7 @@
             margin-bottom: 20px; position: relative; height: 240px; 
         }
         
-        /* === ОБНОВЛЕННАЯ НАВИГАЦИЯ === */
+        /* === НАВИГАЦИЯ === */
         .nav-btn {
             display: block; width: 100%;
             color: white; border: none; border-radius: 16px;
@@ -60,6 +60,7 @@
         .nav-btn:active { transform: scale(0.98); }
         .btn-finance { background-color: #27ae60; } 
         .btn-forecast { background-color: #f39c12; }
+        .btn-arthur { background-color: #8e44ad; padding: 12px; font-size: 0.9rem; margin-top: 12px; }
         
         /* Сетка для маленьких кнопок внизу */
         .nav-grid-small {
@@ -73,7 +74,7 @@
             justify-content: center;
         }
         
-        /* Обновленная квадратная кнопка (теперь для графиков) */
+        /* Квадратная кнопка для графиков */
         .square-btn-charts {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             width: 75px; height: 70px; flex-shrink: 0;
@@ -110,7 +111,6 @@
                 <div class="stat-value" id="shelly-load">...</div>
                 <div class="stat-label">кВт·ч сегодня</div>
             </div>
-            <!-- Новая кнопка на графики вместо фаз -->
             <a href="charts.html" class="square-btn-charts">
                 <span style="font-size: 1.4rem;">📊</span>
                 <span style="margin-top: 3px; line-height: 1.1; text-align: center;">Сегодня<br>Завтра</span>
@@ -128,6 +128,9 @@
         <a href="finance.html" class="nav-btn btn-finance btn-small">💰 История потребления</a>
         <a href="forecast.html" class="nav-btn btn-forecast btn-small">🌤 Стратегия и Прогноз</a>
     </div>
+    
+    <!-- Новая ссылка на Артуркину энергию -->
+    <a href="arthur.html" class="nav-btn btn-arthur">⚡ Артуркина энергия</a>
 </div>
 
 <script>
