@@ -58,16 +58,8 @@
             transition: transform 0.1s ease;
         }
         .nav-btn:active { transform: scale(0.98); }
-        .btn-charts { background-color: #2c3e50; }
         .btn-finance { background-color: #27ae60; } 
         .btn-forecast { background-color: #f39c12; }
-        
-        /* Стили для большой кнопки графиков */
-        .btn-large {
-            padding: 22px 16px;
-            font-size: 1.2rem;
-            margin-bottom: 12px;
-        }
         
         /* Сетка для маленьких кнопок внизу */
         .nav-grid-small {
@@ -81,16 +73,17 @@
             justify-content: center;
         }
         
-        .square-btn-phases {
+        /* Обновленная квадратная кнопка (теперь для графиков) */
+        .square-btn-charts {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            width: 70px; height: 70px; flex-shrink: 0;
-            background-color: #8e44ad; color: white;
+            width: 75px; height: 70px; flex-shrink: 0;
+            background-color: #2c3e50; color: white;
             border: none; border-radius: 18px;
             font-size: 0.65rem; font-weight: bold; text-transform: uppercase;
-            text-decoration: none; box-shadow: 0 4px 12px rgba(142, 68, 173, 0.3);
+            text-decoration: none; box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
             transition: transform 0.1s ease; margin-left: 10px;
         }
-        .square-btn-phases:active { transform: scale(0.95); }
+        .square-btn-charts:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -117,9 +110,10 @@
                 <div class="stat-value" id="shelly-load">...</div>
                 <div class="stat-label">кВт·ч сегодня</div>
             </div>
-            <a href="phases.html" class="square-btn-phases">
-                <span style="font-size: 1.4rem;">⚡</span>
-                <span style="margin-top: 3px; line-height: 1.1; text-align: center;">По<br>фазам</span>
+            <!-- Новая кнопка на графики вместо фаз -->
+            <a href="charts.html" class="square-btn-charts">
+                <span style="font-size: 1.4rem;">📊</span>
+                <span style="margin-top: 3px; line-height: 1.1; text-align: center;">Сегодня<br>Завтра</span>
             </a>
         </div>
 
@@ -130,11 +124,8 @@
         <canvas id="priceChart"></canvas>
     </div>
 
-    <!-- Новая структура кнопок -->
-    <a href="charts.html" class="nav-btn btn-charts btn-large">📊 Графики</a>
-    
     <div class="nav-grid-small">
-        <a href="finance.html" class="nav-btn btn-finance btn-small">💰 Финансы</a>
+        <a href="finance.html" class="nav-btn btn-finance btn-small">💰 История потребления</a>
         <a href="forecast.html" class="nav-btn btn-forecast btn-small">🌤 Стратегия и Прогноз</a>
     </div>
 </div>
@@ -201,7 +192,6 @@
             cachedCloudLastWh = tempLastWh;
             lastCloudSync = Date.now();
 
-            // Показываем киловатты из таблицы
             document.getElementById('shelly-load').innerText = cachedCloudKwh.toFixed(2);
         } catch(e) { 
             console.error("Ошибка загрузки Google Таблицы:", e); 
@@ -210,10 +200,7 @@
 
     async function updateShelly() {
         try {
-            // Твой личный, вечный прокси на Cloudflare
             const proxyUrl = 'https://shelly-proxy.andrey-kanshiev.workers.dev/';
-
-            // Обращаемся к нему напрямую
             const response = await fetch(proxyUrl, { method: 'POST' });
 
             if (!response.ok) throw new Error(`Ошибка HTTP: ${response.status}`);
