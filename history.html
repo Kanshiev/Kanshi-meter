@@ -44,7 +44,7 @@ body {
 .card-title span { color: #7f8c8d; font-weight: 600; font-size: 0.85rem; }
 .chart-wrap { position: relative; height: 200px; margin-bottom: 12px; }
 
-/* === ОБНОВЛЕННЫЙ БЛОК ДЕТАЛЬНОЙ СТАТИСТИКИ === */
+/* === БЛОК ДЕТАЛЬНОЙ СТАТИСТИКИ === */
 .stats {
   background: #f8f9fa; border-radius: 16px; padding: 14px; border: 1px solid #eceff1;
 }
@@ -85,7 +85,7 @@ body {
 }
 .cost-pill b { color: #2c3e50; font-weight: 800; }
 
-/* === КРАСИВАЯ БИТВА ТАРИФОВ === */
+/* === БИТВА ТАРИФОВ === */
 .vs-box { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #cbd5e1; }
 .vs-title {
   text-align: center; font-size: 0.75rem; font-weight: 900; color: #2c3e50;
@@ -127,6 +127,7 @@ body {
 .row-head:active { background: #f8f9fa; }
 .row-title { font-weight: 800; font-size: 0.92rem; color: #2c3e50; }
 .row-sub { font-size: 0.72rem; color: #95a5a6; margin-top: 2px; }
+.row-effect { font-size: 0.74rem; color: #555; font-weight: 700; margin-top: 3px; }
 .row-right { text-align: right; flex-shrink: 0; }
 .row-kwh { font-weight: 800; font-size: 0.92rem; color: #3498db; }
 .row-cost { font-size: 0.78rem; color: #2c3e50; font-weight: 700; }
@@ -344,7 +345,6 @@ function process(spotData, sheetText) {
   });
 }
 
-// Единый генератор подробной статистики и Битвы Тарифов (и для верхней карточки, и для раскрывающихся)
 function buildDetailedStats(d, c, extremes) {
   const badgeSpot = c.diffSpot >= 0
     ? `<span class="badge good">Выгода +${c.diffSpot.toFixed(2)} €</span>`
@@ -543,6 +543,9 @@ function switchTab(tab) {
 
     const badgeClass = c.diffSpot >= 0 ? 'badge-good' : 'badge-bad';
     const badgeText = (c.diffSpot >= 0 ? 'Выгода +' : 'Переплата ') + Math.abs(c.diffSpot).toFixed(2) + ' €';
+    const effectSign = c.effect > 0 ? '+' : '';
+    const effectClass = c.effect <= 0 ? 'val-low' : 'val-high';
+
     const rowId = type + '-' + idx;
     const chartId = 'ch-' + rowId;
 
@@ -555,6 +558,7 @@ function switchTab(tab) {
         <div>
           <div class="row-title">${title}</div>
           <div class="row-sub">биржа ${c.avgSpot.toFixed(1)} c · твой Jousto ${c.finalPrice.toFixed(2)} c</div>
+          <div class="row-effect">Эффект Jousto: <span class="${effectClass}">${effectSign}${c.effect.toFixed(2)} c/kWh</span></div>
         </div>
         <div class="row-right">
           <div class="row-kwh">${d.sumKwh.toFixed(1)} kWh</div>
@@ -600,7 +604,6 @@ function toggleRow(rowId) {
   const body = document.getElementById('body-' + rowId);
   const { labels, kwhArr, spotArr, type, d, c, ex, chartId } = data;
 
-  // Выводим точно такой же полный разбор, как и в главной карточке
   body.innerHTML = `
     <div class="chart-wrap" style="height:190px;margin:12px 0"><canvas id="${chartId}"></canvas></div>
     ${buildDetailedStats(d, c, ex)}
