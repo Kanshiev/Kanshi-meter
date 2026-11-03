@@ -45,73 +45,35 @@ body {
 .card-title span { color: #94a3b8; font-weight: 600; font-size: 0.85rem; }
 .chart-wrap { position: relative; height: 200px; margin-bottom: 12px; }
 
-/* === БЛОК ДЕТАЛЬНОЙ СТАТИСТИКИ === */
+/* === ПРОСТАЯ СТАТИСТИКА === */
 .stats {
   background: #1e1e2d; border-radius: 16px; padding: 14px; border: 1px solid #33334b;
 }
 .main-stat-grid {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-  padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px dashed #475569;
 }
 .main-stat-box {
-  background: #272738; border-radius: 12px; padding: 10px; text-align: center;
+  background: #272738; border-radius: 12px; padding: 12px 10px; text-align: center;
   border: 1px solid #33334b;
 }
 .main-stat-label {
-  font-size: 0.7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;
+  font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;
 }
-.main-stat-val-kwh { color: #38bdf8; font-size: 1.2rem; font-weight: 900; }
-.main-stat-val-cost { color: #f43f5e; font-size: 1.2rem; font-weight: 900; }
+.main-stat-val-kwh { color: #38bdf8; font-size: 1.4rem; font-weight: 900; }
+.main-stat-val-cost { color: #f8fafc; font-size: 1.4rem; font-weight: 900; }
 
-.section-label {
-  font-size: 0.72rem; font-weight: 900; color: #94a3b8;
-  text-transform: uppercase; letter-spacing: 0.5px; margin: 10px 0 6px;
-}
-.sub-stat {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 0.82rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;
-}
-.sub-stat b { color: #f8fafc; font-weight: 800; }
-.val-high { color: #f43f5e; font-weight: 800; }
-.val-low { color: #10b981; font-weight: 800; }
-
-.cost-pills {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;
-  margin-top: 6px; margin-bottom: 10px;
-}
-.cost-pill {
-  background: #272738; border: 1px solid #33334b; border-radius: 10px;
-  padding: 7px 10px; display: flex; justify-content: space-between; align-items: center;
-  font-size: 0.76rem; color: #cbd5e1; font-weight: 600;
-}
-.cost-pill b { color: #f8fafc; font-weight: 800; }
-
-/* === БИТВА ТАРИФОВ === */
-.vs-box { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #475569; }
-.vs-title {
-  text-align: center; font-size: 0.75rem; font-weight: 900; color: #e2e8f0;
-  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;
-}
-.vs-card {
+.simple-formula {
   background: #272738; border: 1px solid #33334b; border-radius: 12px;
-  padding: 10px 12px; margin-bottom: 8px;
-  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px; text-align: center; margin-top: 10px;
 }
-.vs-card:last-child { margin-bottom: 0; }
-.vs-card.mine { border-color: #8e44ad; background: #2d1b38; }
-.vs-left { display: flex; flex-direction: column; gap: 2px; }
-.vs-name { font-size: 0.85rem; font-weight: 800; color: #f8fafc; display: flex; align-items: center; gap: 6px; }
-.vs-rate { font-size: 0.72rem; color: #94a3b8; font-weight: 600; }
-.vs-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
-.vs-price { font-size: 0.98rem; font-weight: 900; color: #f8fafc; }
-
-.badge {
-  padding: 3px 7px; border-radius: 6px; font-size: 0.65rem;
-  font-weight: 800; text-transform: uppercase; display: inline-block;
+.formula-label {
+  font-size: 0.72rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;
 }
-.badge.good { background: #064e3b; color: #34d399; }
-.badge.bad { background: #4c0519; color: #fb7185; }
-.badge.neutral { background: #8e44ad; color: #fff; }
+.formula-calc {
+  font-size: 0.95rem; color: #cbd5e1; font-weight: 600;
+}
+.val-high { color: #f43f5e; font-weight: 800; } /* Красный (переплата) */
+.val-low { color: #10b981; font-weight: 800; }  /* Зеленый (выгода) */
 
 /* === СПИСОК ПРОШЛЫХ ПЕРИОДОВ === */
 .compact-list { display: flex; flex-direction: column; gap: 8px; }
@@ -121,21 +83,14 @@ body {
 }
 .row-head {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 14px; cursor: pointer; gap: 8px; user-select: none;
+  padding: 14px 16px; cursor: pointer; gap: 8px; user-select: none;
 }
 .row-head:active { background: #1e1e2d; }
-.row-title { font-weight: 800; font-size: 0.92rem; color: #f8fafc; }
-.row-sub { font-size: 0.72rem; color: #94a3b8; margin-top: 2px; }
-.row-effect { font-size: 0.74rem; color: #cbd5e1; font-weight: 700; margin-top: 3px; }
+.row-title { font-weight: 800; font-size: 0.95rem; color: #f8fafc; }
+.row-sub { font-size: 0.78rem; color: #94a3b8; margin-top: 4px; font-weight: 600; }
 .row-right { text-align: right; flex-shrink: 0; }
-.row-kwh { font-weight: 800; font-size: 0.92rem; color: #38bdf8; }
-.row-cost { font-size: 0.78rem; color: #f8fafc; font-weight: 700; }
-.row-badge {
-  display: inline-block; margin-top: 2px;
-  font-size: 0.62rem; font-weight: 800; padding: 2px 6px; border-radius: 5px;
-}
-.badge-good { background: #064e3b; color: #34d399; }
-.badge-bad { background: #4c0519; color: #fb7185; }
+.row-kwh { font-weight: 800; font-size: 1rem; color: #38bdf8; }
+.row-cost { font-size: 0.85rem; color: #f8fafc; font-weight: 700; margin-top: 2px; }
 
 .row-body { display: none; padding: 0 12px 14px; border-top: 1px solid #33334b; }
 .row.open .row-body { display: block; }
@@ -160,16 +115,9 @@ body {
 
 <script>
 const FIXED_PRICE = 5.99;
-const PURE_FIXED_PRICE = 8.99;
-const SPOT_MARGIN = 0.40;
-const OOMI_PERUS = 5.90;
-const SIIRTO_PERUS = 20.33;
-const SIIRTO_DAY = 2.69;
-const SIIRTO_NIGHT = 1.63;
-const VERO_C_KWH = 2.92;
 
 // СЮДА НУЖНО ВСТАВИТЬ TSV-ССЫЛКУ ИЗ ОПУБЛИКОВАННОЙ ТАБЛИЦЫ "Arthur_Energy_Data"
-const ARTHUR_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTsIOYXovTe39rIcAhM42rBXzEHYY6jbbCNw0cXDagnVL4N1CALCl2YNF9Q-NErDVvbvs57gMGivTmz/pub?output=tsv';
+const ARTHUR_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-ТУТ_БУДЕТ_ДЛИННЫЙ_КЛЮЧ/pub?gid=0&single=true&output=tsv';
 
 const shortMonths = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
 const monthsFull = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
@@ -193,15 +141,13 @@ function parseSheetDate(str) {
   return new Date(str);
 }
 
-// Теперь счетчик называется intervalsCount для точности 15-минутных отрезков
 function createPeriod() {
-  return { sumKwh:0, sumSpot:0, sumCost:0, sumSiirto:0, sumVero:0, sumPerus:0, intervalsCount:0, spotsList:[] };
+  return { sumKwh:0, sumSpot:0, sumCost:0, intervalsCount:0 };
 }
 
 function merge(t, s) {
   t.sumKwh += s.sumKwh; t.sumSpot += s.sumSpot; t.sumCost += s.sumCost;
-  t.intervalsCount += s.intervalsCount; t.sumSiirto += s.sumSiirto; t.sumVero += s.sumVero;
-  t.sumPerus += s.sumPerus; t.spotsList.push(...s.spotsList);
+  t.intervalsCount += s.intervalsCount;
 }
 
 function calc(d) {
@@ -210,25 +156,8 @@ function calc(d) {
   const effect = avgPersonal - avgSpot;
   const finalPrice = FIXED_PRICE + effect;
   const myEnergy = (d.sumKwh * finalPrice) / 100;
-  const pureSpot = (d.sumCost + d.sumKwh * SPOT_MARGIN) / 100;
-  const pureFixed = (d.sumKwh * PURE_FIXED_PRICE) / 100;
-  const total = myEnergy + d.sumSiirto + d.sumVero + d.sumPerus;
-  const spotEffectiveRate = avgPersonal + SPOT_MARGIN;
 
-  return {
-    avgSpot, avgPersonal, effect, finalPrice, spotEffectiveRate,
-    myEnergy, pureSpot, pureFixed, total,
-    diffSpot: pureSpot - myEnergy,
-    diffFixed: pureFixed - myEnergy
-  };
-}
-
-function getExtremes(d) {
-  const valid = [...new Set(d.spotsList.filter(s => s !== 0))].sort((a,b) => b - a);
-  return {
-    topMax: valid.slice(0, 3).map(n => n.toFixed(1)).join(', ') || '—',
-    topMin: valid.slice(-3).reverse().map(n => n.toFixed(1)).join(', ') || '—'
-  };
+  return { avgSpot, effect, finalPrice, myEnergy };
 }
 
 async function load() {
@@ -264,39 +193,27 @@ function process(spotData, sheetText) {
         dateObj: rowDate, data: createPeriod(),
         kwhByHour: new Array(24).fill(0),
         spotByHour: new Array(24).fill(0),
-        spotCountByHour: new Array(24).fill(0) // Счетчик 15-минуток для усреднения в графике
+        spotCountByHour: new Array(24).fill(0)
       };
     }
 
     const hr = parseInt(cols[1].split(':')[0], 10);
     const spot = parseFloat(String(cols[2]).replace(',', '.'));
-    const kwh = parseFloat(String(cols[6]).replace(',', '.')); // Итого кВтч за 15 минут в колонке G
+    const kwh = parseFloat(String(cols[6]).replace(',', '.')); // Итого кВтч
 
     if (!isNaN(spot) && !isNaN(kwh)) {
-      // 1. Копим потребление за час для графика
       daysMap[dateKey].kwhByHour[hr] += kwh;
-      
-      // 2. Усредняем спот-цену внутри этого часа (например, 4 интервала по 15 мин)
       daysMap[dateKey].spotByHour[hr] = (daysMap[dateKey].spotByHour[hr] * daysMap[dateKey].spotCountByHour[hr] + spot) / (daysMap[dateKey].spotCountByHour[hr] + 1);
       daysMap[dateKey].spotCountByHour[hr]++;
 
-      if (kwh > 0 || !daysMap[dateKey].data.spotsList.includes(spot)) {
-        daysMap[dateKey].data.spotsList.push(spot);
-      }
-
-      // 3. Складываем базовые показатели за весь период (день)
       daysMap[dateKey].data.sumKwh += kwh;
       daysMap[dateKey].data.sumSpot += spot; 
       daysMap[dateKey].data.sumCost += kwh * spot;
       daysMap[dateKey].data.intervalsCount++;
-
-      const sPrice = (hr >= 7 && hr < 22) ? SIIRTO_DAY : SIIRTO_NIGHT;
-      daysMap[dateKey].data.sumSiirto += (kwh * sPrice) / 100;
-      daysMap[dateKey].data.sumVero += (kwh * VERO_C_KWH) / 100;
     }
   }
 
-  // Подставляем спотовые цены из API для оставшихся часов дня, по которым еще нет записей
+  // Заглушка для графика на текущий день
   const todayApi = spotData.filter(s => new Date(s.DateTime).toISOString().slice(0,10) === todayStr);
   if (daysMap[todayStr]) {
     todayApi.forEach(s => {
@@ -312,9 +229,6 @@ function process(spotData, sheetText) {
     const dData = daysMap[key].data;
     const daysInMonth = new Date(dObj.getFullYear(), dObj.getMonth()+1, 0).getDate();
     
-    // Абонентская плата делится на количество дней
-    dData.sumPerus = (OOMI_PERUS + SIIRTO_PERUS) / daysInMonth; 
-
     const weekKey = dObj.getFullYear() + '-W' + String(getISOWeek(dObj)).padStart(2,'0');
     const monthKey = dObj.getFullYear() + '-' + String(dObj.getMonth()+1).padStart(2,'0');
 
@@ -359,15 +273,7 @@ function process(spotData, sheetText) {
   });
 }
 
-function buildDetailedStats(d, c, extremes) {
-  const badgeSpot = c.diffSpot >= 0
-    ? `<span class="badge good">Выгода +${c.diffSpot.toFixed(2)} €</span>`
-    : `<span class="badge bad">Переплата ${Math.abs(c.diffSpot).toFixed(2)} €</span>`;
-
-  const badgeFixed = c.diffFixed >= 0
-    ? `<span class="badge good">Выгода +${c.diffFixed.toFixed(2)} €</span>`
-    : `<span class="badge bad">Переплата ${Math.abs(c.diffFixed).toFixed(2)} €</span>`;
-
+function buildDetailedStats(d, c) {
   const effectSign = c.effect > 0 ? '+' : '';
   const effectClass = c.effect <= 0 ? 'val-low' : 'val-high';
 
@@ -375,74 +281,32 @@ function buildDetailedStats(d, c, extremes) {
   <div class="stats">
     <div class="main-stat-grid">
       <div class="main-stat-box">
-        <div class="main-stat-label">Потребление ПК и Печки</div>
+        <div class="main-stat-label">Нагорело</div>
         <div class="main-stat-val-kwh">${d.sumKwh.toFixed(2)} kWh</div>
       </div>
       <div class="main-stat-box">
-        <div class="main-stat-label">Полный счёт</div>
-        <div class="main-stat-val-cost">${c.total.toFixed(2)} €</div>
+        <div class="main-stat-label">Сумма (Энергия)</div>
+        <div class="main-stat-val-cost">${c.myEnergy.toFixed(2)} €</div>
       </div>
     </div>
 
-    <div class="section-label">Из чего сложился полный счёт</div>
-    <div class="cost-pills">
-      <div class="cost-pill"><span>⚡ Энергия</span><b>${c.myEnergy.toFixed(2)} €</b></div>
-      <div class="cost-pill"><span>🔌 Передача</span><b>${d.sumSiirto.toFixed(2)} €</b></div>
-      <div class="cost-pill"><span>🏛 Налог</span><b>${d.sumVero.toFixed(2)} €</b></div>
-      <div class="cost-pill"><span>📅 Абонентка</span><b>${d.sumPerus.toFixed(2)} €</b></div>
-    </div>
-
-    <div class="section-label">Биржа и профиль потребления</div>
-    <div class="sub-stat"><span>Средняя цена биржи:</span> <b>${c.avgSpot.toFixed(2)} c/kWh</b></div>
-    <div class="sub-stat"><span>Твой спот-профиль:</span> <b>${c.avgPersonal.toFixed(2)} c/kWh</b></div>
-    <div class="sub-stat"><span>Эффект Jousto (профиль):</span> <span class="${effectClass}">${effectSign}${c.effect.toFixed(2)} c/kWh</span></div>
-    <div class="sub-stat"><span>Пик цен (топ-3):</span> <span class="val-high">${extremes.topMax} c</span></div>
-    <div class="sub-stat"><span>Мин. цена (топ-3):</span> <span class="val-low">${extremes.topMin} c</span></div>
-
-    <div class="vs-box">
-      <div class="vs-title">⚔️ Битва Тарифов (только энергия)</div>
-
-      <div class="vs-card mine">
-        <div class="vs-left">
-          <div class="vs-name">Твой Jousto <span class="badge neutral">Активен</span></div>
-          <div class="vs-rate">База ${FIXED_PRICE} c ${effectSign}${c.effect.toFixed(2)} c = <b>${c.finalPrice.toFixed(2)} c/kWh</b></div>
-        </div>
-        <div class="vs-right">
-          <div class="vs-price">${c.myEnergy.toFixed(2)} €</div>
-        </div>
-      </div>
-
-      <div class="vs-card">
-        <div class="vs-left">
-          <div class="vs-name">Чистый Спот</div>
-          <div class="vs-rate">Профиль + маржа ${SPOT_MARGIN.toFixed(2)} c = <b>${c.spotEffectiveRate.toFixed(2)} c/kWh</b></div>
-        </div>
-        <div class="vs-right">
-          <div class="vs-price">${c.pureSpot.toFixed(2)} €</div>
-          ${badgeSpot}
-        </div>
-      </div>
-
-      <div class="vs-card">
-        <div class="vs-left">
-          <div class="vs-name">Чистый Фикс</div>
-          <div class="vs-rate">Фиксированная ставка <b>${PURE_FIXED_PRICE} c/kWh</b></div>
-        </div>
-        <div class="vs-right">
-          <div class="vs-price">${c.pureFixed.toFixed(2)} €</div>
-          ${badgeFixed}
-        </div>
+    <div class="simple-formula">
+      <div class="formula-label">Твой тариф (Jousto)</div>
+      <div class="formula-calc">
+        База ${FIXED_PRICE} c 
+        <span class="${effectClass}">${effectSign}${c.effect.toFixed(2)} c</span> = 
+        <b class="${effectClass}" style="font-size: 1.15rem;">${c.finalPrice.toFixed(2)} c/kWh</b>
       </div>
     </div>
   </div>`;
 }
 
-function buildFullCard(title, d, c, extremes, chartId) {
+function buildFullCard(title, d, c, chartId) {
   return `
   <div class="full-card">
     <div class="card-title">${title}</div>
     <div class="chart-wrap"><canvas id="${chartId}"></canvas></div>
-    ${buildDetailedStats(d, c, extremes)}
+    ${buildDetailedStats(d, c)}
   </div>`;
 }
 
@@ -510,7 +374,6 @@ function switchTab(tab) {
   const first = map[keys[0]];
   const d0 = first.data;
   const c0 = calc(d0);
-  const ex0 = getExtremes(d0);
 
   let title0, labels0, kwh0, spot0;
   if (type === 'day') {
@@ -527,7 +390,7 @@ function switchTab(tab) {
   }
 
   const chartId0 = 'ch-main-' + type;
-  content.insertAdjacentHTML('beforeend', buildFullCard(title0, d0, c0, ex0, chartId0));
+  content.insertAdjacentHTML('beforeend', buildFullCard(title0, d0, c0, chartId0));
   setTimeout(() => makeChart(chartId0, labels0, kwh0, spot0, type), 40);
 
   if (keys.length < 2) return;
@@ -540,7 +403,6 @@ function switchTab(tab) {
     const item = map[key];
     const d = item.data;
     const c = calc(d);
-    const ex = getExtremes(d);
 
     let title, labels, kwhArr, spotArr;
     if (type === 'day') {
@@ -556,28 +418,22 @@ function switchTab(tab) {
       kwhArr = item.kwhByDay; spotArr = item.spotByDay;
     }
 
-    const badgeClass = c.diffSpot >= 0 ? 'badge-good' : 'badge-bad';
-    const badgeText = (c.diffSpot >= 0 ? 'Выгода +' : 'Переплата ') + Math.abs(c.diffSpot).toFixed(2) + ' €';
-    const effectSign = c.effect > 0 ? '+' : '';
     const effectClass = c.effect <= 0 ? 'val-low' : 'val-high';
-
     const rowId = type + '-' + idx;
     const chartId = 'ch-' + rowId;
 
-    rowStore[rowId] = { labels, kwhArr, spotArr, type, d, c, ex, chartId };
+    rowStore[rowId] = { labels, kwhArr, spotArr, type, d, c, chartId };
 
     const html = `
     <div class="row" id="${rowId}">
       <div class="row-head" onclick="toggleRow('${rowId}')">
         <div>
           <div class="row-title">${title}</div>
-          <div class="row-sub">биржа ${c.avgSpot.toFixed(1)} c · твой Jousto ${c.finalPrice.toFixed(2)} c</div>
-          <div class="row-effect">Эффект Jousto: <span class="${effectClass}">${effectSign}${c.effect.toFixed(2)} c/kWh</span></div>
+          <div class="row-sub">Тариф: <span class="${effectClass}">${c.finalPrice.toFixed(2)} c/kWh</span></div>
         </div>
         <div class="row-right">
           <div class="row-kwh">${d.sumKwh.toFixed(1)} kWh</div>
-          <div class="row-cost">${c.total.toFixed(2)} €</div>
-          <div class="row-badge ${badgeClass}">${badgeText}</div>
+          <div class="row-cost">${c.myEnergy.toFixed(2)} €</div>
         </div>
       </div>
       <div class="row-body" id="body-${rowId}"></div>
@@ -614,11 +470,11 @@ function toggleRow(rowId) {
 
   row.classList.add('open');
   const body = document.getElementById('body-' + rowId);
-  const { labels, kwhArr, spotArr, type, d, c, ex, chartId } = data;
+  const { labels, kwhArr, spotArr, type, d, c, chartId } = data;
 
   body.innerHTML = `
     <div class="chart-wrap" style="height:190px;margin:12px 0"><canvas id="${chartId}"></canvas></div>
-    ${buildDetailedStats(d, c, ex)}
+    ${buildDetailedStats(d, c)}
   `;
 
   setTimeout(() => makeChart(chartId, labels, kwhArr, spotArr, type), 30);
@@ -626,7 +482,6 @@ function toggleRow(rowId) {
 
 window.toggleRow = toggleRow;
 load();
-// Автообновление данных каждые 5 минут, чтобы не дергать страницу вручную
 setInterval(load, 5 * 60 * 1000); 
 </script>
 </body>
