@@ -207,7 +207,7 @@ function process(spotData, shedText, boilerText) {
           kwhByHour: new Array(24).fill(0),
           spotByHour: new Array(24).fill(0),
           spotCountByHour: new Array(24).fill(0),
-          seenIntervals: new Set() // Защита от дублей спот-цен при двух таблицах
+          seenIntervals: new Set()
         };
       }
 
@@ -219,18 +219,19 @@ function process(spotData, shedText, boilerText) {
       let kwh = 0;
       if (sourceId === 'shed') {
         kwh = parseFloat(String(cols[6]).replace(',', '.'));
-        // Виртуальная кухня (1/3): 1.23 кВтч в день / 60 дневных 15-мин интервалов = +0.0205 кВтч
+        // Виртуальная кухня (1/3): 1.23 кВтч в день / 60 дневных интервалов = +0.0205 кВтч (только днем)
         if (hr >= 7 && hr < 22) kwh += 0.0205;
+        // Виртуальная стиралка (1/3): ~3 кВтч/мес = 0.1 кВтч/день / 96 интервалов = +0.0010 кВтч (круглые сутки)
+        kwh += 0.0010;
       } else if (sourceId === 'boiler') {
         if (cols.length > 7) {
-          kwh = parseFloat(String(cols[7]).replace(',', '.')); // Берем долю 1/3 из колонки H
+          kwh = parseFloat(String(cols[7]).replace(',', '.'));
         }
       }
 
       if (!isNaN(spot) && !isNaN(kwh)) {
         daysMap[dateKey].kwhByHour[hr] += kwh;
         
-        // Регистрируем спот-цену и интервал только один раз (защита от задвоения при слиянии двух TSV)
         if (!daysMap[dateKey].seenIntervals.has(timeKey)) {
            daysMap[dateKey].seenIntervals.add(timeKey);
            daysMap[dateKey].data.sumSpot += spot;
@@ -250,7 +251,6 @@ function process(spotData, shedText, boilerText) {
     }
   }
 
-  // Парсим обе таблицы в единую структуру
   parseSource(shedText, 'shed');
   parseSource(boilerText, 'boiler');
 
@@ -330,10 +330,6 @@ function buildDetailedStats(d, c) {
         <div class="main-stat-label">Сумма (Всё вместе)</div>
         <div class="main-stat-val-cost">${c.totalCost.toFixed(2)} €</div>
       </div>
-    </div>
-
-    <div class="simple-formula" style="font-size: 0.8rem; color: #94a3b8; margin-top: 8px;">
-      Включает сарайку, 1/3 нагрева воды и 1/3 кухни (день)
     </div>
     
     <div class="simple-formula">
