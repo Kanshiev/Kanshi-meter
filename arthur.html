@@ -102,7 +102,7 @@ body {
 <body>
 <div class="wrap">
   <a href="index.html" class="nav-btn">⬅ Назад в Энерго-пульт</a>
-  <div id="loading" class="loading">Считываем показания сарайки, бойлера и кухни...</div>
+  <div id="loading" class="loading">Считываем показания дома, сарайки и бойлера...</div>
   <div id="app" style="display:none">
     <div class="tabs">
       <button class="tab active" data-tab="days">Дни</button>
@@ -115,13 +115,16 @@ body {
 
 <script>
 const FIXED_PRICE = 5.99;
+const OOMI_PERUS = 5.90;
+const SIIRTO_PERUS = 20.33;
 const SIIRTO_DAY = 2.69;
 const SIIRTO_NIGHT = 1.63;
 const VERO_C_KWH = 2.92;
 
-// ГОТОВЫЕ ССЫЛКИ НА TSV
+// ССЫЛКИ НА ВСЕ 3 ТАБЛИЦЫ TSV (Сарайка, Бойлер, Главный дом)
 const ARTHUR_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTsIOYXovTe39rIcAhM42rBXzEHYY6jbbCNw0cXDagnVL4N1CALCl2YNF9Q-NErDVvbvs57gMGivTmz/pub?output=tsv';
 const BOILER_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRwqjc5FP5nQWEtnlFUXOGv3TyLpxbEIq3umKTBTvNj5Ayuglwt04dIayTNQWOJXuBu13wRvKlyQfD4/pub?output=tsv';
+const MAIN_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREfZuB82WO35dZRrsVl3XEaxyf1DrF35kXMZ5p7MbJTIAtqE5R9AUb3w-72A-sqIZ4Z8PWwDIUVqSV/pub?output=tsv';
 
 const shortMonths = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
 const monthsFull = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
@@ -146,12 +149,16 @@ function parseSheetDate(str) {
 }
 
 function createPeriod() {
-  return { sumKwh:0, sumSpot:0, sumCost:0, sumSiirto:0, sumVero:0, intervalsCount:0 };
+  return {
+    sumKwh: 0, sumSpot: 0, sumCost: 0, sumSiirto: 0, sumVero: 0,
+    houseKwh: 0, housePerus: 0, intervalsCount: 0
+  };
 }
 
 function merge(t, s) {
   t.sumKwh += s.sumKwh; t.sumSpot += s.sumSpot; t.sumCost += s.sumCost;
   t.sumSiirto += s.sumSiirto; t.sumVero += s.sumVero;
+  t.houseKwh += s.houseKwh; t.housePerus += s.housePerus;
   t.intervalsCount += s.intervalsCount;
 }
 
@@ -161,35 +168,43 @@ function calc(d) {
   const effect = avgPersonal - avgSpot;
   const finalPrice = FIXED_PRICE + effect;
   const myEnergy = (d.sumKwh * finalPrice) / 100;
-  
-  // Абонентская плата (Perusmaksu) убрана. Считаем только переменные расходы за объем!
-  const totalCost = myEnergy + d.sumSiirto + d.sumVero;
 
+  // Динамическая доля абонентки: пропорционально доле кВт·ч Артура в общем потреблении дома
+  let myPerus = 0;
+  if (d.houseKwh > 0) {
+    const share = Math.min(1, d.sumKwh / d.houseKwh);
+    myPerus = d.housePerus * share;
+  }
+
+  const totalCost = myEnergy + d.sumSiirto + d.sumVero + myPerus;
   return { avgSpot, effect, finalPrice, totalCost };
 }
 
 async function load() {
   try {
-    const [spotRes, shedRes, boilerRes] = await Promise.all([
+    const [spotRes, shedRes, boilerRes, mainRes] = await Promise.all([
       fetch('https://api.spot-hinta.fi/TodayAndDayForward'),
       fetch(ARTHUR_SHEET_URL + '&_rnd=' + Date.now()).catch(() => null),
-      fetch(BOILER_SHEET_URL + '&_rnd=' + Date.now()).catch(() => null)
+      fetch(BOILER_SHEET_URL + '&_rnd=' + Date.now()).catch(() => null),
+      fetch(MAIN_SHEET_URL + '&_rnd=' + Date.now()).catch(() => null)
     ]);
     const spotData = await spotRes.json();
     const shedText = shedRes && shedRes.ok ? await shedRes.text() : '';
     const boilerText = boilerRes && boilerRes.ok ? await boilerRes.text() : '';
-    process(spotData, shedText, boilerText);
+    const mainText = mainRes && mainRes.ok ? await mainRes.text() : '';
+    process(spotData, shedText, boilerText, mainText);
   } catch (e) {
     console.error(e);
     document.getElementById('loading').innerHTML = '<span style="color:#fb7185">Ошибка загрузки данных. Проверьте ссылки на таблицы TSV.</span>';
   }
 }
 
-function process(spotData, shedText, boilerText) {
+function process(spotData, shedText, boilerText, mainText) {
+  daysMap = {}; weeksMap = {}; monthsMap = {};
   const todayStr = new Date().toISOString().slice(0, 10);
 
   function parseSource(text, sourceId) {
-    if(!text || text.includes('<html')) return;
+    if (!text || text.includes('<html')) return;
     const lines = text.trim().split(/\r?\n/);
     
     for (let i = 1; i < lines.length; i++) {
@@ -207,7 +222,8 @@ function process(spotData, shedText, boilerText) {
           kwhByHour: new Array(24).fill(0),
           spotByHour: new Array(24).fill(0),
           spotCountByHour: new Array(24).fill(0),
-          seenIntervals: new Set()
+          seenIntervals: new Set(),
+          seenHouseHours: new Set()
         };
       }
 
@@ -251,8 +267,36 @@ function process(spotData, shedText, boilerText) {
     }
   }
 
+  // Считываем общее потребление всего дома из главной таблицы
+  function parseHouse(text) {
+    if (!text || text.includes('<html')) return;
+    const lines = text.trim().split(/\r?\n/);
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split('\t');
+      if (cols.length < 6) continue;
+
+      const rowDate = parseSheetDate(cols[0]);
+      const dateKey = rowDate.getFullYear() + '-' +
+        String(rowDate.getMonth()+1).padStart(2,'0') + '-' +
+        String(rowDate.getDate()).padStart(2,'0');
+
+      // Берем только те дни, где уже ведется учет Артура
+      if (!daysMap[dateKey]) continue;
+
+      const hr = parseInt(cols[1].split(':')[0], 10);
+      const houseKwh = parseFloat(String(cols[5]).replace(',', '.'));
+
+      if (!isNaN(houseKwh)) {
+        daysMap[dateKey].data.houseKwh += houseKwh;
+        if (!isNaN(hr)) daysMap[dateKey].seenHouseHours.add(hr);
+      }
+    }
+  }
+
   parseSource(shedText, 'shed');
   parseSource(boilerText, 'boiler');
+  parseHouse(mainText);
 
   const todayApi = spotData.filter(s => new Date(s.DateTime).toISOString().slice(0,10) === todayStr);
   if (daysMap[todayStr]) {
@@ -267,7 +311,13 @@ function process(spotData, shedText, boilerText) {
   for (const key in daysMap) {
     const dObj = daysMap[key].dateObj;
     const dData = daysMap[key].data;
+    const daysInMonth = new Date(dObj.getFullYear(), dObj.getMonth()+1, 0).getDate();
     
+    // Абонентка всего дома за фактически учтенные часы этого дня
+    const dailyHousePerus = (OOMI_PERUS + SIIRTO_PERUS) / daysInMonth;
+    const hoursCount = daysMap[key].seenHouseHours.size || 24;
+    dData.housePerus = dailyHousePerus * (hoursCount / 24);
+
     const weekKey = dObj.getFullYear() + '-W' + String(getISOWeek(dObj)).padStart(2,'0');
     const monthKey = dObj.getFullYear() + '-' + String(dObj.getMonth()+1).padStart(2,'0');
 
@@ -288,8 +338,8 @@ function process(spotData, shedText, boilerText) {
       monthsMap[monthKey] = {
         monthIdx: dObj.getMonth(), year: dObj.getFullYear(),
         data: createPeriod(),
-        kwhByDay: new Array(new Date(dObj.getFullYear(), dObj.getMonth()+1, 0).getDate()).fill(0),
-        spotByDay: new Array(new Date(dObj.getFullYear(), dObj.getMonth()+1, 0).getDate()).fill(0)
+        kwhByDay: new Array(daysInMonth).fill(0),
+        spotByDay: new Array(daysInMonth).fill(0)
       };
     }
     const dom = dObj.getDate() - 1;
@@ -304,11 +354,11 @@ function process(spotData, shedText, boilerText) {
   switchTab('days');
 
   document.querySelectorAll('.tab').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.onclick = () => {
       document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       switchTab(btn.dataset.tab);
-    });
+    };
   });
 }
 
