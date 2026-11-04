@@ -115,13 +115,11 @@ body {
 
 <script>
 const FIXED_PRICE = 5.99;
-const OOMI_PERUS = 5.90;
-const SIIRTO_PERUS = 20.33;
 const SIIRTO_DAY = 2.69;
 const SIIRTO_NIGHT = 1.63;
 const VERO_C_KWH = 2.92;
 
-// ССЫЛКИ НА TSV
+// ГОТОВЫЕ ССЫЛКИ НА TSV
 const ARTHUR_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTsIOYXovTe39rIcAhM42rBXzEHYY6jbbCNw0cXDagnVL4N1CALCl2YNF9Q-NErDVvbvs57gMGivTmz/pub?output=tsv';
 const BOILER_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRwqjc5FP5nQWEtnlFUXOGv3TyLpxbEIq3umKTBTvNj5Ayuglwt04dIayTNQWOJXuBu13wRvKlyQfD4/pub?output=tsv';
 
@@ -148,12 +146,12 @@ function parseSheetDate(str) {
 }
 
 function createPeriod() {
-  return { sumKwh:0, sumSpot:0, sumCost:0, sumSiirto:0, sumVero:0, sumPerus:0, intervalsCount:0 };
+  return { sumKwh:0, sumSpot:0, sumCost:0, sumSiirto:0, sumVero:0, intervalsCount:0 };
 }
 
 function merge(t, s) {
   t.sumKwh += s.sumKwh; t.sumSpot += s.sumSpot; t.sumCost += s.sumCost;
-  t.sumSiirto += s.sumSiirto; t.sumVero += s.sumVero; t.sumPerus += s.sumPerus;
+  t.sumSiirto += s.sumSiirto; t.sumVero += s.sumVero;
   t.intervalsCount += s.intervalsCount;
 }
 
@@ -163,7 +161,9 @@ function calc(d) {
   const effect = avgPersonal - avgSpot;
   const finalPrice = FIXED_PRICE + effect;
   const myEnergy = (d.sumKwh * finalPrice) / 100;
-  const totalCost = myEnergy + d.sumSiirto + d.sumVero + d.sumPerus;
+  
+  // Абонентская плата (Perusmaksu) убрана. Считаем только переменные расходы за объем!
+  const totalCost = myEnergy + d.sumSiirto + d.sumVero;
 
   return { avgSpot, effect, finalPrice, totalCost };
 }
@@ -267,10 +267,7 @@ function process(spotData, shedText, boilerText) {
   for (const key in daysMap) {
     const dObj = daysMap[key].dateObj;
     const dData = daysMap[key].data;
-    const daysInMonth = new Date(dObj.getFullYear(), dObj.getMonth()+1, 0).getDate();
     
-    dData.sumPerus = (OOMI_PERUS + SIIRTO_PERUS) / daysInMonth; 
-
     const weekKey = dObj.getFullYear() + '-W' + String(getISOWeek(dObj)).padStart(2,'0');
     const monthKey = dObj.getFullYear() + '-' + String(dObj.getMonth()+1).padStart(2,'0');
 
@@ -289,10 +286,10 @@ function process(spotData, shedText, boilerText) {
 
     if (!monthsMap[monthKey]) {
       monthsMap[monthKey] = {
-        monthIdx: dObj.getMonth(), year: dObj.getFullYear(), daysInMonth,
+        monthIdx: dObj.getMonth(), year: dObj.getFullYear(),
         data: createPeriod(),
-        kwhByDay: new Array(daysInMonth).fill(0),
-        spotByDay: new Array(daysInMonth).fill(0)
+        kwhByDay: new Array(new Date(dObj.getFullYear(), dObj.getMonth()+1, 0).getDate()).fill(0),
+        spotByDay: new Array(new Date(dObj.getFullYear(), dObj.getMonth()+1, 0).getDate()).fill(0)
       };
     }
     const dom = dObj.getDate() - 1;
@@ -427,7 +424,7 @@ function switchTab(tab) {
     labels0 = daysRu; kwh0 = first.kwhByDay; spot0 = first.spotByDay;
   } else {
     title0 = monthsFull[first.monthIdx] + ' <span>| ' + first.year + '</span>';
-    labels0 = Array.from({length: first.daysInMonth}, (_,i) => i+1);
+    labels0 = Array.from({length: first.kwhByDay.length}, (_,i) => i+1);
     kwh0 = first.kwhByDay; spot0 = first.spotByDay;
   }
 
@@ -456,7 +453,7 @@ function switchTab(tab) {
       labels = daysRu; kwhArr = item.kwhByDay; spotArr = item.spotByDay;
     } else {
       title = monthsFull[item.monthIdx] + ' ' + item.year;
-      labels = Array.from({length: item.daysInMonth}, (_,i) => i+1);
+      labels = Array.from({length: item.kwhByDay.length}, (_,i) => i+1);
       kwhArr = item.kwhByDay; spotArr = item.spotByDay;
     }
 
