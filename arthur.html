@@ -72,8 +72,8 @@ body {
 .formula-calc {
   font-size: 0.95rem; color: #cbd5e1; font-weight: 600;
 }
-.val-high { color: #f43f5e; font-weight: 800; } /* Красный (переплата) */
-.val-low { color: #10b981; font-weight: 800; }  /* Зеленый (выгода) */
+.val-high { color: #f43f5e; font-weight: 800; } 
+.val-low { color: #10b981; font-weight: 800; }  
 
 /* === СПИСОК ПРОШЛЫХ ПЕРИОДОВ === */
 .compact-list { display: flex; flex-direction: column; gap: 8px; }
@@ -102,7 +102,7 @@ body {
 <body>
 <div class="wrap">
   <a href="index.html" class="nav-btn">⬅ Назад в Энерго-пульт</a>
-  <div id="loading" class="loading">Считываем показания сарайки...</div>
+  <div id="loading" class="loading">Считываем показания сарайки, бойлера и кухни...</div>
   <div id="app" style="display:none">
     <div class="tabs">
       <button class="tab active" data-tab="days">Дни</button>
@@ -115,15 +115,15 @@ body {
 
 <script>
 const FIXED_PRICE = 5.99;
-const SPOT_MARGIN = 0.40;
 const OOMI_PERUS = 5.90;
 const SIIRTO_PERUS = 20.33;
 const SIIRTO_DAY = 2.69;
 const SIIRTO_NIGHT = 1.63;
 const VERO_C_KWH = 2.92;
 
-// СЮДА НУЖНО ВСТАВИТЬ TSV-ССЫЛКУ ИЗ ОПУБЛИКОВАННОЙ ТАБЛИЦЫ "Arthur_Energy_Data"
+// ССЫЛКИ НА TSV
 const ARTHUR_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTsIOYXovTe39rIcAhM42rBXzEHYY6jbbCNw0cXDagnVL4N1CALCl2YNF9Q-NErDVvbvs57gMGivTmz/pub?output=tsv';
+const BOILER_SHEET_URL = 'ВСТАВЬ_СЮДА_TSV_ССЫЛКУ_ТАБЛИЦЫ_БОЙЛЕРА';
 
 const shortMonths = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
 const monthsFull = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
@@ -170,60 +170,89 @@ function calc(d) {
 
 async function load() {
   try {
-    const [spotRes, sheetRes] = await Promise.all([
+    const [spotRes, shedRes, boilerRes] = await Promise.all([
       fetch('https://api.spot-hinta.fi/TodayAndDayForward'),
-      fetch(ARTHUR_SHEET_URL + '&_rnd=' + Date.now())
+      fetch(ARTHUR_SHEET_URL + '&_rnd=' + Date.now()).catch(() => null),
+      fetch(BOILER_SHEET_URL + '&_rnd=' + Date.now()).catch(() => null)
     ]);
     const spotData = await spotRes.json();
-    const sheetText = await sheetRes.text();
-    process(spotData, sheetText);
+    const shedText = shedRes && shedRes.ok ? await shedRes.text() : '';
+    const boilerText = boilerRes && boilerRes.ok ? await boilerRes.text() : '';
+    process(spotData, shedText, boilerText);
   } catch (e) {
     console.error(e);
-    document.getElementById('loading').innerHTML = '<span style="color:#fb7185">Вставьте опубликованную ссылку TSV из таблицы Arthur_Energy_Data.</span>';
+    document.getElementById('loading').innerHTML = '<span style="color:#fb7185">Ошибка загрузки данных. Проверьте ссылки на таблицы TSV.</span>';
   }
 }
 
-function process(spotData, sheetText) {
-  const lines = sheetText.trim().split(/\r?\n/);
+function process(spotData, shedText, boilerText) {
   const todayStr = new Date().toISOString().slice(0, 10);
 
-  for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split('\t');
-    if (cols.length < 7) continue;
+  function parseSource(text, sourceId) {
+    if(!text || text.includes('<html')) return;
+    const lines = text.trim().split(/\r?\n/);
+    
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split('\t');
+      if (cols.length < 7) continue;
 
-    const rowDate = parseSheetDate(cols[0]);
-    const dateKey = rowDate.getFullYear() + '-' +
-      String(rowDate.getMonth()+1).padStart(2,'0') + '-' +
-      String(rowDate.getDate()).padStart(2,'0');
+      const rowDate = parseSheetDate(cols[0]);
+      const dateKey = rowDate.getFullYear() + '-' +
+        String(rowDate.getMonth()+1).padStart(2,'0') + '-' +
+        String(rowDate.getDate()).padStart(2,'0');
 
-    if (!daysMap[dateKey]) {
-      daysMap[dateKey] = {
-        dateObj: rowDate, data: createPeriod(),
-        kwhByHour: new Array(24).fill(0),
-        spotByHour: new Array(24).fill(0),
-        spotCountByHour: new Array(24).fill(0)
-      };
-    }
+      if (!daysMap[dateKey]) {
+        daysMap[dateKey] = {
+          dateObj: rowDate, data: createPeriod(),
+          kwhByHour: new Array(24).fill(0),
+          spotByHour: new Array(24).fill(0),
+          spotCountByHour: new Array(24).fill(0),
+          seenIntervals: new Set() // Защита от дублей спот-цен при двух таблицах
+        };
+      }
 
-    const hr = parseInt(cols[1].split(':')[0], 10);
-    const spot = parseFloat(String(cols[2]).replace(',', '.'));
-    const kwh = parseFloat(String(cols[6]).replace(',', '.'));
+      const hr = parseInt(cols[1].split(':')[0], 10);
+      const min = parseInt(cols[1].split(':')[1] || '0', 10);
+      const timeKey = `${hr}:${min}`;
+      const spot = parseFloat(String(cols[2]).replace(',', '.'));
+      
+      let kwh = 0;
+      if (sourceId === 'shed') {
+        kwh = parseFloat(String(cols[6]).replace(',', '.'));
+        // Виртуальная кухня (1/3): 1.23 кВтч в день / 60 дневных 15-мин интервалов = +0.0205 кВтч
+        if (hr >= 7 && hr < 22) kwh += 0.0205;
+      } else if (sourceId === 'boiler') {
+        if (cols.length > 7) {
+          kwh = parseFloat(String(cols[7]).replace(',', '.')); // Берем долю 1/3 из колонки H
+        }
+      }
 
-    if (!isNaN(spot) && !isNaN(kwh)) {
-      daysMap[dateKey].kwhByHour[hr] += kwh;
-      daysMap[dateKey].spotByHour[hr] = (daysMap[dateKey].spotByHour[hr] * daysMap[dateKey].spotCountByHour[hr] + spot) / (daysMap[dateKey].spotCountByHour[hr] + 1);
-      daysMap[dateKey].spotCountByHour[hr]++;
+      if (!isNaN(spot) && !isNaN(kwh)) {
+        daysMap[dateKey].kwhByHour[hr] += kwh;
+        
+        // Регистрируем спот-цену и интервал только один раз (защита от задвоения при слиянии двух TSV)
+        if (!daysMap[dateKey].seenIntervals.has(timeKey)) {
+           daysMap[dateKey].seenIntervals.add(timeKey);
+           daysMap[dateKey].data.sumSpot += spot;
+           daysMap[dateKey].data.intervalsCount++;
+           
+           daysMap[dateKey].spotByHour[hr] = (daysMap[dateKey].spotByHour[hr] * daysMap[dateKey].spotCountByHour[hr] + spot) / (daysMap[dateKey].spotCountByHour[hr] + 1);
+           daysMap[dateKey].spotCountByHour[hr]++;
+        }
 
-      daysMap[dateKey].data.sumKwh += kwh;
-      daysMap[dateKey].data.sumSpot += spot; 
-      daysMap[dateKey].data.sumCost += kwh * spot;
-      daysMap[dateKey].data.intervalsCount++;
+        daysMap[dateKey].data.sumKwh += kwh;
+        daysMap[dateKey].data.sumCost += kwh * spot;
 
-      const sPrice = (hr >= 7 && hr < 22) ? SIIRTO_DAY : SIIRTO_NIGHT;
-      daysMap[dateKey].data.sumSiirto += (kwh * sPrice) / 100;
-      daysMap[dateKey].data.sumVero += (kwh * VERO_C_KWH) / 100;
+        const sPrice = (hr >= 7 && hr < 22) ? SIIRTO_DAY : SIIRTO_NIGHT;
+        daysMap[dateKey].data.sumSiirto += (kwh * sPrice) / 100;
+        daysMap[dateKey].data.sumVero += (kwh * VERO_C_KWH) / 100;
+      }
     }
   }
+
+  // Парсим обе таблицы в единую структуру
+  parseSource(shedText, 'shed');
+  parseSource(boilerText, 'boiler');
 
   const todayApi = spotData.filter(s => new Date(s.DateTime).toISOString().slice(0,10) === todayStr);
   if (daysMap[todayStr]) {
@@ -240,7 +269,6 @@ function process(spotData, sheetText) {
     const dData = daysMap[key].data;
     const daysInMonth = new Date(dObj.getFullYear(), dObj.getMonth()+1, 0).getDate();
     
-    // Считаем долю абонентки за этот день
     dData.sumPerus = (OOMI_PERUS + SIIRTO_PERUS) / daysInMonth; 
 
     const weekKey = dObj.getFullYear() + '-W' + String(getISOWeek(dObj)).padStart(2,'0');
@@ -304,6 +332,10 @@ function buildDetailedStats(d, c) {
       </div>
     </div>
 
+    <div class="simple-formula" style="font-size: 0.8rem; color: #94a3b8; margin-top: 8px;">
+      Включает сарайку, 1/3 нагрева воды и 1/3 кухни (день)
+    </div>
+    
     <div class="simple-formula">
       <div class="formula-label">Эффект экономии (Jousto)</div>
       <div class="formula-calc">
