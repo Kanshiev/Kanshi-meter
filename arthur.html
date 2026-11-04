@@ -115,6 +115,12 @@ body {
 
 <script>
 const FIXED_PRICE = 5.99;
+const SPOT_MARGIN = 0.40;
+const OOMI_PERUS = 5.90;
+const SIIRTO_PERUS = 20.33;
+const SIIRTO_DAY = 2.69;
+const SIIRTO_NIGHT = 1.63;
+const VERO_C_KWH = 2.92;
 
 // СЮДА НУЖНО ВСТАВИТЬ TSV-ССЫЛКУ ИЗ ОПУБЛИКОВАННОЙ ТАБЛИЦЫ "Arthur_Energy_Data"
 const ARTHUR_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTsIOYXovTe39rIcAhM42rBXzEHYY6jbbCNw0cXDagnVL4N1CALCl2YNF9Q-NErDVvbvs57gMGivTmz/pub?output=tsv';
@@ -142,11 +148,12 @@ function parseSheetDate(str) {
 }
 
 function createPeriod() {
-  return { sumKwh:0, sumSpot:0, sumCost:0, intervalsCount:0 };
+  return { sumKwh:0, sumSpot:0, sumCost:0, sumSiirto:0, sumVero:0, sumPerus:0, intervalsCount:0 };
 }
 
 function merge(t, s) {
   t.sumKwh += s.sumKwh; t.sumSpot += s.sumSpot; t.sumCost += s.sumCost;
+  t.sumSiirto += s.sumSiirto; t.sumVero += s.sumVero; t.sumPerus += s.sumPerus;
   t.intervalsCount += s.intervalsCount;
 }
 
@@ -156,8 +163,9 @@ function calc(d) {
   const effect = avgPersonal - avgSpot;
   const finalPrice = FIXED_PRICE + effect;
   const myEnergy = (d.sumKwh * finalPrice) / 100;
+  const totalCost = myEnergy + d.sumSiirto + d.sumVero + d.sumPerus;
 
-  return { avgSpot, effect, finalPrice, myEnergy };
+  return { avgSpot, effect, finalPrice, totalCost };
 }
 
 async function load() {
@@ -199,7 +207,7 @@ function process(spotData, sheetText) {
 
     const hr = parseInt(cols[1].split(':')[0], 10);
     const spot = parseFloat(String(cols[2]).replace(',', '.'));
-    const kwh = parseFloat(String(cols[6]).replace(',', '.')); // Итого кВтч
+    const kwh = parseFloat(String(cols[6]).replace(',', '.'));
 
     if (!isNaN(spot) && !isNaN(kwh)) {
       daysMap[dateKey].kwhByHour[hr] += kwh;
@@ -210,10 +218,13 @@ function process(spotData, sheetText) {
       daysMap[dateKey].data.sumSpot += spot; 
       daysMap[dateKey].data.sumCost += kwh * spot;
       daysMap[dateKey].data.intervalsCount++;
+
+      const sPrice = (hr >= 7 && hr < 22) ? SIIRTO_DAY : SIIRTO_NIGHT;
+      daysMap[dateKey].data.sumSiirto += (kwh * sPrice) / 100;
+      daysMap[dateKey].data.sumVero += (kwh * VERO_C_KWH) / 100;
     }
   }
 
-  // Заглушка для графика на текущий день
   const todayApi = spotData.filter(s => new Date(s.DateTime).toISOString().slice(0,10) === todayStr);
   if (daysMap[todayStr]) {
     todayApi.forEach(s => {
@@ -229,6 +240,9 @@ function process(spotData, sheetText) {
     const dData = daysMap[key].data;
     const daysInMonth = new Date(dObj.getFullYear(), dObj.getMonth()+1, 0).getDate();
     
+    // Считаем долю абонентки за этот день
+    dData.sumPerus = (OOMI_PERUS + SIIRTO_PERUS) / daysInMonth; 
+
     const weekKey = dObj.getFullYear() + '-W' + String(getISOWeek(dObj)).padStart(2,'0');
     const monthKey = dObj.getFullYear() + '-' + String(dObj.getMonth()+1).padStart(2,'0');
 
@@ -285,13 +299,13 @@ function buildDetailedStats(d, c) {
         <div class="main-stat-val-kwh">${d.sumKwh.toFixed(2)} kWh</div>
       </div>
       <div class="main-stat-box">
-        <div class="main-stat-label">Сумма (Энергия)</div>
-        <div class="main-stat-val-cost">${c.myEnergy.toFixed(2)} €</div>
+        <div class="main-stat-label">Сумма (Всё вместе)</div>
+        <div class="main-stat-val-cost">${c.totalCost.toFixed(2)} €</div>
       </div>
     </div>
 
     <div class="simple-formula">
-      <div class="formula-label">Твой тариф (Jousto)</div>
+      <div class="formula-label">Эффект экономии (Jousto)</div>
       <div class="formula-calc">
         База ${FIXED_PRICE} c 
         <span class="${effectClass}">${effectSign}${c.effect.toFixed(2)} c</span> = 
@@ -429,11 +443,11 @@ function switchTab(tab) {
       <div class="row-head" onclick="toggleRow('${rowId}')">
         <div>
           <div class="row-title">${title}</div>
-          <div class="row-sub">Тариф: <span class="${effectClass}">${c.finalPrice.toFixed(2)} c/kWh</span></div>
+          <div class="row-sub">Jousto Тариф: <span class="${effectClass}">${c.finalPrice.toFixed(2)} c/kWh</span></div>
         </div>
         <div class="row-right">
           <div class="row-kwh">${d.sumKwh.toFixed(1)} kWh</div>
-          <div class="row-cost">${c.myEnergy.toFixed(2)} €</div>
+          <div class="row-cost">${c.totalCost.toFixed(2)} €</div>
         </div>
       </div>
       <div class="row-body" id="body-${rowId}"></div>
