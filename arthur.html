@@ -23,9 +23,166 @@ body {
   margin-bottom: 14px; box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);
 }
 
+/* === 1. ВЕРХНИЙ ГЛАВНЫЙ БЛОК (БОЛЬШИЕ ЦИФРЫ) === */
+.hero-card {
+  background: linear-gradient(145deg, #272738 0%, #1f1f2e 100%);
+  border-radius: 20px; padding: 18px 16px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  border: 1px solid #33334b;
+  margin-bottom: 12px;
+}
+.hero-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px; gap: 8px;
+}
+.hero-title {
+  font-size: 0.85rem; font-weight: 800; color: #cbd5e1;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.hero-switch {
+  display: flex; background: #181822; border-radius: 10px; padding: 3px;
+  border: 1px solid #33334b;
+}
+.hero-sw-btn {
+  background: transparent; border: none; color: #94a3b8;
+  font-size: 0.75rem; font-weight: 800; padding: 5px 10px;
+  border-radius: 7px; cursor: pointer;
+}
+.hero-sw-btn.active {
+  background: #8e44ad; color: #fff;
+}
+
+.hero-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.hero-box {
+  background: #181822; border-radius: 16px; padding: 16px 12px;
+  text-align: center; border: 1px solid #2e2e44;
+}
+.hero-label {
+  font-size: 0.72rem; font-weight: 800; color: #94a3b8;
+  text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.4px;
+}
+.hero-val-kwh {
+  color: #38bdf8; font-size: 2.1rem; font-weight: 900; line-height: 1.1;
+}
+.hero-val-kwh span { font-size: 1rem; font-weight: 700; color: #7dd3fc; }
+.hero-val-cost {
+  color: #f8fafc; font-size: 2.1rem; font-weight: 900; line-height: 1.1;
+}
+.hero-val-cost span { font-size: 1.1rem; font-weight: 700; color: #cbd5e1; }
+.hero-subline {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 12px; padding: 8px 12px; background: #222232;
+  border-radius: 10px; font-size: 0.78rem; color: #94a3b8; font-weight: 600;
+}
+.hero-subline b { color: #e2e8f0; }
+
+/* === 2. НАПОМИНАНИЕ И АККОРДЕОН "КАК ВСЁ СЧИТАЕТСЯ" === */
+.info-card {
+  background: #272738; border-radius: 18px; padding: 14px 16px;
+  border: 1px solid #33334b; margin-bottom: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+.reminder-text {
+  font-size: 0.82rem; line-height: 1.45; color: #cbd5e1;
+  padding-left: 10px; border-left: 3px solid #8e44ad;
+}
+.reminder-text b { color: #f8fafc; }
+
+.how-btn {
+  width: 100%; margin-top: 12px; padding: 10px 14px;
+  background: #1e1e2d; border: 1px solid #3b3b58; border-radius: 12px;
+  color: #e2e8f0; font-size: 0.82rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; user-select: none;
+}
+.how-btn:active { background: #181824; }
+.how-arrow { transition: transform 0.25s ease; color: #a855f7; font-size: 0.9rem; }
+.info-card.open .how-arrow { transform: rotate(180deg); }
+
+.how-body {
+  display: none; margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid #33334b; font-size: 0.82rem; line-height: 1.5; color: #cbd5e1;
+}
+.info-card.open .how-body { display: block; }
+
+.how-section-title {
+  font-size: 0.75rem; font-weight: 900; color: #a855f7;
+  text-transform: uppercase; margin: 12px 0 6px; letter-spacing: 0.5px;
+}
+.how-section-title:first-child { margin-top: 0; }
+
+.breakdown-list {
+  background: #1a1a26; border-radius: 12px; padding: 10px 12px;
+  border: 1px solid #2e2e42; margin-bottom: 10px;
+}
+.bd-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0; border-bottom: 1px dashed #2e2e42; font-size: 0.8rem;
+}
+.bd-row:last-child { border-bottom: none; }
+.bd-name { color: #cbd5e1; font-weight: 600; }
+.bd-name small { display: block; color: #64748b; font-size: 0.72rem; font-weight: 500; }
+.bd-val { font-weight: 800; color: #f8fafc; text-align: right; flex-shrink: 0; margin-left: 8px; }
+.bd-val small { display: block; color: #94a3b8; font-size: 0.7rem; font-weight: 600; }
+
+.rule-item {
+  margin-bottom: 8px; padding: 8px 10px;
+  background: #1e1e2d; border-radius: 10px; font-size: 0.79rem;
+}
+.rule-item b { color: #38bdf8; }
+
+/* === 3. БЛОК СПОТ И КУЛУТУСВАЙКУТУС === */
+.jousto-card {
+  background: #272738; border-radius: 20px; padding: 16px;
+  border: 1px solid #33334b; margin-bottom: 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+.jousto-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+.jousto-title {
+  font-size: 0.8rem; font-weight: 800; color: #94a3b8; text-transform: uppercase;
+}
+.live-spot-pill {
+  background: #181822; border: 1px solid #33334b; border-radius: 999px;
+  padding: 4px 10px; font-size: 0.75rem; font-weight: 700; color: #cbd5e1;
+}
+.live-spot-pill b { color: #38bdf8; }
+
+.jousto-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;
+}
+.jousto-box {
+  background: #1e1e2d; border-radius: 12px; padding: 10px; text-align: center;
+  border: 1px solid #2e2e44;
+}
+.jousto-box-lbl {
+  font-size: 0.7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;
+}
+.jousto-box-val { font-size: 1.2rem; font-weight: 900; }
+
+.jousto-formula-bar {
+  background: #181822; border-radius: 12px; padding: 12px;
+  text-align: center; border: 1px solid #2e2e44;
+}
+.jf-sub { font-size: 0.73rem; color: #94a3b8; margin-bottom: 4px; font-weight: 600; }
+.jf-main { font-size: 1rem; font-weight: 700; color: #e2e8f0; }
+
+.val-high { color: #f43f5e; font-weight: 800; }
+.val-low { color: #10b981; font-weight: 800; }
+
+/* === 4. НИЖНИЙ БЛОК: ВКЛАДКИ И ГРАФИКИ === */
+.section-divider {
+  font-size: 0.78rem; font-weight: 800; color: #94a3b8;
+  text-transform: uppercase; letter-spacing: 0.6px;
+  margin: 6px 4px 10px;
+}
 .tabs {
   display: flex; background: #272738; border-radius: 14px; padding: 4px;
-  margin-bottom: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  margin-bottom: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
 .tab {
   flex: 1; text-align: center; padding: 10px 4px;
@@ -38,42 +195,19 @@ body {
   background: #272738; border-radius: 20px; padding: 16px 14px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.2); margin-bottom: 12px;
 }
+.card-head-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 10px; padding: 0 4px;
+}
 .card-title {
-  text-align: center; font-size: 1.05rem; font-weight: 900; color: #f8fafc;
-  margin-bottom: 12px; text-transform: uppercase;
+  font-size: 1rem; font-weight: 900; color: #f8fafc; text-transform: uppercase;
 }
-.card-title span { color: #94a3b8; font-weight: 600; font-size: 0.85rem; }
-.chart-wrap { position: relative; height: 200px; margin-bottom: 12px; }
-
-/* === ПРОСТАЯ СТАТИСТИКА === */
-.stats {
-  background: #1e1e2d; border-radius: 16px; padding: 14px; border: 1px solid #33334b;
+.card-title span { color: #94a3b8; font-weight: 600; font-size: 0.82rem; }
+.card-mini-stat {
+  font-size: 0.82rem; font-weight: 800; color: #38bdf8;
 }
-.main-stat-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-}
-.main-stat-box {
-  background: #272738; border-radius: 12px; padding: 12px 10px; text-align: center;
-  border: 1px solid #33334b;
-}
-.main-stat-label {
-  font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;
-}
-.main-stat-val-kwh { color: #38bdf8; font-size: 1.4rem; font-weight: 900; }
-.main-stat-val-cost { color: #f8fafc; font-size: 1.4rem; font-weight: 900; }
-
-.simple-formula {
-  background: #272738; border: 1px solid #33334b; border-radius: 12px;
-  padding: 12px; text-align: center; margin-top: 10px;
-}
-.formula-label {
-  font-size: 0.72rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;
-}
-.formula-calc {
-  font-size: 0.95rem; color: #cbd5e1; font-weight: 600;
-}
-.val-high { color: #f43f5e; font-weight: 800; } 
-.val-low { color: #10b981; font-weight: 800; }  
+.card-mini-stat b { color: #f8fafc; margin-left: 6px; }
+.chart-wrap { position: relative; height: 200px; }
 
 /* === СПИСОК ПРОШЛЫХ ПЕРИОДОВ === */
 .compact-list { display: flex; flex-direction: column; gap: 8px; }
@@ -95,6 +229,12 @@ body {
 .row-body { display: none; padding: 0 12px 14px; border-top: 1px solid #33334b; }
 .row.open .row-body { display: block; }
 
+.mini-stats-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  background: #1e1e2d; border-radius: 12px; padding: 10px 12px;
+  font-size: 0.8rem; color: #cbd5e1; border: 1px solid #33334b;
+}
+
 .loading { text-align: center; color: #94a3b8; padding: 50px 20px; font-weight: 600; }
 .empty { text-align: center; color: #64748b; padding: 30px; font-style: italic; }
 </style>
@@ -103,7 +243,92 @@ body {
 <div class="wrap">
   <a href="index.html" class="nav-btn">⬅ Назад в Энерго-пульт</a>
   <div id="loading" class="loading">Считываем показания дома, сарайки и бойлера...</div>
+
   <div id="app" style="display:none">
+    <!-- 1. ВЕРХНИЙ БЛОК: БОЛЬШИЕ ЦИФРЫ (КВТЧ И СТОИМОСТЬ) -->
+    <div class="hero-card">
+      <div class="hero-header">
+        <div class="hero-title" id="hero-period-title">Набежало за месяц</div>
+        <div class="hero-switch">
+          <button class="hero-sw-btn active" id="sw-month" onclick="setHeroMode('month')">Месяц</button>
+          <button class="hero-sw-btn" id="sw-day" onclick="setHeroMode('day')">Сегодня</button>
+        </div>
+      </div>
+
+      <div class="hero-grid">
+        <div class="hero-box">
+          <div class="hero-label">Набежало энергии</div>
+          <div class="hero-val-kwh" id="hero-kwh">0.00 <span>kWh</span></div>
+        </div>
+        <div class="hero-box">
+          <div class="hero-label">Полная стоимость</div>
+          <div class="hero-val-cost" id="hero-cost">0.00 <span>€</span></div>
+        </div>
+      </div>
+
+      <div class="hero-subline" id="hero-subline">
+        <span>Средний тариф «под ключ»: <b id="hero-allin-rate">0.00 c/kWh</b></span>
+        <span id="hero-secondary-info">Сегодня: <b>0.00 kWh · 0.00 €</b></span>
+      </div>
+    </div>
+
+    <!-- 2. НАПОМИНАНИЕ + РАЗВОРАЧИВАЕМАЯ ВКЛАДКА "КАК ВСЁ СЧИТАЕТСЯ" -->
+    <div class="info-card" id="how-card">
+      <div class="reminder-text">
+        💡 <b>Напоминание:</b> скидка или наценка <b>Kulutusvaikutus</b> действует только на цену самой электроэнергии (Oomi). Остальная часть итоговой суммы — это доставка по сетям (<b>Siirto</b>), налог (<b>Vero</b>) и пропорциональная доля абонентки дома (<b>Perusmaksu</b>).
+      </div>
+
+      <button class="how-btn" onclick="toggleHowCard()">
+        <span>📊 Как всё считается? (Подробный расчёт)</span>
+        <span class="how-arrow">▼</span>
+      </button>
+
+      <div class="how-body">
+        <div class="how-section-title" id="bd-period-label">Раскладка текущей суммы по полочкам</div>
+        <div class="breakdown-list" id="live-breakdown"></div>
+
+        <div class="how-section-title">Откуда складываются киловатт-часы</div>
+        <div class="breakdown-list" id="kwh-breakdown"></div>
+
+        <div class="how-section-title">Правила нашего договора</div>
+        <div class="rule-item">
+          <b>1. Стимул к экономии (Jousto):</b> Базовая цена энергии — <b>5.99 c/kWh</b>. Каждые 15 минут расход сверяется со спотовой ценой биржи. Если включать мощные приборы в дешёвые часы, возникает зелёный минус (скидка), который удешевляет базовый тариф.
+        </div>
+        <div class="rule-item">
+          <b>2. Доставка (Siirto) и Налог (Vero):</b> Сеть Oulun Energia берёт <b>2.69 c/kWh</b> днём (07:00–22:00) и <b>1.63 c/kWh</b> ночью. Государственный налог на электричество фиксирован — <b>2.92 c/kWh</b>.
+        </div>
+        <div class="rule-item">
+          <b>3. Честная абонентка (Perusmaksu):</b> Фиксированная абонентская плата всего дома (20.33 € сеть + 5.90 € Oomi = <b>26.23 €/мес</b>) делится строго пропорционально доле твоих киловатт в общем расходе дома. Зимой, когда дом тратит больше энергии, абонентка в цене каждого киловатта автоматически становится меньше.
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. БЛОК: СПОТОВАЯ ЦЕНА И ПЛЮС/МИНУС ВАЙКУТУС -->
+    <div class="jousto-card">
+      <div class="jousto-head">
+        <div class="jousto-title">Спот и эффект Jousto</div>
+        <div class="live-spot-pill">Биржа сейчас: <b id="spot-now-val">— c/kWh</b></div>
+      </div>
+
+      <div class="jousto-grid">
+        <div class="jousto-box">
+          <div class="jousto-box-lbl">Кулутусвайкутус (±)</div>
+          <div class="jousto-box-val" id="jousto-effect-val">0.00 c</div>
+        </div>
+        <div class="jousto-box">
+          <div class="jousto-box-lbl">Твой тариф энергии</div>
+          <div class="jousto-box-val" id="jousto-final-val">5.99 c/kWh</div>
+        </div>
+      </div>
+
+      <div class="jousto-formula-bar">
+        <div class="jf-sub" id="jousto-spot-compare">Средний спот биржи: 0.00 c · Твой профиль: 0.00 c</div>
+        <div class="jf-main" id="jousto-formula-text">База 5.99 c - 0.00 c = 5.99 c/kWh</div>
+      </div>
+    </div>
+
+    <!-- 4. НИЖНИЙ БЛОК: ГРАФИКИ И ВКЛАДКИ (ДНИ / НЕДЕЛИ / МЕСЯЦЫ) -->
+    <div class="section-divider">Графики и история потребления</div>
     <div class="tabs">
       <button class="tab active" data-tab="days">Дни</button>
       <button class="tab" data-tab="weeks">Недели</button>
@@ -133,6 +358,9 @@ const daysRu = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 let daysMap = {}, weeksMap = {}, monthsMap = {};
 let charts = {};
 let rowStore = {};
+let heroMode = 'month';
+let currentSpotNow = null;
+let activeTab = 'days';
 
 function getISOWeek(d) {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -150,15 +378,24 @@ function parseSheetDate(str) {
 
 function createPeriod() {
   return {
-    sumKwh: 0, sumSpot: 0, sumCost: 0, sumSiirto: 0, sumVero: 0,
+    sumKwh: 0, shedKwh: 0, boilerKwh: 0, kitchenKwh: 0, laundryKwh: 0,
+    sumSpot: 0, sumCost: 0, sumSiirto: 0, sumVero: 0,
     houseKwh: 0, housePerus: 0, intervalsCount: 0
   };
 }
 
 function merge(t, s) {
-  t.sumKwh += s.sumKwh; t.sumSpot += s.sumSpot; t.sumCost += s.sumCost;
-  t.sumSiirto += s.sumSiirto; t.sumVero += s.sumVero;
-  t.houseKwh += s.houseKwh; t.housePerus += s.housePerus;
+  t.sumKwh += s.sumKwh;
+  t.shedKwh += s.shedKwh;
+  t.boilerKwh += s.boilerKwh;
+  t.kitchenKwh += s.kitchenKwh;
+  t.laundryKwh += s.laundryKwh;
+  t.sumSpot += s.sumSpot;
+  t.sumCost += s.sumCost;
+  t.sumSiirto += s.sumSiirto;
+  t.sumVero += s.sumVero;
+  t.houseKwh += s.houseKwh;
+  t.housePerus += s.housePerus;
   t.intervalsCount += s.intervalsCount;
 }
 
@@ -169,26 +406,45 @@ function calc(d) {
   const finalPrice = FIXED_PRICE + effect;
   const myEnergy = (d.sumKwh * finalPrice) / 100;
 
-  // Динамическая доля абонентки: пропорционально доле кВт·ч Артура в общем потреблении дома
   let myPerus = 0;
+  let houseSharePct = 0;
   if (d.houseKwh > 0) {
     const share = Math.min(1, d.sumKwh / d.houseKwh);
+    houseSharePct = share * 100;
     myPerus = d.housePerus * share;
   }
 
   const totalCost = myEnergy + d.sumSiirto + d.sumVero + myPerus;
-  return { avgSpot, effect, finalPrice, totalCost };
+  const allInRate = d.sumKwh > 0 ? (totalCost / d.sumKwh) * 100 : 0;
+
+  return {
+    avgSpot, avgPersonal, effect, finalPrice,
+    myEnergy, myPerus, houseSharePct, totalCost, allInRate
+  };
 }
+
+function toggleHowCard() {
+  document.getElementById('how-card').classList.toggle('open');
+}
+window.toggleHowCard = toggleHowCard;
+
+function setHeroMode(mode) {
+  heroMode = mode;
+  document.getElementById('sw-month').classList.toggle('active', mode === 'month');
+  document.getElementById('sw-day').classList.toggle('active', mode === 'day');
+  updateTopDashboard();
+}
+window.setHeroMode = setHeroMode;
 
 async function load() {
   try {
     const [spotRes, shedRes, boilerRes, mainRes] = await Promise.all([
-      fetch('https://api.spot-hinta.fi/TodayAndDayForward'),
+      fetch('https://api.spot-hinta.fi/TodayAndDayForward').catch(() => null),
       fetch(ARTHUR_SHEET_URL + '&_rnd=' + Date.now()).catch(() => null),
       fetch(BOILER_SHEET_URL + '&_rnd=' + Date.now()).catch(() => null),
       fetch(MAIN_SHEET_URL + '&_rnd=' + Date.now()).catch(() => null)
     ]);
-    const spotData = await spotRes.json();
+    const spotData = spotRes && spotRes.ok ? await spotRes.json() : [];
     const shedText = shedRes && shedRes.ok ? await shedRes.text() : '';
     const boilerText = boilerRes && boilerRes.ok ? await boilerRes.text() : '';
     const mainText = mainRes && mainRes.ok ? await mainRes.text() : '';
@@ -201,7 +457,28 @@ async function load() {
 
 function process(spotData, shedText, boilerText, mainText) {
   daysMap = {}; weeksMap = {}; monthsMap = {};
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+
+  // Определяем текущую биржевую цену
+  currentSpotNow = null;
+  if (Array.isArray(spotData) && spotData.length) {
+    const nowMs = now.getTime();
+    for (const item of spotData) {
+      const startMs = new Date(item.DateTime).getTime();
+      if (nowMs >= startMs && nowMs < startMs + 15 * 60 * 1000) {
+        currentSpotNow = +(item.PriceWithTax * 100).toFixed(2);
+        break;
+      }
+    }
+    if (currentSpotNow === null) {
+      const sameHour = spotData.find(s => {
+        const dt = new Date(s.DateTime);
+        return dt.toISOString().slice(0, 10) === todayStr && dt.getHours() === now.getHours();
+      });
+      if (sameHour) currentSpotNow = +(sameHour.PriceWithTax * 100).toFixed(2);
+    }
+  }
 
   function parseSource(text, sourceId) {
     if (!text || text.includes('<html')) return;
@@ -233,15 +510,25 @@ function process(spotData, shedText, boilerText, mainText) {
       const spot = parseFloat(String(cols[2]).replace(',', '.'));
       
       let kwh = 0;
+      const pData = daysMap[dateKey].data;
+
       if (sourceId === 'shed') {
-        kwh = parseFloat(String(cols[6]).replace(',', '.'));
-        // Виртуальная кухня (1/3): 1.23 кВтч в день / 60 дневных интервалов = +0.0205 кВтч (только днем)
-        if (hr >= 7 && hr < 22) kwh += 0.0205;
-        // Виртуальная стиралка (1/3): ~3 кВтч/мес = 0.1 кВтч/день / 96 интервалов = +0.0010 кВтч (круглые сутки)
-        kwh += 0.0010;
+        const rawShed = parseFloat(String(cols[6]).replace(',', '.'));
+        if (!isNaN(rawShed)) {
+          const kitch = (hr >= 7 && hr < 22) ? 0.0205 : 0;
+          const laund = 0.0010;
+          pData.shedKwh += rawShed;
+          pData.kitchenKwh += kitch;
+          pData.laundryKwh += laund;
+          kwh = rawShed + kitch + laund;
+        }
       } else if (sourceId === 'boiler') {
         if (cols.length > 7) {
-          kwh = parseFloat(String(cols[7]).replace(',', '.'));
+          const rawBoiler = parseFloat(String(cols[7]).replace(',', '.'));
+          if (!isNaN(rawBoiler)) {
+            pData.boilerKwh += rawBoiler;
+            kwh = rawBoiler;
+          }
         }
       }
 
@@ -249,25 +536,24 @@ function process(spotData, shedText, boilerText, mainText) {
         daysMap[dateKey].kwhByHour[hr] += kwh;
         
         if (!daysMap[dateKey].seenIntervals.has(timeKey)) {
-           daysMap[dateKey].seenIntervals.add(timeKey);
-           daysMap[dateKey].data.sumSpot += spot;
-           daysMap[dateKey].data.intervalsCount++;
-           
-           daysMap[dateKey].spotByHour[hr] = (daysMap[dateKey].spotByHour[hr] * daysMap[dateKey].spotCountByHour[hr] + spot) / (daysMap[dateKey].spotCountByHour[hr] + 1);
-           daysMap[dateKey].spotCountByHour[hr]++;
+          daysMap[dateKey].seenIntervals.add(timeKey);
+          pData.sumSpot += spot;
+          pData.intervalsCount++;
+          
+          daysMap[dateKey].spotByHour[hr] = (daysMap[dateKey].spotByHour[hr] * daysMap[dateKey].spotCountByHour[hr] + spot) / (daysMap[dateKey].spotCountByHour[hr] + 1);
+          daysMap[dateKey].spotCountByHour[hr]++;
         }
 
-        daysMap[dateKey].data.sumKwh += kwh;
-        daysMap[dateKey].data.sumCost += kwh * spot;
+        pData.sumKwh += kwh;
+        pData.sumCost += kwh * spot;
 
         const sPrice = (hr >= 7 && hr < 22) ? SIIRTO_DAY : SIIRTO_NIGHT;
-        daysMap[dateKey].data.sumSiirto += (kwh * sPrice) / 100;
-        daysMap[dateKey].data.sumVero += (kwh * VERO_C_KWH) / 100;
+        pData.sumSiirto += (kwh * sPrice) / 100;
+        pData.sumVero += (kwh * VERO_C_KWH) / 100;
       }
     }
   }
 
-  // Считываем общее потребление всего дома из главной таблицы
   function parseHouse(text) {
     if (!text || text.includes('<html')) return;
     const lines = text.trim().split(/\r?\n/);
@@ -281,7 +567,6 @@ function process(spotData, shedText, boilerText, mainText) {
         String(rowDate.getMonth()+1).padStart(2,'0') + '-' +
         String(rowDate.getDate()).padStart(2,'0');
 
-      // Берем только те дни, где уже ведется учет Артура
       if (!daysMap[dateKey]) continue;
 
       const hr = parseInt(cols[1].split(':')[0], 10);
@@ -298,8 +583,8 @@ function process(spotData, shedText, boilerText, mainText) {
   parseSource(boilerText, 'boiler');
   parseHouse(mainText);
 
-  const todayApi = spotData.filter(s => new Date(s.DateTime).toISOString().slice(0,10) === todayStr);
-  if (daysMap[todayStr]) {
+  if (Array.isArray(spotData) && daysMap[todayStr]) {
+    const todayApi = spotData.filter(s => new Date(s.DateTime).toISOString().slice(0,10) === todayStr);
     todayApi.forEach(s => {
       const h = new Date(s.DateTime).getHours();
       if (daysMap[todayStr].spotCountByHour[h] === 0) {
@@ -313,7 +598,6 @@ function process(spotData, shedText, boilerText, mainText) {
     const dData = daysMap[key].data;
     const daysInMonth = new Date(dObj.getFullYear(), dObj.getMonth()+1, 0).getDate();
     
-    // Абонентка всего дома за фактически учтенные часы этого дня
     const dailyHousePerus = (OOMI_PERUS + SIIRTO_PERUS) / daysInMonth;
     const hoursCount = daysMap[key].seenHouseHours.size || 24;
     dData.housePerus = dailyHousePerus * (hoursCount / 24);
@@ -351,51 +635,128 @@ function process(spotData, shedText, boilerText, mainText) {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('app').style.display = 'block';
 
-  switchTab('days');
+  updateTopDashboard();
+  switchTab(activeTab);
 
   document.querySelectorAll('.tab').forEach(btn => {
     btn.onclick = () => {
       document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      switchTab(btn.dataset.tab);
+      activeTab = btn.dataset.tab;
+      switchTab(activeTab);
     };
   });
 }
 
-function buildDetailedStats(d, c) {
-  const effectSign = c.effect > 0 ? '+' : '';
-  const effectClass = c.effect <= 0 ? 'val-low' : 'val-high';
+function updateTopDashboard() {
+  const dayKeys = Object.keys(daysMap).sort().reverse();
+  const monthKeys = Object.keys(monthsMap).sort().reverse();
+  if (!dayKeys.length || !monthKeys.length) return;
 
-  return `
-  <div class="stats">
-    <div class="main-stat-grid">
-      <div class="main-stat-box">
-        <div class="main-stat-label">Нагорело</div>
-        <div class="main-stat-val-kwh">${d.sumKwh.toFixed(2)} kWh</div>
-      </div>
-      <div class="main-stat-box">
-        <div class="main-stat-label">Сумма (Всё вместе)</div>
-        <div class="main-stat-val-cost">${c.totalCost.toFixed(2)} €</div>
-      </div>
+  const latestDay = daysMap[dayKeys[0]];
+  const latestMonth = monthsMap[monthKeys[0]];
+
+  const dDay = latestDay.data;
+  const cDay = calc(dDay);
+
+  const dMonth = latestMonth.data;
+  const cMonth = calc(dMonth);
+
+  const isMonth = heroMode === 'month';
+  const dActive = isMonth ? dMonth : dDay;
+  const cActive = isMonth ? cMonth : cDay;
+
+  const dayLabel = `${latestDay.dateObj.getDate()} ${shortMonths[latestDay.dateObj.getMonth()]}`;
+  const monthLabel = `${monthsFull[latestMonth.monthIdx]} ${latestMonth.year}`;
+
+  document.getElementById('hero-period-title').textContent = isMonth
+    ? `Набежало за ${monthsFull[latestMonth.monthIdx]}`
+    : `Набежало за сегодня (${dayLabel})`;
+
+  document.getElementById('hero-kwh').innerHTML = `${dActive.sumKwh.toFixed(2)} <span>kWh</span>`;
+  document.getElementById('hero-cost').innerHTML = `${cActive.totalCost.toFixed(2)} <span>€</span>`;
+  document.getElementById('hero-allin-rate').textContent = `${cActive.allInRate.toFixed(2)} c/kWh`;
+
+  document.getElementById('hero-secondary-info').innerHTML = isMonth
+    ? `Сегодня (${dayLabel}): <b>${dDay.sumKwh.toFixed(2)} kWh · ${cDay.totalCost.toFixed(2)} €</b>`
+    : `За ${monthsFull[latestMonth.monthIdx]}: <b>${dMonth.sumKwh.toFixed(2)} kWh · ${cMonth.totalCost.toFixed(2)} €</b>`;
+
+  // Обновляем живую раскладку внутри вкладки "Как всё считается"
+  document.getElementById('bd-period-label').textContent =
+    `Раскладка суммы (${isMonth ? monthLabel : dayLabel}): ${cActive.totalCost.toFixed(2)} €`;
+
+  const siirtoAvgRate = dActive.sumKwh > 0 ? (dActive.sumSiirto / dActive.sumKwh) * 100 : 0;
+  const perusAvgRate = dActive.sumKwh > 0 ? (cActive.myPerus / dActive.sumKwh) * 100 : 0;
+
+  document.getElementById('live-breakdown').innerHTML = `
+    <div class="bd-row">
+      <div class="bd-name">⚡ Электроэнергия (Oomi Jousto)<small>База 5.99 c ${cActive.effect > 0 ? '+' : ''}${cActive.effect.toFixed(2)} c вайкутус</small></div>
+      <div class="bd-val">${cActive.myEnergy.toFixed(2)} €<small>${cActive.finalPrice.toFixed(2)} c/kWh</small></div>
     </div>
-    
-    <div class="simple-formula">
-      <div class="formula-label">Эффект экономии (Jousto)</div>
-      <div class="formula-calc">
-        База ${FIXED_PRICE} c 
-        <span class="${effectClass}">${effectSign}${c.effect.toFixed(2)} c</span> = 
-        <b class="${effectClass}" style="font-size: 1.15rem;">${c.finalPrice.toFixed(2)} c/kWh</b>
-      </div>
+    <div class="bd-row">
+      <div class="bd-name">🔌 Доставка (Oulun Energia Siirto)<small>День 2.69 c · Ночь 1.63 c</small></div>
+      <div class="bd-val">${dActive.sumSiirto.toFixed(2)} €<small>~${siirtoAvgRate.toFixed(2)} c/kWh</small></div>
     </div>
-  </div>`;
+    <div class="bd-row">
+      <div class="bd-name">🏛️ Налог на энергию (Sähkövero)<small>Гос. налог 2.81 c + сбор 0.11 c</small></div>
+      <div class="bd-val">${dActive.sumVero.toFixed(2)} €<small>${VERO_C_KWH.toFixed(2)} c/kWh</small></div>
+    </div>
+    <div class="bd-row">
+      <div class="bd-name">🏠 Доля абонентки дома (Perusmaksu)<small>${cActive.houseSharePct.toFixed(1)}% от расхода всего дома (${dActive.houseKwh.toFixed(1)} kWh)</small></div>
+      <div class="bd-val">${cActive.myPerus.toFixed(2)} €<small>~${perusAvgRate.toFixed(2)} c/kWh</small></div>
+    </div>
+  `;
+
+  document.getElementById('kwh-breakdown').innerHTML = `
+    <div class="bd-row">
+      <div class="bd-name">🛠️ Сарайка (100% по счётчику)</div>
+      <div class="bd-val">${dActive.shedKwh.toFixed(2)} kWh</div>
+    </div>
+    <div class="bd-row">
+      <div class="bd-name">🚿 Нагрев воды — Бойлер (1/3)</div>
+      <div class="bd-val">${dActive.boilerKwh.toFixed(2)} kWh</div>
+    </div>
+    <div class="bd-row">
+      <div class="bd-name">🍳 Кухня — дневная норма (1/3)</div>
+      <div class="bd-val">${dActive.kitchenKwh.toFixed(2)} kWh</div>
+    </div>
+    <div class="bd-row">
+      <div class="bd-name">🧺 Стиральная машина (1/3)</div>
+      <div class="bd-val">${dActive.laundryKwh.toFixed(2)} kWh</div>
+    </div>
+  `;
+
+  // 3. Обновляем блок Спота и Jousto
+  const effectSign = cActive.effect > 0 ? '+' : '';
+  const effectClass = cActive.effect <= 0 ? 'val-low' : 'val-high';
+  const effectWord = cActive.effect <= 0 ? 'экономия' : 'переплата';
+
+  document.getElementById('spot-now-val').textContent =
+    currentSpotNow !== null ? `${currentSpotNow.toFixed(2)} c/kWh` : `${cDay.avgSpot.toFixed(2)} c/kWh`;
+
+  const effEl = document.getElementById('jousto-effect-val');
+  effEl.className = 'jousto-box-val ' + effectClass;
+  effEl.textContent = `${effectSign}${cActive.effect.toFixed(2)} c`;
+
+  const finEl = document.getElementById('jousto-final-val');
+  finEl.className = 'jousto-box-val ' + effectClass;
+  finEl.textContent = `${cActive.finalPrice.toFixed(2)} c/kWh`;
+
+  document.getElementById('jousto-spot-compare').textContent =
+    `Средний спот биржи: ${cActive.avgSpot.toFixed(2)} c · Твой спот по профилю: ${cActive.avgPersonal.toFixed(2)} c`;
+
+  document.getElementById('jousto-formula-text').innerHTML =
+    `База ${FIXED_PRICE} c <span class="${effectClass}">${effectSign}${cActive.effect.toFixed(2)} c (${effectWord})</span> = <b class="${effectClass}">${cActive.finalPrice.toFixed(2)} c/kWh</b>`;
 }
 
 function buildFullCard(title, d, c, chartId) {
   return `
   <div class="full-card">
-    <div class="card-title">${title}</div>
+    <div class="card-head-row">
+      <div class="card-title">${title}</div>
+      <div class="card-mini-stat">${d.sumKwh.toFixed(2)} kWh <b>${c.totalCost.toFixed(2)} €</b></div>
+    </div>
     <div class="chart-wrap"><canvas id="${chartId}"></canvas></div>
-    ${buildDetailedStats(d, c)}
   </div>`;
 }
 
@@ -518,10 +879,10 @@ function switchTab(tab) {
       <div class="row-head" onclick="toggleRow('${rowId}')">
         <div>
           <div class="row-title">${title}</div>
-          <div class="row-sub">Jousto Тариф: <span class="${effectClass}">${c.finalPrice.toFixed(2)} c/kWh</span></div>
+          <div class="row-sub">Jousto: <span class="${effectClass}">${c.finalPrice.toFixed(2)} c/kWh</span> · Под ключ: ${c.allInRate.toFixed(1)} c/kWh</div>
         </div>
         <div class="row-right">
-          <div class="row-kwh">${d.sumKwh.toFixed(1)} kWh</div>
+          <div class="row-kwh">${d.sumKwh.toFixed(2)} kWh</div>
           <div class="row-cost">${c.totalCost.toFixed(2)} €</div>
         </div>
       </div>
@@ -560,10 +921,15 @@ function toggleRow(rowId) {
   row.classList.add('open');
   const body = document.getElementById('body-' + rowId);
   const { labels, kwhArr, spotArr, type, d, c, chartId } = data;
+  const effectSign = c.effect > 0 ? '+' : '';
+  const effectClass = c.effect <= 0 ? 'val-low' : 'val-high';
 
   body.innerHTML = `
-    <div class="chart-wrap" style="height:190px;margin:12px 0"><canvas id="${chartId}"></canvas></div>
-    ${buildDetailedStats(d, c)}
+    <div class="chart-wrap" style="height:185px;margin:12px 0"><canvas id="${chartId}"></canvas></div>
+    <div class="mini-stats-bar">
+      <span>Энергия Jousto: <b class="${effectClass}">5.99 ${effectSign}${c.effect.toFixed(2)} = ${c.finalPrice.toFixed(2)} c</b></span>
+      <span>Сарайка: <b>${d.shedKwh.toFixed(2)} kWh</b></span>
+    </div>
   `;
 
   setTimeout(() => makeChart(chartId, labels, kwhArr, spotArr, type), 30);
@@ -571,7 +937,7 @@ function toggleRow(rowId) {
 
 window.toggleRow = toggleRow;
 load();
-setInterval(load, 5 * 60 * 1000); 
+setInterval(load, 5 * 60 * 1000);
 </script>
 </body>
 </html>
