@@ -68,7 +68,7 @@
 
         .chart-wrapper { width: 100%; height: 220px; position: relative; }
         .legend { text-align: center; font-size: 0.75rem; color: #7f8c8d; font-weight: 600; margin-top: 8px; }
-        .legend u { text-decoration: none; display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: #27ae60; margin-right: 4px; vertical-align: -1px; }
+        .legend u { text-decoration: none; display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: #2c3e50; margin-right: 4px; vertical-align: -1px; }
 
         /* Список вариантов */
         .opt {
@@ -275,11 +275,11 @@
         const labels = slots.map(s => hki(s.t).hm);
         const data = slots.map(s => +s.p.toFixed(2));
         const inWin = slots.map(s => s.t >= best.start && s.t < best.end);
-        const colors = slots.map((s, i) => inWin[i] ? '#27ae60' : barColor(s.p));
+        const colors = slots.map((s, i) => inWin[i] ? '#2c3e50' : barColor(s.p));
         const minP = Math.min(...data), maxP = Math.max(...data);
 
         const cfgData = { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 2, barPercentage: 1, categoryPercentage: 0.9 }] };
-        const yMin = minP < 0 ? minP * 1.2 : 0, yMax = Math.max(maxP * 1.1, 2);
+        const yMin = minP < 0 ? Math.floor(minP * 1.2) : 0, yMax = Math.max(Math.ceil(maxP * 1.1), 2);
         if (chart) {
             chart.data = cfgData;
             chart.options.scales.y.min = yMin; chart.options.scales.y.max = yMax;
