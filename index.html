@@ -42,6 +42,18 @@
         .countdown {
             color: #555; font-size: 0.95rem; margin-top: 12px; font-weight: 600;
         }
+
+        /* Подсказка про дешёвое окно (ведёт на window.html) */
+        .cheap-pill {
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+            margin-top: 12px; padding: 9px 10px;
+            background: #f4f6f8; border-radius: 12px; white-space: nowrap;
+            color: #2c3e50; font-size: 0.82rem; font-weight: 600; text-decoration: none;
+            transition: transform 0.1s ease;
+        }
+        .cheap-pill:active { transform: scale(0.98); }
+        .cheap-pill b { font-weight: 800; }
+        .cheap-pill i { font-style: normal; color: #95a5a6; font-weight: 800; }
         
         .chart-card { 
             background: white; border-radius: 24px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
@@ -102,6 +114,10 @@
 
         <div class="countdown" id="countdown-text">Считаем время...</div>
 
+        <a href="window.html" class="cheap-pill">
+            <span>🕒 Дёшево:</span> <b id="cheap-pill-text">найти окно</b> <i>›</i>
+        </a>
+
         <div class="shelly-stats">
             <div class="stat-item">
                 <div class="stat-value" id="shelly-power">Запуск</div>
@@ -161,8 +177,33 @@
                 document.getElementById('current-price').innerText = displayPrice;
                 applyVisuals(priceExact);
                 renderChart(data, startIndex);
+                updateCheapPill(data, startIndex);
             }
         } catch (e) { console.error("Ошибка цен", e); }
+    }
+
+    // Самое дешёвое окно на 2 часа (8 интервалов по 15 минут) из оставшихся цен
+    function updateCheapPill(data, startIndex) {
+        const N = 8;
+        let best = -1, bestSum = Infinity;
+        for (let i = startIndex; i + N <= data.length; i++) {
+            let sum = 0;
+            for (let j = i; j < i + N; j++) sum += data[j].PriceWithTax;
+            if (sum < bestSum - 1e-9) { bestSum = sum; best = i; }
+        }
+        if (best === -1) return;
+        const avg = (bestSum / N) * 100;
+        const price = (Math.abs(avg) < 10 ? avg.toFixed(1) : Math.round(avg)) + ' c';
+        let text;
+        if (best === startIndex) {
+            text = 'сейчас · ' + price;
+        } else {
+            const end = new Date(new Date(data[best + N - 1].DateTime).getTime() + 15 * 60000);
+            const endStr = String(end.getHours()).padStart(2, '0') + ':' + String(end.getMinutes()).padStart(2, '0');
+            const tomorrow = data[best].DateTime.substring(0, 10) !== data[startIndex].DateTime.substring(0, 10);
+            text = (tomorrow ? 'завтра ' : '') + data[best].DateTime.substring(11, 16) + '–' + endStr + ' · ' + price;
+        }
+        document.getElementById('cheap-pill-text').innerText = text;
     }
 
     async function updateCloudKwh() {
