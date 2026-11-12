@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дешёвое окно</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: #e2f3e5;
+            display: flex; justify-content: center; padding: 15px; margin: 0;
+            transition: background-color 0.8s ease;
+        }
+        .widget-container { width: 100%; max-width: 500px; }
+
+        .nav-btn {
+            display: block; width: 100%; padding: 16px;
+            background-color: #7f8c8d; color: white;
+            border: none; border-radius: 16px;
+            font-size: 16px; font-weight: bold;
+            text-decoration: none; text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 15px;
+        }
+
+        .card {
+            background: white; border-radius: 24px; padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 15px;
+        }
+        .card-title {
+            text-align: center; font-size: 0.8rem; font-weight: 800; color: #7f8c8d;
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
+        }
+
+        /* Переключатель длительности */
+        .seg { display: flex; background: #f0f3f4; border-radius: 14px; padding: 4px; margin-bottom: 18px; }
+        .seg button {
+            flex: 1; border: none; background: transparent; padding: 10px 4px;
+            font-size: 0.95rem; font-weight: 800; color: #7f8c8d; border-radius: 11px; cursor: pointer;
+            font-family: inherit;
+        }
+        .seg button.active { background: #2c3e50; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+
+        /* Главный результат */
+        .hero { text-align: center; }
+        .hero-when { color: #444; font-weight: 600; font-size: 1rem; }
+        .hero-time { font-size: clamp(2rem, 11vw, 2.9rem); font-weight: 900; color: #1a1a1a; line-height: 1.05; margin: 6px 0 2px; letter-spacing: -1px; white-space: nowrap; }
+        .hero-price { color: #666; font-size: 1.1rem; font-weight: 500; }
+        .hero-price b { color: #1a1a1a; font-weight: 900; font-size: 1.5rem; }
+        .advice-box {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            font-weight: 700; font-size: 1.1rem; padding: 14px; border-radius: 16px; margin-top: 15px;
+            background: #d4edda; color: #155724;
+        }
+        .advice-box.go { background: #00d1db; color: #fff; }
+        .compare {
+            display: flex; justify-content: space-between; align-items: stretch; margin-top: 16px;
+            padding-top: 16px; border-top: 1px solid #f0f0f0;
+        }
+        .cmp-item { flex: 1; text-align: center; border-right: 1px solid #f0f0f0; }
+        .cmp-item:last-child { border-right: none; }
+        .cmp-item span { display: block; font-size: 0.7rem; color: #999; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; margin-bottom: 4px; }
+        .cmp-item b { font-size: 1.45rem; font-weight: 800; color: #333; }
+        .cmp-item b.good { color: #27ae60; }
+        .cmp-item b.bad { color: #e74c3c; }
+        .cmp-item small { font-size: 0.8rem; color: #666; font-weight: 600; }
+
+        .chart-wrapper { width: 100%; height: 220px; position: relative; }
+        .legend { text-align: center; font-size: 0.75rem; color: #7f8c8d; font-weight: 600; margin-top: 8px; }
+        .legend u { text-decoration: none; display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: #27ae60; margin-right: 4px; vertical-align: -1px; }
+
+        /* Список вариантов */
+        .opt {
+            display: flex; justify-content: space-between; align-items: center; gap: 10px;
+            padding: 12px 0; border-bottom: 1px dashed #ecf0f1;
+        }
+        .opt:last-child { border-bottom: none; padding-bottom: 0; }
+        .opt:first-child { padding-top: 0; }
+        .opt-name { font-size: 0.72rem; font-weight: 700; color: #95a5a6; text-transform: uppercase; letter-spacing: 0.4px; }
+        .opt-time { font-size: 1.15rem; font-weight: 800; color: #2c3e50; margin-top: 2px; }
+        .opt-time small { font-size: 0.8rem; font-weight: 600; color: #7f8c8d; }
+        .opt-price { font-size: 1.15rem; font-weight: 900; padding: 6px 12px; border-radius: 12px; white-space: nowrap; flex-shrink: 0; }
+        .opt-price small { font-size: 0.7rem; font-weight: 700; opacity: 0.75; }
+
+        .empty-msg { text-align: center; color: #888; font-size: 0.95rem; padding: 30px 0; font-style: italic; }
+        .update-time { text-align: center; color: rgba(0,0,0,0.55); font-size: 0.75rem; margin: 10px 0; line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+<div class="widget-container">
+    <a href="index.html" class="nav-btn">⬅ Назад к пульту</a>
+
+    <div class="card">
+        <div class="card-title">🕒 Сколько нужно времени?</div>
+        <div class="seg" id="seg">
+            <button data-h="1">1 ч</button>
+            <button data-h="2">2 ч</button>
+            <button data-h="3">3 ч</button>
+            <button data-h="4">4 ч</button>
+        </div>
+        <div id="hero" class="hero"><div class="empty-msg">Ищем дешёвое окно...</div></div>
+    </div>
+
+    <div class="card" id="chart-card" style="display:none">
+        <div class="card-title">Цены по 15 минут</div>
+        <div class="chart-wrapper"><canvas id="winChart"></canvas></div>
+        <div class="legend"><u></u>выбранное окно · нажми на столбик, чтобы увидеть цену</div>
+    </div>
+
+    <div class="card" id="opts-card" style="display:none">
+        <div class="card-title">Другие варианты</div>
+        <div id="opts"></div>
+    </div>
+
+    <div class="update-time" id="last-update"></div>
+</div>
+
+<script>
+    const TZ = 'Europe/Helsinki';
+    const FREE = 2, CHEAP = 5, HIGH = 10;       // те же пороги, что на пульте
+    const SPOT_URL = 'https://api.spot-hinta.fi/TodayAndDayForward';
+    const Q = 15 * 60 * 1000;                   // один интервал биржи
+
+    let slotsAll = [];      // [{t: начало интервала (мс), p: цена c/кВтч}]
+    let hours = 2;
+    let chart = null;
+    let chartSlots = [];    // интервалы, которые сейчас нарисованы на графике
+    let lastFetch = 0;
+    try { const saved = +localStorage.getItem('kanshi_window_hours'); if (saved >= 1 && saved <= 4) hours = saved; } catch (e) {}
+
+    // ---- время всегда по Хельсинки ----
+    const partsFmt = new Intl.DateTimeFormat('en-CA', {
+        timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    });
+    function hki(ms) {
+        const o = {};
+        for (const p of partsFmt.formatToParts(new Date(ms))) o[p.type] = p.value;
+        const h = (+o.hour) % 24;
+        return { date: o.year + '-' + o.month + '-' + o.day, hm: String(h).padStart(2, '0') + ':' + o.minute, hour: h, minute: +o.minute };
+    }
+    function dayWord(ms, nowMs) {
+        const d = hki(ms).date, today = hki(nowMs).date;
+        if (d === today) return 'сегодня';
+        return d > today ? 'завтра' : 'вчера';
+    }
+    function partOfDay(h) { return h < 6 ? 'ночью' : h < 12 ? 'утром' : h < 18 ? 'днём' : 'вечером'; }
+    function fmtP(p) { return Math.abs(p) < 10 ? p.toFixed(1) : String(Math.round(p)); }
+    function fmtDur(ms) {
+        const m = Math.max(0, Math.round(ms / 60000));
+        const h = Math.floor(m / 60), mm = m % 60;
+        return h ? h + ' ч' + (mm ? ' ' + mm + ' мин' : '') : mm + ' мин';
+    }
+    function barColor(p) { return p < 0 ? '#a78bfa' : p < FREE ? '#00d1db' : p < CHEAP ? '#95d5b2' : p < HIGH ? '#ffeaae' : '#ffadad'; }
+    function pill(p) {
+        if (p < 0) return 'background:#ebdfff;color:#5b3fa8';
+        if (p < FREE) return 'background:#d6fbff;color:#0b6b73';
+        if (p < CHEAP) return 'background:#d4edda;color:#155724';
+        if (p < HIGH) return 'background:#fff3cd;color:#856404';
+        return 'background:#f8d7da;color:#721c24';
+    }
+    function bodyColor(p) { return p < 0 ? '#ebdfff' : p < FREE ? '#00f2ff' : p < CHEAP ? '#e2f3e5' : p < HIGH ? '#fff9e6' : '#fde8e8'; }
+
+    // ---- поиск окон ----
+    // Все окна из n интервалов подряд, начиная с текущего интервала
+    function allWindows(slots, n) {
+        const out = [];
+        if (slots.length < n) return out;
+        let sum = 0;
+        for (let i = 0; i < slots.length; i++) {
+            sum += slots[i].p;
+            if (i >= n) sum -= slots[i - n].p;
+            if (i >= n - 1) {
+                const s = i - n + 1;
+                // на случай дырки в данных: окно должно быть непрерывным
+                if (slots[i].t - slots[s].t === (n - 1) * Q) out.push({ i: s, start: slots[s].t, end: slots[i].t + Q, avg: sum / n });
+            }
+        }
+        return out;
+    }
+    const cheapest = list => list.length ? list.reduce((a, b) => b.avg < a.avg - 1e-9 ? b : a) : null;
+    const overlaps = (a, b) => a.start < b.end && b.start < a.end;
+
+    function render() {
+        const nowMs = Date.now();
+        const n = hours * 4;
+        const slots = slotsAll.filter(s => s.t + Q > nowMs);
+        const hero = document.getElementById('hero');
+        const chartCard = document.getElementById('chart-card'), optsCard = document.getElementById('opts-card');
+        document.querySelectorAll('#seg button').forEach(b => b.classList.toggle('active', +b.dataset.h === hours));
+
+        const wins = allWindows(slots, n);
+        const best = cheapest(wins);
+        if (!best) {
+            hero.innerHTML = '<div class="empty-msg">' + (slotsAll.length
+                ? 'Цен на ' + hours + ' ч вперёд пока нет. Завтрашние цены появляются около 14:15 — или выбери окно покороче.'
+                : 'Биржа не отвечает. Попробуем ещё раз через минуту.') + '</div>';
+            chartCard.style.display = 'none'; optsCard.style.display = 'none';
+            return;
+        }
+
+        // ---- главный результат ----
+        const nowWin = wins[0].i === 0 ? wins[0] : null;          // окно «включить прямо сейчас»
+        const worst = wins.reduce((a, b) => b.avg > a.avg ? b : a);
+        const started = best.start <= nowMs;
+        const st = hki(best.start), en = hki(best.end);
+        const when = started ? 'Самое дешёвое окно — прямо сейчас'
+            : 'Самое дешёвое окно — ' + dayWord(best.start, nowMs) + ' ' + partOfDay(st.hour);
+
+        let advice;
+        if (started) advice = '<div class="advice-box go"><span>🚀</span><span>Включай! Окно идёт ещё ' + fmtDur(best.end - nowMs) + '</span></div>';
+        else advice = '<div class="advice-box"><span>⏳</span><span>Начнётся через ' + fmtDur(best.start - nowMs) + '</span></div>';
+
+        let compare = '';
+        if (nowWin && !started) {
+            const save = nowWin.avg - best.avg;
+            const pct = nowWin.avg > 0.05 ? Math.round((save / nowWin.avg) * 100) : null;
+            compare = '<div class="compare">' +
+                '<div class="cmp-item"><span>Если сейчас</span><b>' + fmtP(nowWin.avg) + '</b> <small>c</small></div>' +
+                '<div class="cmp-item"><span>В окне</span><b class="good">' + fmtP(best.avg) + '</b> <small>c</small></div>' +
+                '<div class="cmp-item"><span>Выгода</span><b class="good">' + (pct !== null && pct > 0 ? '−' + pct + '%' : '−' + fmtP(save)) + '</b>' +
+                    (pct !== null && pct > 0 ? '' : ' <small>c</small>') + '</div>' +
+            '</div>';
+        } else {
+            compare = '<div class="compare">' +
+                '<div class="cmp-item"><span>В окне</span><b class="good">' + fmtP(best.avg) + '</b> <small>c</small></div>' +
+                '<div class="cmp-item"><span>Худшее окно</span><b class="bad">' + fmtP(worst.avg) + '</b> <small>c</small></div>' +
+            '</div>';
+        }
+
+        hero.innerHTML =
+            '<div class="hero-when">' + when + '</div>' +
+            '<div class="hero-time">' + st.hm + ' – ' + en.hm + '</div>' +
+            '<div class="hero-price">в среднем <b>' + fmtP(best.avg) + '</b> центов / кВтч</div>' +
+            advice + compare;
+        document.body.style.backgroundColor = bodyColor(best.avg);
+
+        // ---- другие варианты ----
+        const opts = [];
+        const todayKey = hki(nowMs).date;
+        const addOpt = (name, w, cls) => { if (w) opts.push({ name, w, cls }); };
+        const winsToday = wins.filter(w => hki(w.start).date === todayKey && hki(w.end - 1).date === todayKey);
+        const winsTomorrow = wins.filter(w => hki(w.start).date > todayKey);
+        const bestToday = cheapest(winsToday), bestTomorrow = cheapest(winsTomorrow);
+        if (bestToday && bestToday !== best) addOpt('Лучшее сегодня', bestToday);
+        if (bestTomorrow && bestTomorrow !== best) addOpt('Лучшее завтра', bestTomorrow);
+        const second = cheapest(wins.filter(w => !overlaps(w, best) && !opts.some(o => overlaps(o.w, w))));
+        if (second) addOpt('Запасной вариант', second);
+        if (worst.avg - best.avg > 0.3) addOpt('Лучше не включать', worst, 'bad');
+
+        document.getElementById('opts').innerHTML = opts.map(o => {
+            const a = hki(o.w.start), b = hki(o.w.end);
+            return '<div class="opt"><div><div class="opt-name">' + (o.cls ? '⛔ ' : '') + o.name + '</div>' +
+                '<div class="opt-time">' + a.hm + ' – ' + b.hm + ' <small>' + dayWord(o.w.start, nowMs) + '</small></div></div>' +
+                '<div class="opt-price" style="' + pill(o.w.avg) + '">' + fmtP(o.w.avg) + ' <small>c</small></div></div>';
+        }).join('');
+        optsCard.style.display = opts.length ? 'block' : 'none';
+
+        // ---- график ----
+        chartCard.style.display = 'block';
+        drawChart(slots, best);
+
+        const lastT = slots[slots.length - 1].t;
+        document.getElementById('last-update').innerHTML =
+            'Обновлено: ' + hki(lastFetch).hm + ' · цены известны до ' +
+            (hki(lastT + Q).hm === '00:00' ? 'конца дня' : hki(lastT + Q).hm) + ' (' + dayWord(lastT, nowMs) + ')' +
+            '<br>Цены биржи с налогом, без передачи. Завтрашние появляются около 14:15.';
+    }
+
+    function drawChart(slots, best) {
+        if (typeof Chart === 'undefined') { document.getElementById('chart-card').style.display = 'none'; return; }
+        chartSlots = slots;
+        const labels = slots.map(s => hki(s.t).hm);
+        const data = slots.map(s => +s.p.toFixed(2));
+        const inWin = slots.map(s => s.t >= best.start && s.t < best.end);
+        const colors = slots.map((s, i) => inWin[i] ? '#27ae60' : barColor(s.p));
+        const minP = Math.min(...data), maxP = Math.max(...data);
+
+        const cfgData = { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 2, barPercentage: 1, categoryPercentage: 0.9 }] };
+        const yMin = minP < 0 ? minP * 1.2 : 0, yMax = Math.max(maxP * 1.1, 2);
+        if (chart) {
+            chart.data = cfgData;
+            chart.options.scales.y.min = yMin; chart.options.scales.y.max = yMax;
+            chart.update('none');
+            return;
+        }
+        chart = new Chart(document.getElementById('winChart'), {
+            type: 'bar',
+            data: cfgData,
+            options: {
+                responsive: true, maintainAspectRatio: false, animation: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        displayColors: false,
+                        callbacks: {
+                            title: items => {
+                                const s = chartSlots[items[0].dataIndex];
+                                return s ? hki(s.t).hm + ' – ' + hki(s.t + Q).hm + ', ' + dayWord(s.t, Date.now()) : '';
+                            },
+                            label: ctx => ctx.raw.toFixed(2) + ' c/кВтч'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            autoSkip: false, maxRotation: 0, font: { size: 9, weight: 'bold' },
+                            // подписываем только каждые 3 часа
+                            callback: function (val) {
+                                const l = this.getLabelForValue(val);
+                                return l.slice(3) === '00' && (+l.slice(0, 2)) % 3 === 0 ? l.slice(0, 2) : null;
+                            }
+                        }
+                    },
+                    y: { min: yMin, max: yMax, ticks: { font: { size: 9 }, maxTicksLimit: 5 }, grid: { color: '#f0f0f0' }, border: { display: false } }
+                }
+            }
+        });
+    }
+
+    async function loadPrices() {
+        try {
+            const res = await fetch(SPOT_URL, { cache: 'no-store' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            const slots = [];
+            for (const s of data) {
+                const t = new Date(s.DateTime).getTime();
+                if (!isNaN(t) && typeof s.PriceWithTax === 'number') slots.push({ t, p: s.PriceWithTax * 100 });
+            }
+            slots.sort((a, b) => a.t - b.t);
+            if (slots.length) { slotsAll = slots; lastFetch = Date.now(); }
+        } catch (e) {
+            console.error('Ошибка цен', e);
+            if (!slotsAll.length) setTimeout(loadPrices, 60 * 1000);   // цен нет совсем — пробуем через минуту
+        }
+        render();
+    }
+
+    document.getElementById('seg').addEventListener('click', e => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        hours = +b.dataset.h;
+        try { localStorage.setItem('kanshi_window_hours', hours); } catch (err) {}
+        render();
+    });
+
+    loadPrices();
+    setInterval(render, 30 * 1000);                 // обратный отсчёт и сдвиг «сейчас»
+    setInterval(loadPrices, 10 * 60 * 1000);        // свежие цены (после 14:15 появится завтра)
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) { if (Date.now() - lastFetch > 10 * 60 * 1000) loadPrices(); else render(); }
+    });
+</script>
+
+</body>
+</html>
